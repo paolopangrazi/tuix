@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(tuix)
+project(tuix VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -22,7 +22,7 @@ endif()
 # ---------------------------------------------------------------------------
 # rapidcsv — vendored header-only library in deps/rapidcsv/
 # ---------------------------------------------------------------------------
-set(RAPIDCSV_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/rapidcsv")
+set(RAPIDCSV_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/rapidcsv/src")
 
 # ---------------------------------------------------------------------------
 # tomlplusplus — system-installed header-only library
@@ -62,3 +62,5 @@ target_link_libraries(tuix PRIVATE
     ftxui::screen
     tomlplusplus::tomlplusplus
 )
+
+install(TARGETS tuix DESTINATION bin)
