@@ -1,0 +1,13 @@
+date,product,category,units,unit_price,revenue,region
+2024-01-03,Widget A,Electronics,120,29.99,3598.80,North
+2024-01-05,Gadget B,Electronics,45,89.99,4049.55,South
+2024-01-07,Tool C,Hardware,200,14.50,2900.00,East
+2024-01-10,Widget A,Electronics,95,29.99,2849.05,West
+2024-01-12,Gadget B,Electronics,30,89.99,2699.70,North
+2024-01-15,Part D,Hardware,500,4.99,2495.00,South
+2024-01-18,Widget A,Electronics,140,29.99,4198.60,East
+2024-01-20,Tool C,Hardware,80,14.50,1160.00,West
+2024-01-22,Gadget B,Electronics,60,89.99,5399.40,North
+2024-01-25,Part D,Hardware,320,4.99,1596.80,South
+2024-01-28,Widget A,Electronics,175,29.99,5248.25,East
+2024-01-30,Tool C,Hardware,110,14.50,1595.00,West

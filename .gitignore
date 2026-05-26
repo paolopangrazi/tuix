@@ -1,0 +1,15 @@
+# Build
+build/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# clangd cache
+.cache/
+
+# macOS
+.DS_Store
