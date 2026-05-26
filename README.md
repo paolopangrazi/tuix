@@ -1,6 +1,19 @@
 # tuix
 
+[![CI](https://github.com/paolopangrazi/tuix/actions/workflows/ci.yml/badge.svg)](https://github.com/paolopangrazi/tuix/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A terminal spreadsheet built on [FTXUI](https://github.com/ArthurSonzogni/FTXUI). Navigate and edit CSV files with vim-style keybindings, write formulas, and undo/redo changes — all in the terminal.
+
+<!--
+  Add a screenshot or demo GIF here. Suggested tools:
+    - vhs       https://github.com/charmbracelet/vhs   (scriptable GIFs)
+    - asciinema https://asciinema.org                  (terminal recordings)
+    - simple    just paste a PNG of your terminal
+  Once captured, save it as docs/demo.gif (or .png) and reference it:
+    ![demo](docs/demo.gif)
+-->
+![demo](docs/demo.png)
 
 ## Requirements
 
