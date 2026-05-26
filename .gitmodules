@@ -1,0 +1,9 @@
+[submodule "deps/rapidcsv"]
+	path = deps/rapidcsv
+	url = https://github.com/d99kris/rapidcsv
+[submodule "deps/ftxui"]
+	path = deps/ftxui
+	url = https://github.com/ArthurSonzogni/FTXUI
+[submodule "deps/tomlplusplus"]
+	path = deps/tomlplusplus
+	url = https://github.com/marzer/tomlplusplus

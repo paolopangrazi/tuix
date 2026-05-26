@@ -6,28 +6,21 @@ A terminal spreadsheet built on [FTXUI](https://github.com/ArthurSonzogni/FTXUI)
 
 - CMake 3.14+
 - C++17 compiler (GCC 8+ or Clang 7+)
-- [toml++](https://github.com/marzer/tomlplusplus) (system package)
+- Git (to fetch submodules)
 
-**Installing toml++:**
-
-| Platform | Command |
-|---|---|
-| Arch Linux | `sudo pacman -S toml++` |
-| Ubuntu 22.04+ | `sudo apt install libtomlplusplus-dev` |
-| Fedora | `sudo dnf install tomlplusplus-devel` |
-| macOS | `brew install toml++` |
-
-All other dependencies (FTXUI, rapidcsv) are fetched automatically during the build.
+All dependencies — [FTXUI](https://github.com/ArthurSonzogni/FTXUI), [rapidcsv](https://github.com/d99kris/rapidcsv), and [toml++](https://github.com/marzer/tomlplusplus) — are bundled as git submodules. No system packages are required.
 
 ## Build
 
 ```bash
 git clone --recurse-submodules https://github.com/paolopangrazi/tuix
+cd tuix
 cmake -B build
 cmake --build build
+./build/tuix samples/csv/employees.csv   # try it out
 ```
 
-If you already cloned without `--recurse-submodules`, run `git submodule update --init` first.
+If you already cloned without `--recurse-submodules`, run `git submodule update --init --recursive` first.
 
 ## Usage
 

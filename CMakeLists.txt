@@ -1,33 +1,45 @@
 cmake_minimum_required(VERSION 3.14)
-project(tuix VERSION 0.1.0)
+project(tuix VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# ---------------------------------------------------------------------------
-# ftxui — use git submodule in deps/ftxui if present, otherwise FetchContent
-# ---------------------------------------------------------------------------
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/deps/ftxui/CMakeLists.txt")
-    add_subdirectory(deps/ftxui)
-else()
-    include(FetchContent)
-    FetchContent_Declare(ftxui
-        GIT_REPOSITORY https://github.com/ArthurSonzogni/FTXUI
-        GIT_TAG v5.0.0
-    )
-    FetchContent_MakeAvailable(ftxui)
-    # expose the include dir so compile_commands.json gets the -I flag
-    set(FTXUI_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_deps/ftxui-src/include")
+# Default to Release if no build type specified (common quality-of-life)
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 endif()
 
+# Always emit compile_commands.json for clangd / IDEs
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # ---------------------------------------------------------------------------
-# rapidcsv — vendored header-only library in deps/rapidcsv/
+# Submodule sanity check — all deps live in deps/ as git submodules
+# ---------------------------------------------------------------------------
+foreach(dep ftxui rapidcsv tomlplusplus)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/deps/${dep}/CMakeLists.txt"
+       AND NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/deps/${dep}/src")
+        message(FATAL_ERROR
+            "Submodule deps/${dep} is missing. "
+            "Run: git submodule update --init --recursive")
+    endif()
+endforeach()
+
+# ---------------------------------------------------------------------------
+# ftxui (deps/ftxui)
+# ---------------------------------------------------------------------------
+set(FTXUI_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)  # don't leak into our install
+add_subdirectory(deps/ftxui)
+
+# ---------------------------------------------------------------------------
+# rapidcsv (deps/rapidcsv) — header-only
 # ---------------------------------------------------------------------------
 set(RAPIDCSV_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/rapidcsv/src")
 
 # ---------------------------------------------------------------------------
-# tomlplusplus — system-installed header-only library
+# tomlplusplus (deps/tomlplusplus) — header-only
 # ---------------------------------------------------------------------------
-find_package(tomlplusplus REQUIRED)
+add_subdirectory(deps/tomlplusplus)
 
 # ---------------------------------------------------------------------------
 # tuix
@@ -53,7 +65,6 @@ target_include_directories(tuix PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}            # for loader/csv_loader.hpp from within components/
     ${CMAKE_CURRENT_SOURCE_DIR}/components # for body.hpp, grid.hpp, etc. from main.cpp
     ${RAPIDCSV_INCLUDE_DIR}
-    $<$<BOOL:${FTXUI_INCLUDE_DIR}>:${FTXUI_INCLUDE_DIR}>
 )
 
 target_link_libraries(tuix PRIVATE
