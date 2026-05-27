@@ -257,17 +257,17 @@ std::string Grid::context_hint() const {
     if (m_pending_delete_row >= 0 || m_pending_delete_col >= 0)
         return "y: confirm delete  |  n/Esc: cancel";
     if (m_header_editing)
-        return "Enter/Esc: confirm  |  Tab: next col  |  Arrows: save & move";
+        return "Enter: confirm & exit  |  Esc: confirm & stay  |  Tab/Arrows: save & move";
     if (m_editing) {
         if (should_show_ac(m_edit_buf) && !ac_matches().empty())
             return "↑↓: navigate  |  Tab/Enter: complete  |  type to filter";
-        return "Enter: confirm & down  |  Tab: confirm & right  |  Arrows: confirm & move";
+        return "Enter: confirm & ↓  |  Tab: confirm & →  |  Arrows: confirm & move  |  Del: clear";
     }
     if (m_in_header)
-        return "hjkl/arrows: navigate  |  +: insert col  |  -/x: delete col  |  i/a: rename  |  Enter/j: exit header";
+        return "hjkl/arrows: nav  |  +: insert col  |  -/x: delete col  |  i/a: rename  |  Enter/↓: exit  |  Esc: exit";
     if (m_cursor_col < 0)
-        return "hjkl/arrows: navigate  |  +: insert row  |  -/x: delete row  |  u: undo";
-    return "hjkl/arrows: navigate  |  u: undo  |  Ctrl+R: redo  |  PgUp/PgDn: scroll";
+        return "hjkl/arrows: nav  |  +: insert row  |  -/x: delete row  |  u/Ctrl+R: undo/redo  |  →: enter row";
+    return "hjkl: nav  |  i/a: edit  |  o/O: new row  |  x: delete  |  y/p: yank/paste  |  Shift+arrows: select  |  gg/G: top/bottom  |  u/Ctrl+R: undo/redo  |  :: cmd";
 }
 
 void Grid::move(int dr, int dc) {

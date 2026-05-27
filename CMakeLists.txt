@@ -53,6 +53,13 @@ add_executable(tuix
     components/titlebar.cpp
     components/body.cpp
     components/statusbar.cpp
+    components/status_area.cpp
+    dialogs/dialog_shell.cpp
+    dialogs/exit_dialog.cpp
+    dialogs/save_confirm_dialog.cpp
+    dialogs/path_input_dialog.cpp
+    dialogs/help_dialog.cpp
+    dialogs/config_dialog.cpp
     loader/csv_loader.cpp
     writer/csv_writer.cpp
     formulas/value.cpp
@@ -64,6 +71,7 @@ add_executable(tuix
 target_include_directories(tuix PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}            # for loader/csv_loader.hpp from within components/
     ${CMAKE_CURRENT_SOURCE_DIR}/components # for body.hpp, grid.hpp, etc. from main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/dialogs    # for dialog_shell.hpp etc. from main.cpp
     ${RAPIDCSV_INCLUDE_DIR}
 )
 
