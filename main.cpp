@@ -4,9 +4,8 @@
 
 #include "titlebar.hpp"
 #include "body.hpp"
+#include "session.hpp"
 #include "status_area.hpp"
-#include "loader/csv_loader.hpp"
-#include "writer/csv_writer.hpp"
 #include "config/config.hpp"
 
 #include "dialog_shell.hpp"
@@ -19,33 +18,6 @@
 #include <filesystem>
 #include <string>
 
-static std::string format_size(uintmax_t bytes) {
-    if (bytes < 1024)        return std::to_string(bytes) + " B";
-    if (bytes < 1024 * 1024) return std::to_string(bytes / 1024) + " KB";
-    return std::to_string(bytes / (1024 * 1024)) + " MB";
-}
-
-static std::string delimiter_name(char d) {
-    switch (d) {
-        case ',':  return "comma";
-        case ';':  return "semicolon";
-        case '\t': return "tab";
-        case '|':  return "pipe";
-        default:   return std::string(1, d);
-    }
-}
-
-static std::string file_info(const std::string& path, const CsvData& data, const Body& body) {
-    std::string name = std::filesystem::path(path).filename().string();
-    std::string size;
-    try { size = format_size(std::filesystem::file_size(path)); } catch (...) { size = "?"; }
-    return name
-        + "  |  " + size
-        + "  |  " + std::to_string(body.grid().cols()) + " cols"
-        + "  |  " + std::to_string(body.grid().rows()) + " rows"
-        + "  |  " + delimiter_name(data.delimiter);
-}
-
 int main(int argc, char* argv[]) {
     using namespace ftxui;
 
@@ -53,57 +25,10 @@ int main(int argc, char* argv[]) {
     int  tab    = 0;
 
     const Config cfg = Config::load();
-    Body body(50, 26, cfg);
+    Body    body(50, 26, cfg);
+    Session session(body);
 
-    std::string file_info_msg;
-    std::string current_path;
-    char        current_delim = ',';
-
-    if (argc > 1) {
-        try {
-            auto data = CsvLoader::load(argv[1]);
-            body.grid().load(data);
-            file_info_msg = file_info(argv[1], data, body);
-            current_path  = argv[1];
-            current_delim = data.delimiter;
-        } catch (const std::exception&) {}
-    }
-
-    auto load_path = [&](const std::string& path) {
-        try {
-            auto data = CsvLoader::load(path);
-            body.grid().load(data);
-            file_info_msg = file_info(path, data, body);
-            current_path  = path;
-            current_delim = data.delimiter;
-        } catch (const std::exception&) {}
-    };
-
-    auto do_write = [&](const std::string& path) {
-        try {
-            auto data = body.grid().to_csv_data(current_delim);
-            CsvWriter::save(path, data);
-            current_path  = path;
-            file_info_msg = file_info(path, data, body);
-        } catch (const std::exception&) {}
-    };
-
-    auto resolve = [&](const std::string& s) -> std::string {
-        std::filesystem::path p = s;
-        if (p.is_relative()) {
-            std::filesystem::path base = current_path.empty()
-                ? std::filesystem::current_path()
-                : std::filesystem::path(current_path).parent_path();
-            p = base / p;
-        }
-        return p.string();
-    };
-
-    auto dir_of_current = [&] {
-        return current_path.empty()
-            ? std::filesystem::current_path().string()
-            : std::filesystem::path(current_path).parent_path().string();
-    };
+    if (argc > 1) session.load(argv[1]);
 
     auto body_comp = body.make_component();
     auto go_main   = [&] { tab = 0; body_comp->TakeFocus(); };
@@ -127,25 +52,22 @@ int main(int argc, char* argv[]) {
         [&] { go_main(); });
 
     SaveConfirmDialog save_confirm(titlebar, cfg,
-        [&]{ return current_path; },
-        [&] { do_write(current_path); go_main(); },
+        [&] { return session.current_path(); },
+        [&] { session.write(session.current_path()); go_main(); },
         [&] { go_main(); });
 
     PathInputDialog save_as_dialog(titlebar, cfg,
         "Save As", "save", "filename.csv",
-        dir_of_current,
+        [&] { return session.dir_of_current(); },
         [&](const std::string& name) {
-            std::filesystem::path dir = current_path.empty()
-                ? std::filesystem::current_path()
-                : std::filesystem::path(current_path).parent_path();
-            do_write((dir / name).string());
+            session.write((std::filesystem::path(session.dir_of_current()) / name).string());
         },
         [&] { go_main(); });
 
     PathInputDialog open_dialog(titlebar, cfg,
         "Open", "open", "path/to/file.csv",
-        dir_of_current,
-        [&](const std::string& s) { load_path(resolve(s)); },
+        [&] { return session.dir_of_current(); },
+        [&](const std::string& s) { session.load(session.resolve(s)); },
         [&] { go_main(); });
 
     HelpDialog   help_dialog(titlebar, cfg, [&] { go_main(); });
@@ -153,12 +75,12 @@ int main(int argc, char* argv[]) {
 
     on_open    = [&] { open_dialog.clear_buffer(); tab = 6; };
     on_save_as = [&] {
-        save_as_dialog.set_buffer(current_path.empty()
-            ? "untitled.csv"
-            : std::filesystem::path(current_path).filename().string());
+        save_as_dialog.set_buffer(session.has_path()
+            ? std::filesystem::path(session.current_path()).filename().string()
+            : "untitled.csv");
         tab = 4;
     };
-    on_save = [&] { if (!current_path.empty()) tab = 3; };
+    on_save = [&] { if (session.has_path()) tab = 3; };
 
     // ── Main view ────────────────────────────────────────────────────────────
     bool        cmd_mode = false;
@@ -169,7 +91,7 @@ int main(int argc, char* argv[]) {
         [&] {
             auto status = render_status_area(
                 cfg, cmd_mode, cmd_buf,
-                body.grid().mode(), body.grid().context_hint(), file_info_msg);
+                body.grid().mode(), body.grid().context_hint(), session.file_info());
             return window(
                 titlebar.render_logo(),
                 vbox({
@@ -224,11 +146,11 @@ int main(int argc, char* argv[]) {
                     if (quit)                          tab = 1;
                     if (save)                          on_save();
                     if (save_quit) {
-                        if (!current_path.empty()) do_write(current_path);
+                        if (session.has_path()) session.write(session.current_path());
                         screen.ExitLoopClosure()();
                     }
-                    if (save_as && !sp.empty()) do_write (resolve(sp));
-                    if (edit    && !ep.empty()) load_path(resolve(ep));
+                    if (save_as && !sp.empty()) session.write(session.resolve(sp));
+                    if (edit    && !ep.empty()) session.load (session.resolve(ep));
                     return true;
                 }
                 if (e == Event::Backspace) {
