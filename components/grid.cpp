@@ -55,9 +55,9 @@ bool should_show_ac(const std::string& buf) {
 }  // namespace
 
 Grid::Grid(int rows, int cols, const Config& cfg)
-    : m_cfg(cfg),
-      k_cell_w(cfg.grid.cell_width),
+    : k_cell_w(cfg.grid.cell_width),
       m_rows(rows), m_cols(cols),
+      m_cfg(cfg),
       m_cells(rows, std::vector<Cell>(cols)),
       m_col_names(cols),
       m_col_widths(cols, k_cell_w),
@@ -737,6 +737,7 @@ bool Grid::handle_normal_nav(Event e) {
                 m_undo_stack.push_back({m_cursor_row, m_cursor_col, cell.value(), ""});
                 m_redo_stack.clear();
                 cell.set_value("");
+                m_col_widths[m_cursor_col] = compute_col_width(m_cursor_col);
             }
         }
         return true;
