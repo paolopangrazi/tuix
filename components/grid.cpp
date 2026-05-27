@@ -709,6 +709,7 @@ bool Grid::handle_normal_nav(Event e) {
     };
 
     if (e == Event::Escape && m_insert_sticky) { m_insert_sticky = false; return true; }
+    if (e == Event::Escape && m_has_selection)  { m_has_selection = false; return true; }
     if (e == Event::ArrowUp || m_cfg.key_is(e, m_cfg.keys.nav_up)) {
         m_has_selection = false;
         if (m_cursor_row == 0 && m_cursor_col >= 0) { m_in_header = true; return true; }
@@ -742,6 +743,53 @@ bool Grid::handle_normal_nav(Event e) {
     }
     if (m_cfg.key_is(e, m_cfg.keys.undo)) { undo(); return true; }
     if (e == Event::Special("\x12"))      { redo(); return true; }  // Ctrl+R
+
+    if (!m_insert_sticky && !m_in_header && m_cursor_col >= 0 && e.is_character()) {
+        const auto ch = e.character();
+        if (ch == "g") {
+            if (m_pending_g) {
+                m_pending_g = false;
+                m_has_selection = false;
+                m_cursor_row = 0;
+                adjust_viewport();
+            } else {
+                m_pending_g = true;
+            }
+            return true;
+        }
+        m_pending_g = false;
+        if (ch == "G") {
+            m_has_selection = false;
+            m_cursor_row = m_rows - 1;
+            adjust_viewport();
+            return true;
+        }
+        if (ch == "0") {
+            m_has_selection = false;
+            m_cursor_col = 0;
+            adjust_viewport();
+            return true;
+        }
+        if (ch == "$") {
+            m_has_selection = false;
+            m_cursor_col = m_cols - 1;
+            adjust_viewport();
+            return true;
+        }
+        if (ch == "o") {
+            insert_row(m_cursor_row);
+            start_edit(false);
+            return true;
+        }
+        if (ch == "O") {
+            insert_row(m_cursor_row - 1);
+            start_edit(false);
+            return true;
+        }
+    } else {
+        m_pending_g = false;
+    }
+
     if (!m_insert_sticky && !m_in_header && m_cursor_col >= 0 && e.is_character() && e.character() == "y") {
         int r0 = m_cursor_row, r1 = m_cursor_row;
         int c0 = m_cursor_col, c1 = m_cursor_col;

@@ -100,6 +100,9 @@ int main(int argc, char* argv[]) {
         } catch (const std::exception&) {}
     };
 
+    auto body_comp = body.make_component();
+    auto go_main   = [&] { tab = 0; body_comp->TakeFocus(); };
+
     std::string save_as_buf;
 
     InputOption save_as_opt;
@@ -110,7 +113,7 @@ int main(int argc, char* argv[]) {
                 : std::filesystem::path(current_path).parent_path();
             do_write((dir / save_as_buf).string());
         }
-        tab = 0;
+        go_main();
     };
     auto save_as_input = Input(&save_as_buf, "filename.csv", save_as_opt);
 
@@ -133,12 +136,10 @@ int main(int argc, char* argv[]) {
     };
 
     auto btn_yes = Button("  Yes  ", [&] { screen.ExitLoopClosure()(); }, btn_style);
-    auto btn_no  = Button("  No   ", [&] { tab = 0; },                    btn_style);
+    auto btn_no  = Button("  No   ", [&] { go_main(); },                    btn_style);
 
-    auto btn_save_yes = Button("  Yes  ", [&] { do_write(current_path); tab = 0; }, btn_style);
-    auto btn_save_no  = Button("  No   ", [&] { tab = 0; },                         btn_style);
-
-    auto body_comp = body.make_component();
+    auto btn_save_yes = Button("  Yes  ", [&] { do_write(current_path); go_main(); }, btn_style);
+    auto btn_save_no  = Button("  No   ", [&] { go_main(); },                         btn_style);
 
     bool        cmd_mode = false;
     std::string cmd_buf;
@@ -176,6 +177,8 @@ int main(int argc, char* argv[]) {
                     std::move(switch_key),
                     text(hint) | color(cfg.colors.dimmed),
                     filler(),
+                    text("F1") | bold | color(cfg.colors.header),
+                    text(": Help  ") | color(cfg.colors.dimmed),
                 }));
                 return vbox(std::move(lines));
             }();
@@ -279,74 +282,90 @@ int main(int argc, char* argv[]) {
             );
         }),
         [&](Event e) {
-            if (e == Event::Escape) { tab = 0; return true; }
+            if (e == Event::Escape) { go_main(); return true; }
             return false;
         }
     );
 
     // ── Help dialog ───────────────────────────────────────────────────────────
-    auto help_dialog = Renderer([&] {
-        auto krow = [&](const char* keys, const char* desc) -> Element {
-            return hbox({
-                text("  "),
-                text(keys) | bold | color(cfg.colors.header) | size(WIDTH, EQUAL, 28),
-                text(desc) | color(cfg.colors.dimmed),
-            });
-        };
-        auto sec = [&](const char* title) -> Element {
-            return vbox({
-                text(""),
-                hbox({ text("  "), text(title) | bold | color(cfg.colors.insert_badge_bg) }),
-            });
-        };
+    int help_tab = 0;
 
-        auto left_col = vbox({
-            sec("NAVIGATION"),
-            krow("h/←  j/↓  k/↑  l/→",   "Move cursor"),
-            krow("PgUp / PgDn",            "Scroll one page up / down"),
-            krow("Home / End",             "Jump to first / last column"),
-            krow("↑  from first row",      "Enter column header"),
-            sec("EDITING"),
-            krow("i  /  a",               "Enter INSERT mode"),
-            krow("Esc",                   "Exit INSERT → NORMAL"),
-            krow("Enter",                 "Confirm & move down"),
-            krow("Tab  /  Shift+Tab",     "Confirm & move right / left"),
-            krow("Arrows  (INSERT)",      "Confirm & move in that direction"),
-            krow("Del",                   "Clear cell buffer"),
-            krow("Backspace  (INSERT)",   "Delete last typed character"),
+    auto krow = [&](const char* keys, const char* desc) -> Element {
+        return hbox({
+            text("  "),
+            text(keys) | bold | color(cfg.colors.header) | size(WIDTH, EQUAL, 26),
+            text("  "),
+            text(desc) | color(cfg.colors.dimmed),
+        });
+    };
+
+    std::vector<std::string> help_tab_names = {
+        "Navigation", "Editing", "Selection", "Col Header",
+        "Row Index", "History", "Formulas", "File", "App",
+    };
+
+    auto help_tabs = Menu(&help_tab_names, &help_tab, MenuOption::Horizontal());
+
+    auto help_content = Container::Tab({
+        Renderer([&] { return vbox({
+            krow("h/←  j/↓  k/↑  l/→",    "Move cursor"),
+            krow("PgUp / PgDn",             "Scroll one page up / down"),
+            krow("Home / End  /  0  /  $",  "Jump to first / last column"),
+            krow("gg  /  G",                "Jump to first / last row"),
+            krow("↑  from first row",       "Enter column header"),
+        }); }),
+        Renderer([&] { return vbox({
+            krow("i  /  a",                 "Enter INSERT mode"),
+            krow("Esc",                     "Exit INSERT → NORMAL"),
+            krow("o  /  O",                 "Insert row below / above & edit"),
+            krow("Enter",                   "Confirm & move down"),
+            krow("Tab  /  Shift+Tab",       "Confirm & move right / left"),
+            krow("Arrows  (INSERT)",        "Confirm & move in that direction"),
+            krow("Del",                     "Clear cell buffer"),
+            krow("Backspace  (INSERT)",     "Delete last typed character"),
             krow("Backspace / x  (NORMAL)", "Delete cell value"),
-            sec("MULTI-SELECT"),
-            krow("Shift+Arrows  (NORMAL)", "Start / extend selection"),
-            text(""),
-        });
+        }); }),
+        Renderer([&] { return vbox({
+            krow("Shift+Arrows  (NORMAL)",  "Start / extend selection"),
+            krow("Esc  (NORMAL)",           "Clear selection"),
+        }); }),
+        Renderer([&] { return vbox({
+            krow("i  /  a",                "Rename column"),
+            krow("+",                      "Insert column to the right"),
+            krow("-  /  x  /  Backspace",  "Delete column"),
+            krow("↓  /  Enter",            "Exit header back to grid"),
+        }); }),
+        Renderer([&] { return vbox({
+            krow("+",                      "Insert row below"),
+            krow("-  /  x",               "Delete row"),
+        }); }),
+        Renderer([&] { return vbox({
+            krow("u",                      "Undo last change"),
+            krow("Ctrl+R",                "Redo last change"),
+        }); }),
+        Renderer([&] { return vbox({
+            krow("=",                      "Open formula autocomplete popup"),
+            krow("↑ / ↓  (popup)",         "Navigate formula list"),
+            krow("Tab / Enter  (popup)",   "Complete with selected formula"),
+        }); }),
+        Renderer([&] { return vbox({
+            krow("Ctrl+S",                "Save (warns before overwriting)"),
+            krow("Save As  (titlebar)",    "Choose a path; prompts on overwrite"),
+            krow("Open  (titlebar)",       "Open a CSV file"),
+        }); }),
+        Renderer([&] { return vbox({
+            krow(":w",                    "Save current file"),
+            krow(":w filename",           "Save as (relative or absolute path)"),
+            krow(":wq",                   "Save and quit"),
+            krow(":q  /  :q!",            "Quit via command mode"),
+            krow("Ctrl+E",                "Toggle quit confirmation dialog"),
+            krow("F1",                    "This help screen"),
+        }); }),
+    }, &help_tab);
 
-        auto right_col = vbox({
-            sec("COLUMN HEADER  (↑ from row 1)"),
-            krow("i  /  a",               "Rename column"),
-            krow("+",                     "Insert column to the right"),
-            krow("-  /  x  /  Backspace", "Delete column"),
-            krow("↓  /  Enter",           "Exit header back to grid"),
-            sec("ROW INDEX  (← from col A)"),
-            krow("+",                     "Insert row below"),
-            krow("-  /  x",              "Delete row"),
-            sec("HISTORY"),
-            krow("u",                     "Undo last change"),
-            krow("Ctrl+R",               "Redo last change"),
-            sec("FORMULAS  (while editing)"),
-            krow("=",                     "Open formula autocomplete popup"),
-            krow("↑ / ↓  (popup)",        "Navigate formula list"),
-            krow("Tab / Enter  (popup)",  "Complete with selected formula"),
-            sec("FILE"),
-            krow("Ctrl+S",               "Save (warns before overwriting)"),
-            krow("Save As  (titlebar)",  "Choose a path; prompts on overwrite"),
-            krow("Open  (titlebar)",     "Open a CSV file"),
-            sec("APP"),
-            krow(":q  /  :q!",           "Quit via command mode"),
-            krow("Ctrl+E",               "Toggle quit confirmation dialog"),
-            krow("F1",                   "This help screen"),
-            text(""),
-        });
+    auto help_inner = Container::Vertical({ help_tabs, help_content });
 
+    auto help_dialog = Renderer(help_inner, [&] {
         return window(
             titlebar.render_logo(),
             vbox({
@@ -355,17 +374,19 @@ int main(int argc, char* argv[]) {
                 filler(),
                 window(
                     hbox({ text(" "), text("Keybindings") | bold, text(" ") }),
-                    hbox({
-                        left_col  | size(WIDTH, EQUAL, 56),
+                    vbox({
+                        help_tabs->Render(),
                         separator(),
-                        right_col | size(WIDTH, EQUAL, 56),
+                        help_content->Render() | size(WIDTH, EQUAL, 70) | size(HEIGHT, GREATER_THAN, 12),
                     })
                 ) | center,
                 filler(),
                 separatorLight(),
                 hbox({ text(" "), text("F1") | bold | color(cfg.colors.header),
                        text(" / "), text("Esc") | bold | color(cfg.colors.header),
-                       text("  close this window") | color(cfg.colors.dimmed), filler() }),
+                       text("  close this window  ") | color(cfg.colors.dimmed),
+                       text("← →") | bold | color(cfg.colors.header),
+                       text("  switch tab") | color(cfg.colors.dimmed), filler() }),
             })
         );
     });
@@ -373,11 +394,11 @@ int main(int argc, char* argv[]) {
     auto root = CatchEvent(
         Container::Tab({ main_ui, confirm_dialog, help_dialog, save_confirm_dialog, save_as_dialog }, &tab),
         [&](Event e) {
-            if (e == Event::F1)                  { tab = (tab == 2) ? 0 : 2; return true; }
+            if (e == Event::F1)                  { if (tab == 2) { go_main(); } else { help_tab = 0; tab = 2; } return true; }
             if (e == Event::Special("\x05"))     { tab = (tab == 0) ? 1 : 0; return true; }
-            if (e == Event::Escape && tab == 1)  { tab = 0; return true; }
-            if (e == Event::Escape && tab == 2)  { tab = 0; return true; }
-            if (e == Event::Escape && tab == 3)  { tab = 0; return true; }
+            if (e == Event::Escape && tab == 1)  { go_main(); return true; }
+            if (e == Event::Escape && tab == 2)  { go_main(); return true; }
+            if (e == Event::Escape && tab == 3)  { go_main(); return true; }
 
             if (cmd_mode) {
                 if (e == Event::Escape)    { cmd_mode = false; cmd_buf.clear(); return true; }
@@ -385,10 +406,22 @@ int main(int argc, char* argv[]) {
                     bool quit      = (cmd_buf == ":q" || cmd_buf == ":q!");
                     bool save      = (cmd_buf == ":w");
                     bool save_quit = (cmd_buf == ":wq");
+                    bool save_as   = (cmd_buf.size() > 3 && cmd_buf.substr(0, 3) == ":w ");
+                    std::string save_as_path = save_as ? cmd_buf.substr(3) : "";
                     cmd_mode = false; cmd_buf.clear();
                     if (quit)      tab = 1;
                     if (save)      on_save();
                     if (save_quit) { if (!current_path.empty()) do_write(current_path); screen.ExitLoopClosure()(); }
+                    if (save_as && !save_as_path.empty()) {
+                        std::filesystem::path p = save_as_path;
+                        if (p.is_relative()) {
+                            std::filesystem::path base = current_path.empty()
+                                ? std::filesystem::current_path()
+                                : std::filesystem::path(current_path).parent_path();
+                            p = base / p;
+                        }
+                        do_write(p.string());
+                    }
                     return true;
                 }
                 if (e == Event::Backspace) {

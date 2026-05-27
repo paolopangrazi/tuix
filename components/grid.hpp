@@ -67,6 +67,7 @@ private:
     int m_yank_row = -1;
     int m_yank_col = -1;
 
+    bool        m_pending_g      = false;
     bool        m_editing        = false;
     bool        m_insert_sticky  = false;
     bool        m_in_header      = false;
