@@ -156,41 +156,47 @@ int main(int argc, char* argv[]) {
                 bool insert = (m == Grid::Mode::INSERT);
                 auto mode_color = insert ? cfg.colors.insert_badge_bg : cfg.colors.normal_badge_bg;
                 const std::string hint = body.grid().context_hint();
+                auto flex_left = FlexboxConfig()
+                    .Set(FlexboxConfig::Wrap::Wrap)
+                    .Set(FlexboxConfig::JustifyContent::FlexStart)
+                    .Set(FlexboxConfig::AlignItems::FlexStart)
+                    .Set(FlexboxConfig::AlignContent::FlexStart);
                 Elements lines;
                 if (!file_info_msg.empty()) {
                     lines.push_back(hbox({
-                        text("▎") | bold | color(cfg.colors.dimmed),
                         text(" FILE  ") | bold | color(cfg.colors.dimmed),
-                        text(file_info_msg) | color(cfg.colors.dimmed),
-                        filler(),
+                        paragraph(file_info_msg) | color(cfg.colors.dimmed),
                     }));
                 }
                 auto switch_key = insert
                     ? hbox({ text("  "), text("Esc") | bold | color(cfg.colors.normal_badge_bg),
-                             text("  →  NORMAL") | color(cfg.colors.dimmed), text("    ") })
+                             text("  →  NORMAL") | color(cfg.colors.dimmed) })
                     : hbox({ text("  "), text("i") | bold | color(cfg.colors.insert_badge_bg),
                              text(" / "),
                              text("a") | bold | color(cfg.colors.insert_badge_bg),
-                             text("  →  INSERT") | color(cfg.colors.dimmed), text("    ") });
-                lines.push_back(hbox({
-                    text("▎") | bold | color(mode_color),
-                    text(" "),
-                    text(insert ? "INSERT" : "NORMAL") | bold | color(mode_color),
+                             text("  →  INSERT") | color(cfg.colors.dimmed) });
+                lines.push_back(flexbox({
+                    hbox({ text(" "), text(insert ? "INSERT" : "NORMAL") | bold | color(mode_color) }),
                     std::move(switch_key),
-                    text(hint) | color(cfg.colors.dimmed),
-                    filler(),
-                    text("F1") | bold | color(cfg.colors.header),
-                    text(": Help  ") | color(cfg.colors.dimmed),
-                    text("F2") | bold | color(cfg.colors.header),
-                    text(": Config  ") | color(cfg.colors.dimmed),
-                }));
+                }, flex_left));
+                if (!hint.empty()) {
+                    lines.push_back(hbox({
+                        text(" "), paragraph(hint) | color(cfg.colors.dimmed),
+                    }));
+                }
+                lines.push_back(flexbox({
+                    hbox({ text(" F1") | bold | color(cfg.colors.header),
+                           text(": Help    ") | color(cfg.colors.dimmed) }),
+                    hbox({ text("F2") | bold | color(cfg.colors.header),
+                           text(": Config") | color(cfg.colors.dimmed) }),
+                }, flex_left));
                 return vbox(std::move(lines));
             }();
 
             return window(
                 titlebar.render_logo(),
                 vbox({
-                    hbox({ titlebar.render_buttons(), filler() }),
+                    titlebar.render_buttons(),
                     separatorLight(),
                     body_comp->Render() | flex,
                     separatorLight(),
@@ -206,7 +212,7 @@ int main(int argc, char* argv[]) {
             return window(
                 titlebar.render_logo(),
                 vbox({
-                    hbox({ titlebar.render_buttons(), filler() }),
+                    titlebar.render_buttons(),
                     separatorLight(),
                     filler(),
                     window(
@@ -233,7 +239,7 @@ int main(int argc, char* argv[]) {
             return window(
                 titlebar.render_logo(),
                 vbox({
-                    hbox({ titlebar.render_buttons(), filler() }),
+                    titlebar.render_buttons(),
                     separatorLight(),
                     filler(),
                     window(
@@ -262,7 +268,7 @@ int main(int argc, char* argv[]) {
             return window(
                 titlebar.render_logo(),
                 vbox({
-                    hbox({ titlebar.render_buttons(), filler() }),
+                    titlebar.render_buttons(),
                     separatorLight(),
                     filler(),
                     window(
@@ -387,11 +393,19 @@ int main(int argc, char* argv[]) {
                 ) | center,
                 filler(),
                 separatorLight(),
-                hbox({ text(" "), text("F1") | bold | color(cfg.colors.header),
-                       text(" / "), text("Esc") | bold | color(cfg.colors.header),
-                       text("  close this window  ") | color(cfg.colors.dimmed),
-                       text("← →") | bold | color(cfg.colors.header),
-                       text("  switch tab") | color(cfg.colors.dimmed), filler() }),
+                flexbox({
+                    hbox({ text(" "),
+                           text("F1") | bold | color(cfg.colors.header),
+                           text(" / "),
+                           text("Esc") | bold | color(cfg.colors.header),
+                           text("  close  ") | color(cfg.colors.dimmed) }),
+                    hbox({ text("← →") | bold | color(cfg.colors.header),
+                           text("  switch tab  ") | color(cfg.colors.dimmed) }),
+                }, FlexboxConfig()
+                    .Set(FlexboxConfig::Wrap::Wrap)
+                    .Set(FlexboxConfig::JustifyContent::FlexStart)
+                    .Set(FlexboxConfig::AlignItems::FlexStart)
+                    .Set(FlexboxConfig::AlignContent::FlexStart)),
             })
         );
     });
@@ -634,22 +648,26 @@ int main(int argc, char* argv[]) {
                 ) | center,
                 filler(),
                 separatorLight(),
-                hbox({
-                    text("  "),
+                flexbox({
                     cfg_status.empty()
                         ? text("")
-                        : (text(cfg_status) | color(cfg.colors.header)),
-                    filler(),
-                    text("Ctrl+W") | bold | color(cfg.colors.header),
-                    text("  save  ") | color(cfg.colors.dimmed),
-                    text("← →") | bold | color(cfg.colors.header),
-                    text("  switch tab  ") | color(cfg.colors.dimmed),
-                    text("Tab") | bold | color(cfg.colors.header),
-                    text("  next field  ") | color(cfg.colors.dimmed),
-                    text("Esc") | bold | color(cfg.colors.header),
-                    text("  close") | color(cfg.colors.dimmed),
-                    text("  "),
-                }),
+                        : hbox({ text(" "),
+                                 text(cfg_status) | color(cfg.colors.header),
+                                 text("  ") }),
+                    hbox({ text(" "),
+                           text("Ctrl+W") | bold | color(cfg.colors.header),
+                           text("  save  ") | color(cfg.colors.dimmed) }),
+                    hbox({ text("← →") | bold | color(cfg.colors.header),
+                           text("  switch tab  ") | color(cfg.colors.dimmed) }),
+                    hbox({ text("Tab") | bold | color(cfg.colors.header),
+                           text("  next field  ") | color(cfg.colors.dimmed) }),
+                    hbox({ text("Esc") | bold | color(cfg.colors.header),
+                           text("  close  ") | color(cfg.colors.dimmed) }),
+                }, FlexboxConfig()
+                    .Set(FlexboxConfig::Wrap::Wrap)
+                    .Set(FlexboxConfig::JustifyContent::FlexStart)
+                    .Set(FlexboxConfig::AlignItems::FlexStart)
+                    .Set(FlexboxConfig::AlignContent::FlexStart)),
             })
         );
     });

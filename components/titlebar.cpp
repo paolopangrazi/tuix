@@ -55,20 +55,18 @@ Element TitleBar::render_logo() const {
 }
 
 Element TitleBar::render_buttons() const {
-    return hbox({
-        m_btn_undo->Render(),
-        text("  "),
-        m_btn_redo->Render(),
-        text("    "),
-        m_btn_open->Render(),
-        text("  "),
-        m_btn_save->Render(),
-        text("  "),
-        m_btn_save_as->Render(),
-        text("    "),
+    return flexbox({
+        hbox({ m_btn_undo->Render(),    text("  ") }),
+        hbox({ m_btn_redo->Render(),    text("    ") }),
+        hbox({ m_btn_open->Render(),    text("  ") }),
+        hbox({ m_btn_save->Render(),    text("  ") }),
+        hbox({ m_btn_save_as->Render(), text("    ") }),
         m_btn_exit->Render(),
-        text(" "),
-    });
+    }, FlexboxConfig()
+        .Set(FlexboxConfig::Wrap::Wrap)
+        .Set(FlexboxConfig::JustifyContent::FlexStart)
+        .Set(FlexboxConfig::AlignItems::FlexStart)
+        .Set(FlexboxConfig::AlignContent::FlexStart));
 }
 
 Component TitleBar::component() { return m_btns; }
