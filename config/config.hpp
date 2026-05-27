@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <filesystem>
 #include <ftxui/screen/color.hpp>
 #include <ftxui/component/event.hpp>
 
@@ -46,7 +47,9 @@ struct Config {
     Keys    keys;
     GridCfg grid;
 
-    static Config load();  // loads from ~/.config/tuix/config.toml, falls back to defaults
+    static Config load();
+    static std::filesystem::path config_file_path();
+    static std::string color_to_name(ftxui::Color c);
 
     bool key_is(const ftxui::Event& e, const std::vector<char>& binding) const;
 };

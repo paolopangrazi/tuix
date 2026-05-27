@@ -130,6 +130,14 @@ Config Config::load() {
     return cfg;
 }
 
+std::filesystem::path Config::config_file_path() { return config_path(); }
+
+std::string Config::color_to_name(ftxui::Color c) {
+    for (const auto& [name, col] : k_named)
+        if (col == c) return name;
+    return "";
+}
+
 bool Config::key_is(const Event& e, const std::vector<char>& binding) const {
     for (char k : binding)
         if (e == Event::Character(k)) return true;
