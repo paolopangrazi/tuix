@@ -48,9 +48,9 @@ Element TitleBar::render_logo() const {
     return hbox({
         text(" "),
         text("▌") | color(m_cfg.colors.titlebar_bg),
-        text("TUIX") | bold | color(m_cfg.colors.titlebar_bg),
+        text("tuiX") | bold | color(m_cfg.colors.titlebar_bg),
         text("▐") | color(m_cfg.colors.titlebar_bg),
-        text(" = Tui Excel ") | color(m_cfg.colors.dimmed),
+        text(" = tui eXcel-lent spreadsheet editor ") | color(m_cfg.colors.dimmed),
     });
 }
 
