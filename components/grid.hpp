@@ -70,12 +70,8 @@ private:
     bool        m_pending_g      = false;
     bool        m_editing        = false;
     bool        m_insert_sticky  = false;
-    bool        m_in_header      = false;
-    bool        m_header_editing = false;
     std::string m_edit_buf;
     std::string m_edit_orig;
-    std::string m_header_edit_buf;
-    std::string m_header_edit_orig;
 
     void move(int dr, int dc);
     void move_home();
@@ -94,14 +90,15 @@ private:
     void scroll_to_mouse_y(int my);
     void start_edit(bool clear);
     void commit_edit();
-    void commit_header_edit();
     void extend_selection(int dr, int dc);
     void commit_and_step(int dr, int dc);
 
+    // Cursor target is the header row when m_cursor_row < 0, else a grid cell.
+    std::string value_at(int r, int c) const;
+    void        set_value_at(int r, int c, const std::string& v);
+
     // Event dispatch (called from CatchEvent in make_component)
     bool handle_pending_delete (ftxui::Event e);
-    bool handle_header_editing (ftxui::Event e);
-    bool handle_header_nav     (ftxui::Event e);
     bool handle_cell_editing   (ftxui::Event e);
     bool handle_normal_nav     (ftxui::Event e);
     bool handle_mouse          (ftxui::Event e);

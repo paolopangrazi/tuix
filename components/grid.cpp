@@ -69,7 +69,7 @@ Grid::Grid(int rows, int cols, const Config& cfg)
 }
 
 Grid::Mode Grid::mode() const noexcept {
-    return (m_editing || m_header_editing || m_insert_sticky) ? Mode::INSERT : Mode::NORMAL;
+    return (m_editing || m_insert_sticky) ? Mode::INSERT : Mode::NORMAL;
 }
 
 void Grid::load(const CsvData& data) {
@@ -94,12 +94,8 @@ void Grid::load(const CsvData& data) {
     m_offset_row     = 0;
     m_offset_col     = 0;
     m_editing        = false;
-    m_in_header      = false;
-    m_header_editing = false;
     m_edit_buf.clear();
     m_edit_orig.clear();
-    m_header_edit_buf.clear();
-    m_header_edit_orig.clear();
     m_undo_stack.clear();
     m_redo_stack.clear();
     m_action_boxes.assign(m_rows, ActionBox{});
@@ -130,7 +126,6 @@ void Grid::add_row() {
     ++m_rows;
     m_cursor_row = m_rows - 1;
     m_cursor_col = 0;
-    m_in_header  = false;
     m_editing    = false;
     adjust_viewport();
 }
@@ -141,7 +136,6 @@ void Grid::insert_row(int r) {
     ++m_rows;
     m_cursor_row = r + 1;
     m_cursor_col = 0;
-    m_in_header  = false;
     m_editing    = false;
     adjust_viewport();
 }
@@ -154,7 +148,7 @@ void Grid::add_col() {
     m_col_action_boxes.emplace_back();
     ++m_cols;
     m_cursor_col = m_cols - 1;
-    m_in_header  = true;
+    m_cursor_row = -1;   // land on the new column's header
     m_editing    = false;
     adjust_viewport();
 }
@@ -168,7 +162,7 @@ void Grid::insert_col(int c) {
     m_col_action_boxes.insert(m_col_action_boxes.begin() + c + 1, ActionBox{});
     ++m_cols;
     m_cursor_col = c + 1;
-    m_in_header  = true;
+    m_cursor_row = -1;   // land on the new column's header
     m_editing    = false;
     adjust_viewport();
 }
@@ -215,14 +209,14 @@ Cell& Grid::at(int r, int c)             { return m_cells[r][c]; }
 const Cell& Grid::at(int r, int c) const { return m_cells[r][c]; }
 
 bool Grid::in_selection(int r, int c) const noexcept {
-    if (!m_has_selection || m_cursor_col < 0) return false;
+    if (!m_has_selection || m_cursor_row < 0 || m_cursor_col < 0) return false;
     const int r0 = std::min(m_cursor_row, m_sel_row), r1 = std::max(m_cursor_row, m_sel_row);
     const int c0 = std::min(m_cursor_col, m_sel_col), c1 = std::max(m_cursor_col, m_sel_col);
     return r >= r0 && r <= r1 && c >= c0 && c <= c1;
 }
 
 std::string Grid::cursor_label() const {
-    if (m_in_header)    return "Col " + col_letter(m_cursor_col);
+    if (m_cursor_row < 0) return "Col " + col_letter(m_cursor_col);
     if (m_cursor_col < 0) return "Row " + std::to_string(m_cursor_row + 1);
     return m_col_names[m_cursor_col] + std::to_string(m_cursor_row + 1);
 }
@@ -256,23 +250,30 @@ std::string Grid::cell_display(int r, int c) const {
 std::string Grid::context_hint() const {
     if (m_pending_delete_row >= 0 || m_pending_delete_col >= 0)
         return "y: confirm delete  |  n/Esc: cancel";
-    if (m_header_editing)
-        return "Enter: confirm & exit  |  Esc: confirm & stay  |  Tab/Arrows: save & move";
     if (m_editing) {
+        if (m_cursor_row < 0)
+            return "Enter: confirm & ↓  |  Tab/→: confirm & next col  |  Esc: confirm & NORMAL";
         if (should_show_ac(m_edit_buf) && !ac_matches().empty())
             return "↑↓: navigate  |  Tab/Enter: complete  |  type to filter";
         return "Enter: confirm & ↓  |  Tab: confirm & →  |  Arrows: confirm & move  |  Del: clear";
     }
-    if (m_in_header)
-        return "hjkl/arrows: nav  |  +: insert col  |  -/x: delete col  |  i/a: rename  |  Enter/↓: exit  |  Esc: exit";
+    if (m_cursor_row < 0)
+        return "hjkl/arrows: nav  |  +: insert col  |  -/x: delete col  |  i/a: rename  |  ↓: into grid";
     if (m_cursor_col < 0)
         return "hjkl/arrows: nav  |  +: insert row  |  -/x: delete row  |  u/Ctrl+R: undo/redo  |  →: enter row";
     return "hjkl: nav  |  i/a: edit  |  o/O: new row  |  x: delete  |  y/p: yank/paste  |  Shift+arrows: select  |  gg/G: top/bottom  |  u/Ctrl+R: undo/redo  |  :: cmd";
 }
 
 void Grid::move(int dr, int dc) {
-    m_cursor_row = std::clamp(m_cursor_row + dr, 0, m_rows - 1);
-    m_cursor_col = std::clamp(m_cursor_col + dc, -1, m_cols - 1);
+    int nr = std::clamp(m_cursor_row + dr, -1, m_rows - 1);  // row -1 = header
+    int nc = std::clamp(m_cursor_col + dc, -1, m_cols - 1);  // col -1 = row index
+    // There is no cell at the (header, row-index) corner; stay on the axis we came from.
+    if (nr < 0 && nc < 0) {
+        if (m_cursor_col < 0) nr = m_cursor_row;  // moving up the row-index gutter: don't enter header
+        else                  nc = m_cursor_col;  // moving left along the header: don't enter row index
+    }
+    m_cursor_row = nr;
+    m_cursor_col = nc;
     adjust_viewport();
 }
 
@@ -281,27 +282,35 @@ void Grid::move_end()   { m_cursor_col = m_cols - 1; adjust_viewport(); }
 void Grid::page_up()    { move(-vis_rows(), 0); }
 void Grid::page_down()  { move( vis_rows(), 0); }
 
+std::string Grid::value_at(int r, int c) const {
+    return (r < 0) ? m_col_names[c] : m_cells[r][c].value();
+}
+
+void Grid::set_value_at(int r, int c, const std::string& v) {
+    if (r < 0) m_col_names[c] = v;
+    else       m_cells[r][c].set_value(v);
+}
+
 void Grid::start_edit(bool clear) {
-    if (m_cursor_col < 0) return;
-    m_editing        = true;
-    m_insert_sticky  = true;
-    m_edit_orig = at(m_cursor_row, m_cursor_col).value();
+    if (m_cursor_col < 0) return;   // the row-index gutter has nothing to edit
+    m_editing       = true;
+    m_insert_sticky = true;
+    m_edit_orig = value_at(m_cursor_row, m_cursor_col);
     m_edit_buf  = clear ? "" : m_edit_orig;
 }
 
 void Grid::commit_edit() {
-    if (m_edit_buf != m_edit_orig) {
-        m_undo_stack.push_back({m_cursor_row, m_cursor_col, m_edit_orig, m_edit_buf});
+    if (!m_editing) return;
+    std::string after = m_edit_buf;
+    if (m_cursor_row < 0)                    // editing a column name: keep names unique
+        after = unique_col_name(after, m_cursor_col);
+    if (after != m_edit_orig) {
+        m_undo_stack.push_back({m_cursor_row, m_cursor_col, m_edit_orig, after});
         m_redo_stack.clear();
-        at(m_cursor_row, m_cursor_col).set_value(m_edit_buf);
+        set_value_at(m_cursor_row, m_cursor_col, after);
         m_col_widths[m_cursor_col] = compute_col_width(m_cursor_col);
     }
     m_editing = false;
-}
-
-void Grid::commit_header_edit() {
-    m_col_names[m_cursor_col] = unique_col_name(m_header_edit_buf, m_cursor_col);
-    m_header_editing = false;
 }
 
 void Grid::extend_selection(int dr, int dc) {
@@ -331,11 +340,10 @@ void Grid::undo() {
     m_editing = false;
     auto e = std::move(m_undo_stack.back());
     m_undo_stack.pop_back();
-    at(e.row, e.col).set_value(e.before);
+    set_value_at(e.row, e.col, e.before);
     m_col_widths[e.col] = compute_col_width(e.col);
     m_cursor_row = e.row;
     m_cursor_col = e.col;
-    m_in_header  = false;
     m_redo_stack.push_back(std::move(e));
     adjust_viewport();
 }
@@ -345,11 +353,10 @@ void Grid::redo() {
     m_editing = false;
     auto e = std::move(m_redo_stack.back());
     m_redo_stack.pop_back();
-    at(e.row, e.col).set_value(e.after);
+    set_value_at(e.row, e.col, e.after);
     m_col_widths[e.col] = compute_col_width(e.col);
     m_cursor_row = e.row;
     m_cursor_col = e.col;
-    m_in_header  = false;
     m_undo_stack.push_back(std::move(e));
     adjust_viewport();
 }
@@ -382,13 +389,12 @@ bool Grid::select_at_mouse(int mx, int my) {
         return -1;
     };
 
-    if (ry == 0 && rx >= k_gutter) {
+    if (ry == 0 && rx >= k_gutter) {        // header band → header row (-1)
         const int c = col_at(rx);
         if (c < 0) return false;
-        m_in_header      = true;
-        m_editing        = false;
-        m_header_editing = false;
-        m_cursor_col     = c;
+        commit_edit();
+        m_cursor_row = -1;
+        m_cursor_col = c;
         adjust_viewport();
         return true;
     }
@@ -399,7 +405,7 @@ bool Grid::select_at_mouse(int mx, int my) {
 
     if (r >= m_rows || c < 0 || c >= m_cols) return false;
 
-    m_in_header  = false;
+    commit_edit();
     m_cursor_row = r;
     m_cursor_col = c;
     adjust_viewport();
@@ -427,16 +433,12 @@ Element Grid::formula_bar() const {
             })
         );
     }
-    std::string label, content;
-    if (m_in_header) {
-        label   = "Col " + col_letter(m_cursor_col);
-        content = m_header_editing ? m_header_edit_buf + "_" : m_col_names[m_cursor_col];
-    } else {
-        label   = cursor_label();
-        content = (m_cursor_col >= 0)
-                  ? (m_editing ? m_edit_buf + "_" : at(m_cursor_row, m_cursor_col).display())
-                  : "";
-    }
+    std::string label = cursor_label();
+    std::string content;
+    if (m_cursor_col < 0)       content = "";                          // row-index gutter
+    else if (m_editing)         content = m_edit_buf + "_";
+    else if (m_cursor_row < 0)  content = m_col_names[m_cursor_col];   // column header
+    else                        content = at(m_cursor_row, m_cursor_col).display();
     return window(
         hbox({ text(" "), text(label) | bold | color(m_cfg.colors.header), text(" ") }),
         hbox({ text(" "), text(content), filler() })
@@ -453,9 +455,9 @@ Element Grid::render() const {
     header.push_back(text(std::string(ActionBox::k_width + k_rownum_w, ' ')) | bold | color(m_cfg.colors.header));
     for (int c = m_offset_col; c < c_end; ++c) {
         header.push_back(separator());
-        const bool hsel    = (m_in_header && c == m_cursor_col);
+        const bool hsel    = (m_cursor_row < 0 && c == m_cursor_col);
         const int  name_w  = m_col_widths[c] - ActionBox::k_width - 1;
-        std::string name = (hsel && m_header_editing) ? m_header_edit_buf : m_col_names[c];
+        std::string name = (hsel && m_editing) ? m_edit_buf : m_col_names[c];
         if ((int)name.size() > name_w) name = name.substr(0, name_w);
         auto name_e = text(name) | center | size(WIDTH, EQUAL, name_w) | bold;
         name_e = hsel ? name_e | bgcolor(m_cfg.colors.cursor_bg) | color(m_cfg.colors.cursor_fg)
@@ -480,7 +482,7 @@ Element Grid::render() const {
         if (r == m_pending_delete_row)
             row.push_back(text("del?") | bold | color(Color::Red) | size(WIDTH, EQUAL, k_rownum_w + ActionBox::k_width));
         else {
-            const bool idx_active = (!m_in_header && m_cursor_col < 0 && r == m_cursor_row);
+            const bool idx_active = (m_cursor_col < 0 && r == m_cursor_row);
             row.push_back(hbox({
                 m_action_boxes[r].render(idx_active),
                 text(std::to_string(r + 1)) | align_right | size(WIDTH, EQUAL, k_rownum_w) | color(m_cfg.colors.row_number),
@@ -489,7 +491,7 @@ Element Grid::render() const {
 
         for (int c = m_offset_col; c < c_end; ++c) {
             row.push_back(separator());
-            const bool is_cursor  = (!m_in_header && r == m_cursor_row && c == m_cursor_col);
+            const bool is_cursor  = (r == m_cursor_row && c == m_cursor_col);
             const bool is_yanked  = m_yank_row >= 0 && !m_yank_data.empty() &&
                 r >= m_yank_row && r < m_yank_row + (int)m_yank_data.size() &&
                 c >= m_yank_col && c < m_yank_col + (int)m_yank_data[0].size();
@@ -589,11 +591,6 @@ Component Grid::make_component() {
     return CatchEvent(renderer, [this](Event e) -> bool {
         if (m_pending_delete_row >= 0 || m_pending_delete_col >= 0)
             return handle_pending_delete(e);
-        if (m_header_editing) return handle_header_editing(e);
-        if (m_in_header) {
-            if (handle_header_nav(e)) return true;
-            if (!e.is_mouse())        return true;  // consume non-mouse events in header
-        }
         if (m_editing && !e.is_mouse()) return handle_cell_editing(e);
         if (handle_normal_nav(e)) return true;
         return handle_mouse(e);
@@ -619,46 +616,9 @@ bool Grid::handle_pending_delete(Event e) {
     return true;
 }
 
-bool Grid::handle_header_editing(Event e) {
-    if (e == Event::Escape)     { commit_header_edit(); return true; }
-    if (e == Event::Return)     { commit_header_edit(); m_in_header = false; return true; }
-    if (e == Event::Tab)        { commit_header_edit(); move(0,  1); return true; }
-    if (e == Event::ArrowLeft)  { commit_header_edit(); move(0, -1); return true; }
-    if (e == Event::ArrowRight) { commit_header_edit(); move(0,  1); return true; }
-    if (e == Event::ArrowDown)  { commit_header_edit(); m_in_header = false; return true; }
-    if (e == Event::Backspace)  { if (!m_header_edit_buf.empty()) m_header_edit_buf.pop_back(); return true; }
-    if (e.is_character())       { m_header_edit_buf += e.character(); return true; }
-    return false;
-}
-
-bool Grid::handle_header_nav(Event e) {
-    if (e == Event::ArrowLeft  || m_cfg.key_is(e, m_cfg.keys.nav_left))  { if (m_cursor_col > 0) move(0, -1); return true; }
-    if (e == Event::ArrowRight || m_cfg.key_is(e, m_cfg.keys.nav_right)) { move(0,  1); return true; }
-    if (e == Event::Tab)        { move(0,  1); return true; }
-    if (e == Event::TabReverse) { move(0, -1); return true; }
-    if (e == Event::Escape)     { m_insert_sticky = false; m_in_header = false; return true; }
-    if (e == Event::ArrowDown  || m_cfg.key_is(e, m_cfg.keys.nav_down) || e == Event::Return) {
-        m_in_header = false;
-        if (m_insert_sticky) start_edit(false);
-        return true;
-    }
-    if (m_cfg.key_is(e, m_cfg.keys.rename_col)) {
-        m_header_edit_orig = m_col_names[m_cursor_col];
-        m_header_edit_buf  = m_col_names[m_cursor_col];
-        m_header_editing   = true;
-        return true;
-    }
-    if (m_cfg.key_is(e, m_cfg.keys.insert_col)) { insert_col(m_cursor_col); m_in_header = true; return true; }
-    if (m_cfg.key_is(e, m_cfg.keys.delete_col) || e == Event::Backspace) {
-        try_delete_col(m_cursor_col);
-        return true;
-    }
-    return false;
-}
-
 bool Grid::handle_cell_editing(Event e) {
-    // Autocomplete popup navigation (takes priority over cell navigation)
-    if (should_show_ac(m_edit_buf)) {
+    // Autocomplete popup navigation (cells only — headers don't take formulas)
+    if (m_cursor_row >= 0 && should_show_ac(m_edit_buf)) {
         const auto matches = ac_matches();
         if (!matches.empty()) {
             const int n = (int)matches.size();
@@ -684,10 +644,8 @@ bool Grid::handle_cell_editing(Event e) {
     if (e == Event::ArrowLeft)  { commit_and_step( 0, -1); return true; }
     if (e == Event::ArrowRight) { commit_and_step( 0,  1); return true; }
     if (e == Event::ArrowUp) {
-        commit_edit(); m_has_selection = false;
-        if (m_cursor_row == 0 && m_cursor_col >= 0) m_in_header = true;
-        else                                        { move(-1, 0); start_edit(false); }
-        return true;
+        if (m_cursor_row < 0) return true;       // already in the header, keep editing
+        commit_and_step(-1, 0); return true;     // row 0 → header, else up one row
     }
     if (e == Event::Backspace)  { m_ac_sel = 0; if (!m_edit_buf.empty()) m_edit_buf.pop_back(); return true; }
     if (e.is_character())       { m_ac_sel = 0; m_edit_buf += e.character(); return true; }
@@ -695,7 +653,7 @@ bool Grid::handle_cell_editing(Event e) {
 }
 
 bool Grid::handle_normal_nav(Event e) {
-    if (!m_in_header && m_cursor_col >= 0) {
+    if (m_cursor_row >= 0 && m_cursor_col >= 0) {   // selection only over data cells
         if (e == ShiftArrowUp)    { extend_selection(-1,  0); return true; }
         if (e == ShiftArrowDown)  { extend_selection( 1,  0); return true; }
         if (e == ShiftArrowLeft)  { extend_selection( 0, -1); return true; }
@@ -705,15 +663,13 @@ bool Grid::handle_normal_nav(Event e) {
     auto nav_move = [&](int dr, int dc) {
         m_has_selection = false;
         move(dr, dc);
-        if (m_insert_sticky && m_cursor_col >= 0 && !m_in_header) start_edit(false);
+        if (m_insert_sticky && m_cursor_col >= 0) start_edit(false);  // header or cell
     };
 
     if (e == Event::Escape && m_insert_sticky) { m_insert_sticky = false; return true; }
     if (e == Event::Escape && m_has_selection)  { m_has_selection = false; return true; }
     if (e == Event::ArrowUp || m_cfg.key_is(e, m_cfg.keys.nav_up)) {
-        m_has_selection = false;
-        if (m_cursor_row == 0 && m_cursor_col >= 0) { m_in_header = true; return true; }
-        nav_move(-1, 0); return true;
+        nav_move(-1, 0); return true;   // row 0 → header (-1); sticky auto-edits the name
     }
     if (e == Event::ArrowDown  || m_cfg.key_is(e, m_cfg.keys.nav_down))  { nav_move( 1,  0); return true; }
     if (e == Event::ArrowLeft  || m_cfg.key_is(e, m_cfg.keys.nav_left))  { nav_move( 0, -1); return true; }
@@ -725,13 +681,19 @@ bool Grid::handle_normal_nav(Event e) {
     if (e == Event::Return)     { m_has_selection = false; move(1, 0); return true; }
     if (e == Event::Tab)        { m_has_selection = false; move(0, 1); return true; }
     if (e == Event::TabReverse) { move(0,-1); return true; }
-    if (m_cfg.key_is(e, m_cfg.keys.insert_mode)) { start_edit(false); return true; }
-    if (m_cursor_col < 0 && m_cfg.key_is(e, m_cfg.keys.insert_row)) { insert_row(m_cursor_row); m_cursor_col = -1; return true; }
-    if (m_cursor_col < 0 && m_cfg.key_is(e, m_cfg.keys.delete_row)) { try_delete_row(m_cursor_row); return true; }
+    if (m_cfg.key_is(e, m_cfg.keys.insert_mode)) { start_edit(false); return true; }  // i/a: edit (cell or header name)
+    if (m_cursor_row < 0) {  // column header: action box inserts / deletes columns
+        if (m_cfg.key_is(e, m_cfg.keys.insert_col)) { insert_col(m_cursor_col);     return true; }
+        if (m_cfg.key_is(e, m_cfg.keys.delete_col)) { try_delete_col(m_cursor_col); return true; }
+    }
+    if (m_cursor_col < 0) {  // row index: action box inserts / deletes rows
+        if (m_cfg.key_is(e, m_cfg.keys.insert_row)) { insert_row(m_cursor_row); m_cursor_col = -1; return true; }
+        if (m_cfg.key_is(e, m_cfg.keys.delete_row)) { try_delete_row(m_cursor_row); return true; }
+    }
     if (e == Event::Backspace || m_cfg.key_is(e, m_cfg.keys.delete_cell)) {
-        if (m_cursor_col < 0) {
-            try_delete_row(m_cursor_row);
-        } else {
+        if (m_cursor_row < 0)      { try_delete_col(m_cursor_col); }
+        else if (m_cursor_col < 0) { try_delete_row(m_cursor_row); }
+        else {
             auto& cell = at(m_cursor_row, m_cursor_col);
             if (!cell.value().empty()) {
                 m_undo_stack.push_back({m_cursor_row, m_cursor_col, cell.value(), ""});
@@ -745,7 +707,7 @@ bool Grid::handle_normal_nav(Event e) {
     if (m_cfg.key_is(e, m_cfg.keys.undo)) { undo(); return true; }
     if (e == Event::Special("\x12"))      { redo(); return true; }  // Ctrl+R
 
-    if (!m_insert_sticky && !m_in_header && m_cursor_col >= 0 && e.is_character()) {
+    if (!m_insert_sticky && m_cursor_row >= 0 && m_cursor_col >= 0 && e.is_character()) {
         const auto ch = e.character();
         if (ch == "g") {
             if (m_pending_g) {
@@ -791,7 +753,7 @@ bool Grid::handle_normal_nav(Event e) {
         m_pending_g = false;
     }
 
-    if (!m_insert_sticky && !m_in_header && m_cursor_col >= 0 && e.is_character() && e.character() == "y") {
+    if (!m_insert_sticky && m_cursor_row >= 0 && m_cursor_col >= 0 && e.is_character() && e.character() == "y") {
         int r0 = m_cursor_row, r1 = m_cursor_row;
         int c0 = m_cursor_col, c1 = m_cursor_col;
         if (m_has_selection) {
@@ -808,7 +770,7 @@ bool Grid::handle_normal_nav(Event e) {
         m_yank_col = c0;
         return true;
     }
-    if (!m_insert_sticky && !m_in_header && m_cursor_col >= 0 && e.is_character() && e.character() == "p"
+    if (!m_insert_sticky && m_cursor_row >= 0 && m_cursor_col >= 0 && e.is_character() && e.character() == "p"
             && !m_yank_data.empty()) {
         const int need_rows = m_cursor_row + (int)m_yank_data.size();
         const int need_cols = m_cursor_col + (int)m_yank_data[0].size();
@@ -895,8 +857,10 @@ int Grid::vis_cols() const {
 
 void Grid::adjust_viewport() {
     const int vr = vis_rows(), vc = vis_cols();
-    if (m_cursor_row < m_offset_row)         m_offset_row = m_cursor_row;
-    if (m_cursor_row >= m_offset_row + vr)   m_offset_row = m_cursor_row - vr + 1;
+    if (m_cursor_row >= 0) {   // header row (-1) is always pinned above the grid
+        if (m_cursor_row < m_offset_row)         m_offset_row = m_cursor_row;
+        if (m_cursor_row >= m_offset_row + vr)   m_offset_row = m_cursor_row - vr + 1;
+    }
     if (m_cursor_col >= 0) {
         if (m_cursor_col < m_offset_col)         m_offset_col = m_cursor_col;
         if (m_cursor_col >= m_offset_col + vc)   m_offset_col = m_cursor_col - vc + 1;

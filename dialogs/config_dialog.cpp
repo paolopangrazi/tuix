@@ -1,7 +1,6 @@
 #include "config_dialog.hpp"
 #include "dialog_shell.hpp"
 
-#include "titlebar.hpp"
 #include "config/config.hpp"
 
 #include <filesystem>
@@ -23,8 +22,8 @@ toml::array make_key_arr(const std::string& s) {
 }
 }
 
-ConfigDialog::ConfigDialog(TitleBar& tb, const Config& cfg, std::function<void()> on_close)
-    : m_tb(tb), m_cfg(cfg), m_on_close(std::move(on_close)),
+ConfigDialog::ConfigDialog(const Config& cfg, std::function<void()> on_close)
+    : m_cfg(cfg), m_on_close(std::move(on_close)),
       m_tab_names{"Colors", "Keys", "Grid"} {
     refresh_from_cfg();
 
@@ -254,7 +253,7 @@ Component ConfigDialog::component() {
             .Set(FlexboxConfig::JustifyContent::FlexStart)
             .Set(FlexboxConfig::AlignItems::FlexStart)
             .Set(FlexboxConfig::AlignContent::FlexStart));
-        return render_dialog_shell(m_tb, inner, bottom);
+        return render_dialog_shell(inner, bottom);
     });
     return CatchEvent(renderer, [this](Event e) {
         if (e == Event::Escape)             { m_on_close(); return true; }

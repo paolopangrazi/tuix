@@ -4,20 +4,17 @@
 #include <vector>
 #include <ftxui/component/component.hpp>
 
-class TitleBar;
 struct Config;
 
 class HelpDialog {
 public:
-    HelpDialog(TitleBar& titlebar,
-               const Config& cfg,
+    HelpDialog(const Config& cfg,
                std::function<void()> on_close);
 
     void reset_tab();
     ftxui::Component component();
 
 private:
-    TitleBar&     m_tb;
     const Config& m_cfg;
     std::function<void()> m_on_close;
 

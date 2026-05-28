@@ -1,18 +1,17 @@
 #include "save_confirm_dialog.hpp"
 #include "dialog_shell.hpp"
 
-#include "titlebar.hpp"
 #include "config/config.hpp"
 
 #include <filesystem>
 
 using namespace ftxui;
 
-SaveConfirmDialog::SaveConfirmDialog(TitleBar& tb, const Config& cfg,
+SaveConfirmDialog::SaveConfirmDialog(const Config& cfg,
                                      std::function<std::string()> get_path,
                                      std::function<void()> on_yes,
                                      std::function<void()> on_close)
-    : m_tb(tb), m_cfg(cfg),
+    : m_cfg(cfg),
       m_get_path(std::move(get_path)),
       m_on_close(std::move(on_close)) {
     auto style = make_dialog_btn_style(m_cfg);
@@ -36,7 +35,7 @@ Component SaveConfirmDialog::component() {
             text("  "), text("Esc") | bold | color(m_cfg.colors.header),
             text("  cancel") | color(m_cfg.colors.dimmed), filler(),
         });
-        return render_dialog_shell(m_tb, inner, bottom);
+        return render_dialog_shell(inner, bottom);
     });
     return CatchEvent(renderer, [this](Event e) {
         if (e == Event::Escape) { m_on_close(); return true; }

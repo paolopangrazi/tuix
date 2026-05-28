@@ -3,14 +3,12 @@
 #include <string>
 #include <ftxui/component/component.hpp>
 
-class TitleBar;
 struct Config;
 
 // Generic "type a path and Enter" dialog, used by Save As and Open.
 class PathInputDialog {
 public:
-    PathInputDialog(TitleBar& titlebar,
-                    const Config& cfg,
+    PathInputDialog(const Config& cfg,
                     std::string title,                                 // e.g. "Save As"
                     std::string action_label,                          // e.g. "save"
                     std::string placeholder,                           // e.g. "filename.csv"
@@ -23,7 +21,6 @@ public:
     ftxui::Component component();
 
 private:
-    TitleBar&     m_tb;
     const Config& m_cfg;
     std::string   m_title;
     std::string   m_action_label;

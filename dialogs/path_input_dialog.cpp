@@ -1,18 +1,17 @@
 #include "path_input_dialog.hpp"
 #include "dialog_shell.hpp"
 
-#include "titlebar.hpp"
 #include "config/config.hpp"
 
 using namespace ftxui;
 
-PathInputDialog::PathInputDialog(TitleBar& tb, const Config& cfg,
+PathInputDialog::PathInputDialog(const Config& cfg,
                                  std::string title, std::string action_label,
                                  std::string placeholder,
                                  std::function<std::string()> get_dir,
                                  std::function<void(const std::string&)> on_submit,
                                  std::function<void()> on_close)
-    : m_tb(tb), m_cfg(cfg),
+    : m_cfg(cfg),
       m_title(std::move(title)), m_action_label(std::move(action_label)),
       m_get_dir(std::move(get_dir)),
       m_on_submit(std::move(on_submit)),
@@ -48,7 +47,7 @@ Component PathInputDialog::component() {
             text(m_get_dir()) | color(m_cfg.colors.dimmed),
             filler(),
         });
-        return render_dialog_shell(m_tb, inner, bottom);
+        return render_dialog_shell(inner, bottom);
     });
     return CatchEvent(renderer, [this](Event e) {
         if (e == Event::Escape) { m_on_close(); return true; }

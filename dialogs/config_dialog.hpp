@@ -4,13 +4,11 @@
 #include <vector>
 #include <ftxui/component/component.hpp>
 
-class TitleBar;
 struct Config;
 
 class ConfigDialog {
 public:
-    ConfigDialog(TitleBar& titlebar,
-                 const Config& cfg,
+    ConfigDialog(const Config& cfg,
                  std::function<void()> on_close);
 
     void refresh_from_cfg();   // re-read cfg values into buffers (call on open)
@@ -18,7 +16,6 @@ public:
     ftxui::Component component();
 
 private:
-    TitleBar&     m_tb;
     const Config& m_cfg;
     std::function<void()> m_on_close;
 

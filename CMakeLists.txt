@@ -55,6 +55,7 @@ add_executable(tuix
     components/statusbar.cpp
     components/status_area.cpp
     components/session.cpp
+    components/cmd_mode.cpp
     dialogs/dialog_shell.cpp
     dialogs/exit_dialog.cpp
     dialogs/save_confirm_dialog.cpp
