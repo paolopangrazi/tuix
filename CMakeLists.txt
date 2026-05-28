@@ -16,7 +16,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # ---------------------------------------------------------------------------
 # Submodule sanity check — all deps live in deps/ as git submodules
 # ---------------------------------------------------------------------------
-foreach(dep ftxui rapidcsv tomlplusplus)
+foreach(dep ftxui rapidcsv tomlplusplus openxlsx)
     if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/deps/${dep}/CMakeLists.txt"
        AND NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/deps/${dep}/src")
         message(FATAL_ERROR
@@ -40,6 +40,13 @@ set(RAPIDCSV_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/rapidcsv/src")
 # tomlplusplus (deps/tomlplusplus) — header-only
 # ---------------------------------------------------------------------------
 add_subdirectory(deps/tomlplusplus)
+
+# ---------------------------------------------------------------------------
+# OpenXLSX (deps/openxlsx)
+# ---------------------------------------------------------------------------
+# miniz (fetched by OpenXLSX) requires this policy flag on CMake >= 3.30
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+add_subdirectory(deps/openxlsx)
 
 # ---------------------------------------------------------------------------
 # tuix
@@ -68,6 +75,7 @@ add_executable(tuix
     dialogs/help_dialog.cpp
     dialogs/config_dialog.cpp
     loader/csv_loader.cpp
+    loader/xlsx_loader.cpp
     writer/csv_writer.cpp
     formulas/value.cpp
     formulas/lexer.cpp
@@ -87,6 +95,7 @@ target_link_libraries(tuix PRIVATE
     ftxui::dom
     ftxui::screen
     tomlplusplus::tomlplusplus
+    OpenXLSX::OpenXLSX
     Threads::Threads
 )
 

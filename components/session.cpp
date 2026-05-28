@@ -2,9 +2,11 @@
 
 #include "body.hpp"
 #include "loader/csv_loader.hpp"
+#include "loader/xlsx_loader.hpp"
 #include "writer/csv_writer.hpp"
 
 #include <filesystem>
+#include <algorithm>
 
 namespace {
 std::string format_size(uintmax_t bytes) {
@@ -26,13 +28,25 @@ std::string delimiter_name(char d) {
 
 Session::Session(Body& body) : m_body(body) {}
 
+static bool is_xlsx(const std::string& path) {
+    std::string ext = std::filesystem::path(path).extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+    return ext == ".xlsx";
+}
+
 void Session::load(const std::string& path) {
     try {
-        auto data = CsvLoader::load(path);
+        CsvData data;
+        if (is_xlsx(path)) {
+            data = XlsxLoader::load(path);
+            m_delim = '\0';
+        } else {
+            data = CsvLoader::load(path);
+            m_delim = data.delimiter;
+        }
         m_body.grid().load(data);
-        m_path  = path;
-        m_delim = data.delimiter;
-        m_info  = build_info(path);
+        m_path = path;
+        m_info = build_info(path);
     } catch (const std::exception&) {}
 }
 
@@ -66,9 +80,11 @@ std::string Session::build_info(const std::string& path) const {
     std::string name = std::filesystem::path(path).filename().string();
     std::string size;
     try { size = format_size(std::filesystem::file_size(path)); } catch (...) { size = "?"; }
-    return name
+    std::string info = name
         + "  |  " + size
         + "  |  " + std::to_string(m_body.grid().cols()) + " cols"
-        + "  |  " + std::to_string(m_body.grid().rows()) + " rows"
-        + "  |  " + delimiter_name(m_delim);
+        + "  |  " + std::to_string(m_body.grid().rows()) + " rows";
+    if (m_delim != '\0')
+        info += "  |  " + delimiter_name(m_delim);
+    return info;
 }

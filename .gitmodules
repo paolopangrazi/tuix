@@ -7,3 +7,6 @@
 [submodule "deps/tomlplusplus"]
 	path = deps/tomlplusplus
 	url = https://github.com/marzer/tomlplusplus
+[submodule "deps/openxlsx"]
+	path = deps/openxlsx
+	url = https://github.com/troldal/OpenXLSX.git
