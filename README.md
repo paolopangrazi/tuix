@@ -11,6 +11,8 @@
 
 *Open a CSV. Fly through it with vim keys. Write formulas. Undo anything. Never touch the mouse — unless you want to.*
 
+*Built in [Omarchy](https://omarchy.org). Built for Omarchy and any compatible Linux distro.*
+
 ![demo](screenshots/Hackerman_tuix.jpg)
 
 </div>
@@ -91,7 +93,7 @@ Want to override a specific accent anyway? You can — see [Configuration](#conf
 
 ---
 
-## Theme gallery
+## Omarchy Theme Gallery
 
 tuiX on all 20 built-in Omarchy themes — same app, your palette. Scroll horizontally to browse.
 
