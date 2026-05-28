@@ -27,8 +27,8 @@ public:
     Cell&       at(int r, int c);
     const Cell& at(int r, int c) const;
 
-    void    load(const CsvData& data);
-    CsvData to_csv_data(char delimiter = ',') const;
+    void    load(const SheetData& data);
+    SheetData to_csv_data(char delimiter = ',') const;
 
     void undo();
     void redo();

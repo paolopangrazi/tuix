@@ -36,7 +36,7 @@ static bool is_xlsx(const std::string& path) {
 
 void Session::load(const std::string& path) {
     try {
-        CsvData data;
+        SheetData data;
         if (is_xlsx(path)) {
             data = XlsxLoader::load(path);
             m_delim = '\0';

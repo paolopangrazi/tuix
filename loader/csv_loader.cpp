@@ -24,13 +24,13 @@ char detect_delimiter(const std::string& path) {
 
 namespace CsvLoader {
 
-CsvData load(const std::string& path) {
+SheetData load(const std::string& path) {
     char delim = detect_delimiter(path);
     rapidcsv::Document doc(path,
         rapidcsv::LabelParams(),
         rapidcsv::SeparatorParams(delim));
 
-    CsvData result;
+    SheetData result;
     result.delimiter = delim;
     result.headers   = doc.GetColumnNames();
 

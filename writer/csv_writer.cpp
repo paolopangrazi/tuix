@@ -3,7 +3,7 @@
 
 namespace CsvWriter {
 
-void save(const std::string& path, const CsvData& data) {
+void save(const std::string& path, const SheetData& data) {
     rapidcsv::Document doc(
         std::string(),
         rapidcsv::LabelParams(),  // row 0 = column names

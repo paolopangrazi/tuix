@@ -30,7 +30,7 @@ std::string cell_to_string(const OpenXLSX::XLCellValue& val) {
 
 } // namespace
 
-CsvData XlsxLoader::load(const std::string& path) {
+SheetData XlsxLoader::load(const std::string& path) {
     OpenXLSX::XLDocument doc;
     doc.open(path);
 
@@ -38,7 +38,7 @@ CsvData XlsxLoader::load(const std::string& path) {
     uint32_t nrows = wks.rowCount();
     uint16_t ncols = wks.columnCount();
 
-    CsvData data;
+    SheetData data;
     data.delimiter = ',';
 
     if (nrows == 0) {

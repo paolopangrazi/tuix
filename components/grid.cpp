@@ -94,7 +94,7 @@ Grid::Mode Grid::mode() const noexcept {
     return (m_editing || m_insert_sticky) ? Mode::INSERT : Mode::NORMAL;
 }
 
-void Grid::load(const CsvData& data) {
+void Grid::load(const SheetData& data) {
     const int new_cols = static_cast<int>(data.headers.size());
     const int new_rows = static_cast<int>(data.rows.size());
 
@@ -131,8 +131,8 @@ void Grid::load(const CsvData& data) {
     launch_build();
 }
 
-CsvData Grid::to_csv_data(char delimiter) const {
-    CsvData data;
+SheetData Grid::to_csv_data(char delimiter) const {
+    SheetData data;
     data.delimiter = delimiter;
     data.headers   = m_col_names;
     data.rows.resize(m_rows);
