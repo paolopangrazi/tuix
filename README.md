@@ -93,286 +93,89 @@ Want to override a specific accent anyway? You can — see [Configuration](#conf
 
 ## Theme gallery
 
-tuiX on all 20 built-in Omarchy themes — same app, your palette.
-
----
-
-<a id="aether"></a>
-
-<div align="center">
-
-### [← White](#white) &nbsp;&nbsp;&nbsp;&nbsp; 1 / 20 · **Aether** &nbsp;&nbsp;&nbsp;&nbsp; [Catppuccin →](#catppuccin)
-
-<img src="screenshots/Aether_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="catppuccin"></a>
-
-<div align="center">
-
-### [← Aether](#aether) &nbsp;&nbsp;&nbsp;&nbsp; 2 / 20 · **Catppuccin** &nbsp;&nbsp;&nbsp;&nbsp; [Catppuccin Latte →](#catppuccin-latte)
-
-<img src="screenshots/Catppuccin_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="catppuccin-latte"></a>
-
-<div align="center">
-
-### [← Catppuccin](#catppuccin) &nbsp;&nbsp;&nbsp;&nbsp; 3 / 20 · **Catppuccin Latte** &nbsp;&nbsp;&nbsp;&nbsp; [Ethereal →](#ethereal)
-
-<img src="screenshots/Catppuccin_Latte_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="ethereal"></a>
-
-<div align="center">
-
-### [← Catppuccin Latte](#catppuccin-latte) &nbsp;&nbsp;&nbsp;&nbsp; 4 / 20 · **Ethereal** &nbsp;&nbsp;&nbsp;&nbsp; [Everforest →](#everforest)
-
-<img src="screenshots/Ethereal_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="everforest"></a>
-
-<div align="center">
-
-### [← Ethereal](#ethereal) &nbsp;&nbsp;&nbsp;&nbsp; 5 / 20 · **Everforest** &nbsp;&nbsp;&nbsp;&nbsp; [Flexoki Light →](#flexoki-light)
-
-<img src="screenshots/Everforest_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="flexoki-light"></a>
-
-<div align="center">
-
-### [← Everforest](#everforest) &nbsp;&nbsp;&nbsp;&nbsp; 6 / 20 · **Flexoki Light** &nbsp;&nbsp;&nbsp;&nbsp; [Gruvbox →](#gruvbox)
-
-<img src="screenshots/Flexoki_Light_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="gruvbox"></a>
-
-<div align="center">
-
-### [← Flexoki Light](#flexoki-light) &nbsp;&nbsp;&nbsp;&nbsp; 7 / 20 · **Gruvbox** &nbsp;&nbsp;&nbsp;&nbsp; [Hackerman →](#hackerman)
-
-<img src="screenshots/Gruvbox_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="hackerman"></a>
-
-<div align="center">
-
-### [← Gruvbox](#gruvbox) &nbsp;&nbsp;&nbsp;&nbsp; 8 / 20 · **Hackerman** &nbsp;&nbsp;&nbsp;&nbsp; [Kanagawa →](#kanagawa)
-
-<img src="screenshots/Hackerman_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="kanagawa"></a>
-
-<div align="center">
-
-### [← Hackerman](#hackerman) &nbsp;&nbsp;&nbsp;&nbsp; 9 / 20 · **Kanagawa** &nbsp;&nbsp;&nbsp;&nbsp; [Lumon →](#lumon)
-
-<img src="screenshots/Kanagawa_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="lumon"></a>
-
-<div align="center">
-
-### [← Kanagawa](#kanagawa) &nbsp;&nbsp;&nbsp;&nbsp; 10 / 20 · **Lumon** &nbsp;&nbsp;&nbsp;&nbsp; [Matte Black →](#matte-black)
-
-<img src="screenshots/Lumon_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="matte-black"></a>
-
-<div align="center">
-
-### [← Lumon](#lumon) &nbsp;&nbsp;&nbsp;&nbsp; 11 / 20 · **Matte Black** &nbsp;&nbsp;&nbsp;&nbsp; [Miasma →](#miasma)
-
-<img src="screenshots/Matte_Black_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="miasma"></a>
-
-<div align="center">
-
-### [← Matte Black](#matte-black) &nbsp;&nbsp;&nbsp;&nbsp; 12 / 20 · **Miasma** &nbsp;&nbsp;&nbsp;&nbsp; [Nord →](#nord)
-
-<img src="screenshots/Miasma_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="nord"></a>
-
-<div align="center">
-
-### [← Miasma](#miasma) &nbsp;&nbsp;&nbsp;&nbsp; 13 / 20 · **Nord** &nbsp;&nbsp;&nbsp;&nbsp; [Osaka Jade →](#osaka-jade)
-
-<img src="screenshots/Nord_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="osaka-jade"></a>
-
-<div align="center">
-
-### [← Nord](#nord) &nbsp;&nbsp;&nbsp;&nbsp; 14 / 20 · **Osaka Jade** &nbsp;&nbsp;&nbsp;&nbsp; [Retro 82 →](#retro-82)
-
-<img src="screenshots/Osaka_Jade_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="retro-82"></a>
-
-<div align="center">
-
-### [← Osaka Jade](#osaka-jade) &nbsp;&nbsp;&nbsp;&nbsp; 15 / 20 · **Retro 82** &nbsp;&nbsp;&nbsp;&nbsp; [Ristretto →](#ristretto)
-
-<img src="screenshots/Retro_82_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="ristretto"></a>
-
-<div align="center">
-
-### [← Retro 82](#retro-82) &nbsp;&nbsp;&nbsp;&nbsp; 16 / 20 · **Ristretto** &nbsp;&nbsp;&nbsp;&nbsp; [Rose Pine →](#rose-pine)
-
-<img src="screenshots/Ristretto_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="rose-pine"></a>
-
-<div align="center">
-
-### [← Ristretto](#ristretto) &nbsp;&nbsp;&nbsp;&nbsp; 17 / 20 · **Rose Pine** &nbsp;&nbsp;&nbsp;&nbsp; [Tokyo Night →](#tokyo-night)
-
-<img src="screenshots/Rose_Pine_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="tokyo-night"></a>
-
-<div align="center">
-
-### [← Rose Pine](#rose-pine) &nbsp;&nbsp;&nbsp;&nbsp; 18 / 20 · **Tokyo Night** &nbsp;&nbsp;&nbsp;&nbsp; [Vantablack →](#vantablack)
-
-<img src="screenshots/Tokyo_Night_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="vantablack"></a>
-
-<div align="center">
-
-### [← Tokyo Night](#tokyo-night) &nbsp;&nbsp;&nbsp;&nbsp; 19 / 20 · **Vantablack** &nbsp;&nbsp;&nbsp;&nbsp; [White →](#white)
-
-<img src="screenshots/Vantablack_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-</div>
-
----
-
-<a id="white"></a>
-
-<div align="center">
-
-### [← Vantablack](#vantablack) &nbsp;&nbsp;&nbsp;&nbsp; 20 / 20 · **White** &nbsp;&nbsp;&nbsp;&nbsp; [Aether →](#aether)
-
-<img src="screenshots/White_tuix.jpg" width="92%"/>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
+tuiX on all 20 built-in Omarchy themes — same app, your palette. Scroll horizontally to browse.
+
+<div style="overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; display: flex; gap: 10px; padding: 10px 0;">
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Aether_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Aether">
+    <p><strong>Aether</strong> &nbsp;·&nbsp; 1 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Catppuccin_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Catppuccin">
+    <p><strong>Catppuccin</strong> &nbsp;·&nbsp; 2 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Catppuccin_Latte_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Catppuccin Latte">
+    <p><strong>Catppuccin Latte</strong> &nbsp;·&nbsp; 3 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Ethereal_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Ethereal">
+    <p><strong>Ethereal</strong> &nbsp;·&nbsp; 4 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Everforest_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Everforest">
+    <p><strong>Everforest</strong> &nbsp;·&nbsp; 5 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Flexoki_Light_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Flexoki Light">
+    <p><strong>Flexoki Light</strong> &nbsp;·&nbsp; 6 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Gruvbox_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Gruvbox">
+    <p><strong>Gruvbox</strong> &nbsp;·&nbsp; 7 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Hackerman_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Hackerman">
+    <p><strong>Hackerman</strong> &nbsp;·&nbsp; 8 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Kanagawa_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Kanagawa">
+    <p><strong>Kanagawa</strong> &nbsp;·&nbsp; 9 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Lumon_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Lumon">
+    <p><strong>Lumon</strong> &nbsp;·&nbsp; 10 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Matte_Black_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Matte Black">
+    <p><strong>Matte Black</strong> &nbsp;·&nbsp; 11 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Miasma_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Miasma">
+    <p><strong>Miasma</strong> &nbsp;·&nbsp; 12 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Nord_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Nord">
+    <p><strong>Nord</strong> &nbsp;·&nbsp; 13 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Osaka_Jade_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Osaka Jade">
+    <p><strong>Osaka Jade</strong> &nbsp;·&nbsp; 14 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Retro_82_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Retro 82">
+    <p><strong>Retro 82</strong> &nbsp;·&nbsp; 15 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Ristretto_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Ristretto">
+    <p><strong>Ristretto</strong> &nbsp;·&nbsp; 16 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Rose_Pine_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Rose Pine">
+    <p><strong>Rose Pine</strong> &nbsp;·&nbsp; 17 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Tokyo_Night_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Tokyo Night">
+    <p><strong>Tokyo Night</strong> &nbsp;·&nbsp; 18 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/Vantablack_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Vantablack">
+    <p><strong>Vantablack</strong> &nbsp;·&nbsp; 19 / 20</p>
+  </div>
+  <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
+    <img src="screenshots/White_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="White">
+    <p><strong>White</strong> &nbsp;·&nbsp; 20 / 20</p>
+  </div>
 </div>
 
 ---
