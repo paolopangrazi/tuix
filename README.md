@@ -13,7 +13,7 @@
 
 *Never touch the mouse — unless you want to.*
 
-*Built in [Omarchy](https://omarchy.org). Built for [Omarchy](#omarchy-theme-gallery) and any compatible Linux distro.*
+*Built in [Omarchy](https://omarchy.org). Built for Omarchy ([see gallery](#omarchy-theme-gallery)) and any compatible Linux distro.*
 
 ![demo](screenshots/Hackerman_tuix.jpg)
 
@@ -97,7 +97,7 @@ Want to override a specific accent anyway? You can — see [Configuration](#conf
 
 ## Omarchy Theme Gallery
 
-tuiX on all 20 built-in Omarchy themes — same app, your palette. Scroll horizontally to browse.
+tuiX on all 20 built-in Omarchy themes — same app, your palette.
 
 <div style="overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; display: flex; gap: 10px; padding: 10px 0;">
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
