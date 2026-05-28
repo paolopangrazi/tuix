@@ -9,9 +9,11 @@
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C.svg)](https://en.cppreference.com/w/cpp/17)
 [![Built with FTXUI](https://img.shields.io/badge/built%20with-FTXUI-8A2BE2.svg)](https://github.com/ArthurSonzogni/FTXUI)
 
-*Open a CSV or XLSX. Fly through it with vim keys. Write formulas. Undo anything. Never touch the mouse — unless you want to.*
+*Open a CSV or XLSX. Fly through it with vim keys. Write formulas. Undo anything.*
 
-*Built in [Omarchy](https://omarchy.org). Built for Omarchy and any compatible Linux distro.*
+*Never touch the mouse — unless you want to.*
+
+*Built in [Omarchy](https://omarchy.org). Built for [Omarchy](#omarchy-theme-gallery) and any compatible Linux distro.*
 
 ![demo](screenshots/Hackerman_tuix.jpg)
 
