@@ -19,10 +19,11 @@
 
 ## Why tuiX?
 
-Opening a CSV shouldn't mean waiting on a 300 MB Electron app to boot, or fighting a web grid that lags one keystroke behind your fingers. tuiX is a **native C++ binary** built on [FTXUI](https://github.com/ArthurSonzogni/FTXUI). It launches in the time it takes your terminal to draw a frame, and every keystroke lands **immediately** — no spinners, no debounce, no "syncing…".
+Opening a CSV shouldn't mean waiting on a 300 MB Electron app to boot, or fighting a web grid that lags one keystroke behind your fingers. tuiX is a **native C++ binary** built on [FTXUI](https://github.com/ArthurSonzogni/FTXUI). It launches in the time it takes your terminal to draw a frame, and **every single keystroke lands immediately** — no spinners, no debounce, no "syncing…", no flicker.
 
-- 🚀 **Blazingly fast.** A single static-ish native binary. Cold start is effectively instant. Files open the moment you hit Enter.
-- ⌨️ **Zero-latency editing.** Type, navigate, undo — the grid redraws on every event with no perceptible delay. Your terminal *is* the UI; there's nothing heavier between you and your data.
+- 🚀 **Blazingly fast — always.** A single native binary with a cold start measured in milliseconds. Files are on screen before you finish blinking. Every action — navigation, editing, undo, formula evaluation — is **instantaneous**.
+- ⌨️ **Zero-latency editing.** Type, navigate, undo — the grid redraws on every event with no perceptible delay, ever. Your terminal *is* the UI; there is nothing heavier between you and your data.
+- 💡 **Immediate feedback everywhere.** Formula suggestions appear the instant you land on a cell. Range statistics update live on every keypress as you extend a selection. You never wait for tuiX.
 - 🪶 **Featherweight.** No runtime dependencies, no Node, no browser engine, no background daemon. Just a binary and your CSV.
 - 🎨 **Theme-native.** tuiX paints itself from your terminal's ANSI palette, so it adopts your [Omarchy](https://omarchy.org) theme automatically — switch themes, and tuiX follows. (More below.)
 - 🧠 **vim muscle memory.** `h j k l`, `gg`, `G`, `0`, `$`, modes, `:w`, `:q` — if your fingers know vim, they already know tuiX.
@@ -34,16 +35,16 @@ If you live in the terminal, tuiX is the spreadsheet that finally feels like it 
 ## What you can actually do
 
 ### 📂 Open and move through data — instantly
-Point tuiX at a CSV and it's on screen before you blink. Glide around with `h j k l` or arrow keys, jump to the top/bottom with `gg` / `G`, snap to the first/last column with `0` / `$`, and page through big files with `PgUp` / `PgDn`. Delimiters (comma, semicolon, tab, pipe) are detected for you.
+Point tuiX at a CSV and it's on screen **before you blink**. Glide around with `h j k l` or arrow keys, jump to the top/bottom with `gg` / `G`, snap to the first/last column with `0` / `$`, and page through big files with `PgUp` / `PgDn`. Delimiters (comma, semicolon, tab, pipe) are detected for you — no configuration, no delay.
 
-### ✏️ Edit like you mean it
-Press `i` or `a` to start typing into a cell. tuiX has a **sticky INSERT mode** — like a real spreadsheet, you can keep typing and arrowing from cell to cell without dropping back to navigation. `Enter` commits and moves down, `Tab` commits and moves right. `Esc` drops you back to NORMAL. Column **headers behave exactly like cells** — edit them the same way, with the same undo.
+### ✏️ Edit like you mean it — with zero friction
+Press `i` or `a` to start typing into a cell. The response is **immediate**: no input lag, no waiting for the cursor to appear. tuiX has a **sticky INSERT mode** — like a real spreadsheet, you can keep typing and arrowing from cell to cell without dropping back to navigation. `Enter` commits and moves down, `Tab` commits and moves right. `Esc` drops you back to NORMAL. Column **headers behave exactly like cells** — edit them the same way, with the same undo.
 
-### ↩️ Undo & redo everything
-Every edit — cell values *and* column renames — is on a single undo stack. `u` to undo, `Ctrl+R` to redo. Experiment freely; you can always walk it back.
+### ↩️ Undo & redo — instantly
+Every edit — cell values *and* column renames — is on a single undo stack. `u` to undo, `Ctrl+R` to redo, and the grid snaps back **immediately**. Experiment freely; you can always walk it back.
 
-### 🧮 Real formulas
-Start any cell with `=` and tuiX evaluates it live. A full lexer → parser → evaluator pipeline backs **18 functions**, cell references, and ranges:
+### 🧮 Real formulas — evaluated on the spot
+Start any cell with `=` and tuiX evaluates it **live, right away**. A full lexer → parser → evaluator pipeline backs **18 functions**, cell references, and ranges:
 
 ```
 =A1 + B2 * 3                 arithmetic & precedence
@@ -55,19 +56,28 @@ Start any cell with `=` and tuiX evaluates it live. A full lexer → parser → 
 
 > **Functions:** `ABS` · `AVERAGE` · `CONCATENATE` · `COUNT` · `COUNTA` · `IF` · `IFERROR` · `INT` · `LEN` · `LOWER` · `MAX` · `MIN` · `MOD` · `ROUND` · `SQRT` · `SUM` · `TRIM` · `UPPER`
 
-Type `=` and a name, and an **autocomplete popup** appears with signatures and descriptions — `↑`/`↓` to browse, `Tab`/`Enter` to complete. Circular references are detected and flagged instead of hanging.
+Type `=` and a name, and an **autocomplete popup** appears **instantly** with signatures and descriptions — `↑`/`↓` to browse, `Tab`/`Enter` to complete. Circular references are detected and flagged instead of hanging.
 
-### 📐 Reshape your sheet
-Insert and delete **rows and columns** on the fly with `+` / `-` (in the row-index gutter for rows, in the header for columns). Select a region with `Shift`+arrows, **yank** it with `y`, and **paste** it elsewhere with `p`.
+### 💡 Smart formula suggestions — always ready, always instant
+
+Land on a cell and a **suggestion bar** appears below the grid **immediately**, showing you what the most useful formulas would produce *right now*, without you having to type anything:
+
+- On a **number** → `ABS` · `INT` · `SQRT` · `ROUND` · `LEN` · `UPPER` · `TRIM`
+- On a **text cell** → `LEN` · `UPPER` · `LOWER` · `TRIM`
+
+Select **multiple cells** with `Shift`+arrows and the bar switches to **live range statistics** — `SUM`, `AVG`, `COUNT`, `COUNTA`, `MIN`, `MAX` — **recalculated on every single keystroke** as your selection grows or shrinks. No configuration, no extra step, no delay: select cells, see the numbers.
+
+### 📐 Reshape your sheet — immediately
+Insert and delete **rows and columns** on the fly with `+` / `-` (in the row-index gutter for rows, in the header for columns) — the grid reflows **instantly**. Select a region with `Shift`+arrows, **yank** it with `y`, and **paste** it elsewhere with `p`.
 
 ### 🖱️ Mouse, if you want it
-Don't feel like reaching for the keyboard? Click any cell to select it. Click the little `+`/`-` action boxes on rows and columns to insert/delete. Drag the scrollbar or spin the wheel to scroll. tuiX is keyboard-first, not keyboard-only.
+Don't feel like reaching for the keyboard? Click any cell to select it — **it responds immediately**. Click the little `+`/`-` action boxes on rows and columns to insert/delete. Drag the scrollbar or spin the wheel to scroll. tuiX is keyboard-first, not keyboard-only.
 
 ### 💾 Save without leaving home row
-`:w` saves, `:w newname.csv` saves as, `:wq` saves and quits, `:e other.csv` opens another file — all from the command line, vim-style. There's a titlebar with **Undo / Redo / Open / Save / Save As / Exit** buttons too, and an overwrite-confirmation prompt so you never clobber a file by accident.
+`:w` saves, `:w newname.csv` saves as, `:wq` saves and quits, `:e other.csv` opens another file — all from the command line, vim-style, **with instant execution**. There's a titlebar with **Undo / Redo / Open / Save / Save As / Exit** buttons too, and an overwrite-confirmation prompt so you never clobber a file by accident.
 
 ### 🆘 Help & live config, built in
-Hit `F1` for a tabbed keybinding reference, and `F2` for a **live configuration editor** that writes your changes straight to `config.toml`.
+Hit `F1` for a tabbed keybinding reference, and `F2` for a **live configuration editor** that writes your changes straight to `config.toml` — changes take effect the next time you launch.
 
 ---
 
