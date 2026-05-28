@@ -97,202 +97,282 @@ tuiX on all 20 built-in Omarchy themes — same app, your palette.
 
 ---
 
-<div align="center">
 <a id="aether"></a>
 
-[← White](#white) &nbsp;·&nbsp; **Aether** &nbsp;·&nbsp; [Catppuccin →](#catppuccin)
+<div align="center">
 
-<img src="screenshots/Aether_tuix.jpg" width="88%"/>
+### [← White](#white) &nbsp;&nbsp;&nbsp;&nbsp; 1 / 20 · **Aether** &nbsp;&nbsp;&nbsp;&nbsp; [Catppuccin →](#catppuccin)
+
+<img src="screenshots/Aether_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="catppuccin"></a>
 
-[← Aether](#aether) &nbsp;·&nbsp; **Catppuccin** &nbsp;·&nbsp; [Catppuccin Latte →](#catppuccin-latte)
+<div align="center">
 
-<img src="screenshots/Catppuccin_tuix.jpg" width="88%"/>
+### [← Aether](#aether) &nbsp;&nbsp;&nbsp;&nbsp; 2 / 20 · **Catppuccin** &nbsp;&nbsp;&nbsp;&nbsp; [Catppuccin Latte →](#catppuccin-latte)
+
+<img src="screenshots/Catppuccin_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="catppuccin-latte"></a>
 
-[← Catppuccin](#catppuccin) &nbsp;·&nbsp; **Catppuccin Latte** &nbsp;·&nbsp; [Ethereal →](#ethereal)
+<div align="center">
 
-<img src="screenshots/Catppuccin_Latte_tuix.jpg" width="88%"/>
+### [← Catppuccin](#catppuccin) &nbsp;&nbsp;&nbsp;&nbsp; 3 / 20 · **Catppuccin Latte** &nbsp;&nbsp;&nbsp;&nbsp; [Ethereal →](#ethereal)
+
+<img src="screenshots/Catppuccin_Latte_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="ethereal"></a>
 
-[← Catppuccin Latte](#catppuccin-latte) &nbsp;·&nbsp; **Ethereal** &nbsp;·&nbsp; [Everforest →](#everforest)
+<div align="center">
 
-<img src="screenshots/Ethereal_tuix.jpg" width="88%"/>
+### [← Catppuccin Latte](#catppuccin-latte) &nbsp;&nbsp;&nbsp;&nbsp; 4 / 20 · **Ethereal** &nbsp;&nbsp;&nbsp;&nbsp; [Everforest →](#everforest)
+
+<img src="screenshots/Ethereal_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="everforest"></a>
 
-[← Ethereal](#ethereal) &nbsp;·&nbsp; **Everforest** &nbsp;·&nbsp; [Flexoki Light →](#flexoki-light)
+<div align="center">
 
-<img src="screenshots/Everforest_tuix.jpg" width="88%"/>
+### [← Ethereal](#ethereal) &nbsp;&nbsp;&nbsp;&nbsp; 5 / 20 · **Everforest** &nbsp;&nbsp;&nbsp;&nbsp; [Flexoki Light →](#flexoki-light)
+
+<img src="screenshots/Everforest_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="flexoki-light"></a>
 
-[← Everforest](#everforest) &nbsp;·&nbsp; **Flexoki Light** &nbsp;·&nbsp; [Gruvbox →](#gruvbox)
+<div align="center">
 
-<img src="screenshots/Flexoki_Light_tuix.jpg" width="88%"/>
+### [← Everforest](#everforest) &nbsp;&nbsp;&nbsp;&nbsp; 6 / 20 · **Flexoki Light** &nbsp;&nbsp;&nbsp;&nbsp; [Gruvbox →](#gruvbox)
+
+<img src="screenshots/Flexoki_Light_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="gruvbox"></a>
 
-[← Flexoki Light](#flexoki-light) &nbsp;·&nbsp; **Gruvbox** &nbsp;·&nbsp; [Hackerman →](#hackerman)
+<div align="center">
 
-<img src="screenshots/Gruvbox_tuix.jpg" width="88%"/>
+### [← Flexoki Light](#flexoki-light) &nbsp;&nbsp;&nbsp;&nbsp; 7 / 20 · **Gruvbox** &nbsp;&nbsp;&nbsp;&nbsp; [Hackerman →](#hackerman)
+
+<img src="screenshots/Gruvbox_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="hackerman"></a>
 
-[← Gruvbox](#gruvbox) &nbsp;·&nbsp; **Hackerman** &nbsp;·&nbsp; [Kanagawa →](#kanagawa)
+<div align="center">
 
-<img src="screenshots/Hackerman_tuix.jpg" width="88%"/>
+### [← Gruvbox](#gruvbox) &nbsp;&nbsp;&nbsp;&nbsp; 8 / 20 · **Hackerman** &nbsp;&nbsp;&nbsp;&nbsp; [Kanagawa →](#kanagawa)
+
+<img src="screenshots/Hackerman_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="kanagawa"></a>
 
-[← Hackerman](#hackerman) &nbsp;·&nbsp; **Kanagawa** &nbsp;·&nbsp; [Lumon →](#lumon)
+<div align="center">
 
-<img src="screenshots/Kanagawa_tuix.jpg" width="88%"/>
+### [← Hackerman](#hackerman) &nbsp;&nbsp;&nbsp;&nbsp; 9 / 20 · **Kanagawa** &nbsp;&nbsp;&nbsp;&nbsp; [Lumon →](#lumon)
+
+<img src="screenshots/Kanagawa_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="lumon"></a>
 
-[← Kanagawa](#kanagawa) &nbsp;·&nbsp; **Lumon** &nbsp;·&nbsp; [Matte Black →](#matte-black)
+<div align="center">
 
-<img src="screenshots/Lumon_tuix.jpg" width="88%"/>
+### [← Kanagawa](#kanagawa) &nbsp;&nbsp;&nbsp;&nbsp; 10 / 20 · **Lumon** &nbsp;&nbsp;&nbsp;&nbsp; [Matte Black →](#matte-black)
+
+<img src="screenshots/Lumon_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="matte-black"></a>
 
-[← Lumon](#lumon) &nbsp;·&nbsp; **Matte Black** &nbsp;·&nbsp; [Miasma →](#miasma)
+<div align="center">
 
-<img src="screenshots/Matte_Black_tuix.jpg" width="88%"/>
+### [← Lumon](#lumon) &nbsp;&nbsp;&nbsp;&nbsp; 11 / 20 · **Matte Black** &nbsp;&nbsp;&nbsp;&nbsp; [Miasma →](#miasma)
+
+<img src="screenshots/Matte_Black_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="miasma"></a>
 
-[← Matte Black](#matte-black) &nbsp;·&nbsp; **Miasma** &nbsp;·&nbsp; [Nord →](#nord)
+<div align="center">
 
-<img src="screenshots/Miasma_tuix.jpg" width="88%"/>
+### [← Matte Black](#matte-black) &nbsp;&nbsp;&nbsp;&nbsp; 12 / 20 · **Miasma** &nbsp;&nbsp;&nbsp;&nbsp; [Nord →](#nord)
+
+<img src="screenshots/Miasma_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="nord"></a>
 
-[← Miasma](#miasma) &nbsp;·&nbsp; **Nord** &nbsp;·&nbsp; [Osaka Jade →](#osaka-jade)
+<div align="center">
 
-<img src="screenshots/Nord_tuix.jpg" width="88%"/>
+### [← Miasma](#miasma) &nbsp;&nbsp;&nbsp;&nbsp; 13 / 20 · **Nord** &nbsp;&nbsp;&nbsp;&nbsp; [Osaka Jade →](#osaka-jade)
+
+<img src="screenshots/Nord_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="osaka-jade"></a>
 
-[← Nord](#nord) &nbsp;·&nbsp; **Osaka Jade** &nbsp;·&nbsp; [Retro 82 →](#retro-82)
+<div align="center">
 
-<img src="screenshots/Osaka_Jade_tuix.jpg" width="88%"/>
+### [← Nord](#nord) &nbsp;&nbsp;&nbsp;&nbsp; 14 / 20 · **Osaka Jade** &nbsp;&nbsp;&nbsp;&nbsp; [Retro 82 →](#retro-82)
+
+<img src="screenshots/Osaka_Jade_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="retro-82"></a>
 
-[← Osaka Jade](#osaka-jade) &nbsp;·&nbsp; **Retro 82** &nbsp;·&nbsp; [Ristretto →](#ristretto)
+<div align="center">
 
-<img src="screenshots/Retro_82_tuix.jpg" width="88%"/>
+### [← Osaka Jade](#osaka-jade) &nbsp;&nbsp;&nbsp;&nbsp; 15 / 20 · **Retro 82** &nbsp;&nbsp;&nbsp;&nbsp; [Ristretto →](#ristretto)
+
+<img src="screenshots/Retro_82_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="ristretto"></a>
 
-[← Retro 82](#retro-82) &nbsp;·&nbsp; **Ristretto** &nbsp;·&nbsp; [Rose Pine →](#rose-pine)
+<div align="center">
 
-<img src="screenshots/Ristretto_tuix.jpg" width="88%"/>
+### [← Retro 82](#retro-82) &nbsp;&nbsp;&nbsp;&nbsp; 16 / 20 · **Ristretto** &nbsp;&nbsp;&nbsp;&nbsp; [Rose Pine →](#rose-pine)
+
+<img src="screenshots/Ristretto_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="rose-pine"></a>
 
-[← Ristretto](#ristretto) &nbsp;·&nbsp; **Rose Pine** &nbsp;·&nbsp; [Tokyo Night →](#tokyo-night)
+<div align="center">
 
-<img src="screenshots/Rose_Pine_tuix.jpg" width="88%"/>
+### [← Ristretto](#ristretto) &nbsp;&nbsp;&nbsp;&nbsp; 17 / 20 · **Rose Pine** &nbsp;&nbsp;&nbsp;&nbsp; [Tokyo Night →](#tokyo-night)
+
+<img src="screenshots/Rose_Pine_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="tokyo-night"></a>
 
-[← Rose Pine](#rose-pine) &nbsp;·&nbsp; **Tokyo Night** &nbsp;·&nbsp; [Vantablack →](#vantablack)
+<div align="center">
 
-<img src="screenshots/Tokyo_Night_tuix.jpg" width="88%"/>
+### [← Rose Pine](#rose-pine) &nbsp;&nbsp;&nbsp;&nbsp; 18 / 20 · **Tokyo Night** &nbsp;&nbsp;&nbsp;&nbsp; [Vantablack →](#vantablack)
+
+<img src="screenshots/Tokyo_Night_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="vantablack"></a>
 
-[← Tokyo Night](#tokyo-night) &nbsp;·&nbsp; **Vantablack** &nbsp;·&nbsp; [White →](#white)
+<div align="center">
 
-<img src="screenshots/Vantablack_tuix.jpg" width="88%"/>
+### [← Tokyo Night](#tokyo-night) &nbsp;&nbsp;&nbsp;&nbsp; 19 / 20 · **Vantablack** &nbsp;&nbsp;&nbsp;&nbsp; [White →](#white)
+
+<img src="screenshots/Vantablack_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
 
-<div align="center">
 <a id="white"></a>
 
-[← Vantablack](#vantablack) &nbsp;·&nbsp; **White** &nbsp;·&nbsp; [Aether →](#aether)
+<div align="center">
 
-<img src="screenshots/White_tuix.jpg" width="88%"/>
+### [← Vantablack](#vantablack) &nbsp;&nbsp;&nbsp;&nbsp; 20 / 20 · **White** &nbsp;&nbsp;&nbsp;&nbsp; [Aether →](#aether)
+
+<img src="screenshots/White_tuix.jpg" width="92%"/>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </div>
 
 ---
