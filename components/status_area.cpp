@@ -8,8 +8,7 @@ Element render_status_area(const Config& cfg,
                            bool cmd_mode,
                            const std::string& cmd_buf,
                            Grid::Mode mode,
-                           const std::string& hint,
-                           const std::string& file_info_msg) {
+                           const std::string& hint) {
     if (cmd_mode) {
         return vbox({
             hbox({ text(" "), text(cmd_buf) | bold, text("_") | bold, filler() }),
@@ -34,10 +33,9 @@ Element render_status_area(const Config& cfg,
         .Set(FlexboxConfig::AlignContent::FlexStart);
 
     Elements lines;
-    if (!file_info_msg.empty()) {
+    if (!hint.empty()) {
         lines.push_back(hbox({
-            text(" FILE  ") | bold | color(cfg.colors.dimmed),
-            paragraph(file_info_msg) | color(cfg.colors.dimmed),
+            text(" "), paragraph(hint) | color(cfg.colors.dimmed),
         }));
     }
 
@@ -52,16 +50,7 @@ Element render_status_area(const Config& cfg,
     lines.push_back(flexbox({
         hbox({ text(" "), text(insert ? "INSERT" : "NORMAL") | bold | color(mode_color) }),
         std::move(switch_key),
-    }, flex_left));
-
-    if (!hint.empty()) {
-        lines.push_back(hbox({
-            text(" "), paragraph(hint) | color(cfg.colors.dimmed),
-        }));
-    }
-
-    lines.push_back(flexbox({
-        hbox({ text(" F1") | bold | color(cfg.colors.header),
+        hbox({ text("    F1") | bold | color(cfg.colors.header),
                text(": Help    ") | color(cfg.colors.dimmed) }),
         hbox({ text("F2") | bold | color(cfg.colors.header),
                text(": Config") | color(cfg.colors.dimmed) }),

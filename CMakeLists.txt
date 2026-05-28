@@ -52,6 +52,7 @@ add_executable(tuix
     components/actionbox.cpp
     components/calc_cache.cpp
     components/cell.cpp
+    components/file_bar.cpp
     components/grid.cpp
     components/titlebar.cpp
     components/body.cpp

@@ -13,6 +13,5 @@ ftxui::Element render_status_area(
     bool cmd_mode,
     const std::string& cmd_buf,
     Grid::Mode mode,
-    const std::string& hint,
-    const std::string& file_info_msg
+    const std::string& hint
 );

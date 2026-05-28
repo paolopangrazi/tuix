@@ -7,6 +7,7 @@
 #include "session.hpp"
 #include "status_area.hpp"
 #include "suggestion_bar.hpp"
+#include "file_bar.hpp"
 #include "cmd_mode.hpp"
 #include "config/config.hpp"
 
@@ -106,10 +107,13 @@ int main(int argc, char* argv[]) {
                 rows.push_back(separatorLight());
                 rows.push_back(render_suggestion_bar(cfg, sugg));
             }
+            if (!session.file_info().empty()) {
+                rows.push_back(separatorLight());
+                rows.push_back(render_file_bar(cfg, session.file_info()));
+            }
             rows.push_back(separatorLight());
             rows.push_back(render_status_area(cfg, cmd_mode.is_active(), cmd_mode.buffer(),
-                                              body.grid().mode(), body.grid().context_hint(),
-                                              session.file_info()));
+                                              body.grid().mode(), body.grid().context_hint()));
             return vbox(std::move(rows));
         });
 
