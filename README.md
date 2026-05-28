@@ -11,7 +11,7 @@
 
 *Open a CSV. Fly through it with vim keys. Write formulas. Undo anything. Never touch the mouse — unless you want to.*
 
-![demo](docs/demo.png)
+![demo](screenshots/Hackerman_tuix.jpg)
 
 </div>
 
@@ -95,38 +95,205 @@ Want to override a specific accent anyway? You can — see [Configuration](#conf
 
 tuiX on all 20 built-in Omarchy themes — same app, your palette.
 
-<table>
-  <tr>
-    <td align="center" width="25%"><img src="docs/screenshots/Aether_tuix.jpg" width="100%"/><br/><sub>Aether</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Catppuccin_tuix.jpg" width="100%"/><br/><sub>Catppuccin</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Catppuccin_Latte_tuix.jpg" width="100%"/><br/><sub>Catppuccin Latte</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Ethereal_tuix.jpg" width="100%"/><br/><sub>Ethereal</sub></td>
-  </tr>
-  <tr>
-    <td align="center" width="25%"><img src="docs/screenshots/Everforest_tuix.jpg" width="100%"/><br/><sub>Everforest</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Flexoki_Light_tuix.jpg" width="100%"/><br/><sub>Flexoki Light</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Gruvbox_tuix.jpg" width="100%"/><br/><sub>Gruvbox</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Hackerman_tuix.jpg" width="100%"/><br/><sub>Hackerman</sub></td>
-  </tr>
-  <tr>
-    <td align="center" width="25%"><img src="docs/screenshots/Kanagawa_tuix.jpg" width="100%"/><br/><sub>Kanagawa</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Lumon_tuix.jpg" width="100%"/><br/><sub>Lumon</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Matte_Black_tuix.jpg" width="100%"/><br/><sub>Matte Black</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Miasma_tuix.jpg" width="100%"/><br/><sub>Miasma</sub></td>
-  </tr>
-  <tr>
-    <td align="center" width="25%"><img src="docs/screenshots/Nord_tuix.jpg" width="100%"/><br/><sub>Nord</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Osaka_Jade_tuix.jpg" width="100%"/><br/><sub>Osaka Jade</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Retro_82_tuix.jpg" width="100%"/><br/><sub>Retro 82</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Ristretto_tuix.jpg" width="100%"/><br/><sub>Ristretto</sub></td>
-  </tr>
-  <tr>
-    <td align="center" width="25%"><img src="docs/screenshots/Rose_Pine_tuix.jpg" width="100%"/><br/><sub>Rose Pine</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Tokyo_Night_tuix.jpg" width="100%"/><br/><sub>Tokyo Night</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/Vantablack_tuix.jpg" width="100%"/><br/><sub>Vantablack</sub></td>
-    <td align="center" width="25%"><img src="docs/screenshots/White_tuix.jpg" width="100%"/><br/><sub>White</sub></td>
-  </tr>
-</table>
+---
+
+<div align="center">
+<a id="aether"></a>
+
+[← White](#white) &nbsp;·&nbsp; **Aether** &nbsp;·&nbsp; [Catppuccin →](#catppuccin)
+
+<img src="screenshots/Aether_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="catppuccin"></a>
+
+[← Aether](#aether) &nbsp;·&nbsp; **Catppuccin** &nbsp;·&nbsp; [Catppuccin Latte →](#catppuccin-latte)
+
+<img src="screenshots/Catppuccin_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="catppuccin-latte"></a>
+
+[← Catppuccin](#catppuccin) &nbsp;·&nbsp; **Catppuccin Latte** &nbsp;·&nbsp; [Ethereal →](#ethereal)
+
+<img src="screenshots/Catppuccin_Latte_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="ethereal"></a>
+
+[← Catppuccin Latte](#catppuccin-latte) &nbsp;·&nbsp; **Ethereal** &nbsp;·&nbsp; [Everforest →](#everforest)
+
+<img src="screenshots/Ethereal_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="everforest"></a>
+
+[← Ethereal](#ethereal) &nbsp;·&nbsp; **Everforest** &nbsp;·&nbsp; [Flexoki Light →](#flexoki-light)
+
+<img src="screenshots/Everforest_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="flexoki-light"></a>
+
+[← Everforest](#everforest) &nbsp;·&nbsp; **Flexoki Light** &nbsp;·&nbsp; [Gruvbox →](#gruvbox)
+
+<img src="screenshots/Flexoki_Light_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="gruvbox"></a>
+
+[← Flexoki Light](#flexoki-light) &nbsp;·&nbsp; **Gruvbox** &nbsp;·&nbsp; [Hackerman →](#hackerman)
+
+<img src="screenshots/Gruvbox_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="hackerman"></a>
+
+[← Gruvbox](#gruvbox) &nbsp;·&nbsp; **Hackerman** &nbsp;·&nbsp; [Kanagawa →](#kanagawa)
+
+<img src="screenshots/Hackerman_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="kanagawa"></a>
+
+[← Hackerman](#hackerman) &nbsp;·&nbsp; **Kanagawa** &nbsp;·&nbsp; [Lumon →](#lumon)
+
+<img src="screenshots/Kanagawa_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="lumon"></a>
+
+[← Kanagawa](#kanagawa) &nbsp;·&nbsp; **Lumon** &nbsp;·&nbsp; [Matte Black →](#matte-black)
+
+<img src="screenshots/Lumon_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="matte-black"></a>
+
+[← Lumon](#lumon) &nbsp;·&nbsp; **Matte Black** &nbsp;·&nbsp; [Miasma →](#miasma)
+
+<img src="screenshots/Matte_Black_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="miasma"></a>
+
+[← Matte Black](#matte-black) &nbsp;·&nbsp; **Miasma** &nbsp;·&nbsp; [Nord →](#nord)
+
+<img src="screenshots/Miasma_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="nord"></a>
+
+[← Miasma](#miasma) &nbsp;·&nbsp; **Nord** &nbsp;·&nbsp; [Osaka Jade →](#osaka-jade)
+
+<img src="screenshots/Nord_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="osaka-jade"></a>
+
+[← Nord](#nord) &nbsp;·&nbsp; **Osaka Jade** &nbsp;·&nbsp; [Retro 82 →](#retro-82)
+
+<img src="screenshots/Osaka_Jade_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="retro-82"></a>
+
+[← Osaka Jade](#osaka-jade) &nbsp;·&nbsp; **Retro 82** &nbsp;·&nbsp; [Ristretto →](#ristretto)
+
+<img src="screenshots/Retro_82_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="ristretto"></a>
+
+[← Retro 82](#retro-82) &nbsp;·&nbsp; **Ristretto** &nbsp;·&nbsp; [Rose Pine →](#rose-pine)
+
+<img src="screenshots/Ristretto_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="rose-pine"></a>
+
+[← Ristretto](#ristretto) &nbsp;·&nbsp; **Rose Pine** &nbsp;·&nbsp; [Tokyo Night →](#tokyo-night)
+
+<img src="screenshots/Rose_Pine_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="tokyo-night"></a>
+
+[← Rose Pine](#rose-pine) &nbsp;·&nbsp; **Tokyo Night** &nbsp;·&nbsp; [Vantablack →](#vantablack)
+
+<img src="screenshots/Tokyo_Night_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="vantablack"></a>
+
+[← Tokyo Night](#tokyo-night) &nbsp;·&nbsp; **Vantablack** &nbsp;·&nbsp; [White →](#white)
+
+<img src="screenshots/Vantablack_tuix.jpg" width="88%"/>
+</div>
+
+---
+
+<div align="center">
+<a id="white"></a>
+
+[← Vantablack](#vantablack) &nbsp;·&nbsp; **White** &nbsp;·&nbsp; [Aether →](#aether)
+
+<img src="screenshots/White_tuix.jpg" width="88%"/>
+</div>
 
 ---
 
