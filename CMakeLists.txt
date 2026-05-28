@@ -44,10 +44,13 @@ add_subdirectory(deps/tomlplusplus)
 # ---------------------------------------------------------------------------
 # tuix
 # ---------------------------------------------------------------------------
+find_package(Threads REQUIRED)
+
 add_executable(tuix
     main.cpp
     config/config.cpp
     components/actionbox.cpp
+    components/calc_cache.cpp
     components/cell.cpp
     components/grid.cpp
     components/titlebar.cpp
@@ -83,6 +86,7 @@ target_link_libraries(tuix PRIVATE
     ftxui::dom
     ftxui::screen
     tomlplusplus::tomlplusplus
+    Threads::Threads
 )
 
 install(TARGETS tuix DESTINATION bin)

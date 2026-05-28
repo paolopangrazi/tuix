@@ -28,6 +28,8 @@ int main(int argc, char* argv[]) {
     Body    body(50, 26, cfg);
     Session session(body);
 
+    body.grid().set_calc_ready_cb([&] { screen.PostEvent(ftxui::Event::Custom); });
+
     if (argc > 1) session.load(argv[1]);
 
     auto body_comp = body.make_component();

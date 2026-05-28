@@ -1,5 +1,7 @@
 #pragma once
+#include <functional>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <ftxui/component/component.hpp>
@@ -7,6 +9,7 @@
 #include <ftxui/screen/box.hpp>
 
 #include "actionbox.hpp"
+#include "calc_cache.hpp"
 #include "cell.hpp"
 #include "loader/csv_loader.hpp"
 #include "formulas/eval_context.hpp"
@@ -16,6 +19,7 @@
 class Grid : public EvalContext {
 public:
     Grid(int rows, int cols, const Config& cfg = {});
+    ~Grid();
 
     int rows() const override;
     int cols() const override;
@@ -40,6 +44,8 @@ public:
     std::vector<Suggestion> cell_suggestions() const;
 
     Value cell_value(int row, int col) const override;
+
+    void set_calc_ready_cb(std::function<void()> cb);
 
     ftxui::Component make_component();
 
@@ -70,6 +76,12 @@ private:
     std::vector<std::vector<std::string>> m_yank_data;  // [rows][cols] raw values
     int m_yank_row = -1;
     int m_yank_col = -1;
+
+    CalcCache              m_calc_cache;
+    std::thread            m_bg_thread;
+    std::function<void()>  m_on_calc_ready;
+
+    void launch_build();
 
     bool        m_pending_g      = false;
     bool        m_editing        = false;

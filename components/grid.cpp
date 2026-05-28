@@ -68,6 +68,28 @@ Grid::Grid(int rows, int cols, const Config& cfg)
     start_edit(false);
 }
 
+Grid::~Grid() {
+    if (m_bg_thread.joinable()) m_bg_thread.join();
+}
+
+void Grid::set_calc_ready_cb(std::function<void()> cb) {
+    m_on_calc_ready = std::move(cb);
+}
+
+void Grid::launch_build() {
+    m_calc_cache.cancel();
+    if (m_bg_thread.joinable()) m_bg_thread.join();
+    m_calc_cache.reset();
+    std::vector<std::vector<std::string>> raw(m_rows, std::vector<std::string>(m_cols));
+    for (int r = 0; r < m_rows; ++r)
+        for (int c = 0; c < m_cols; ++c)
+            raw[r][c] = m_cells[r][c].value();
+    m_bg_thread = std::thread([this, raw = std::move(raw)]() mutable {
+        m_calc_cache.build(std::move(raw));
+        if (m_on_calc_ready) m_on_calc_ready();
+    });
+}
+
 Grid::Mode Grid::mode() const noexcept {
     return (m_editing || m_insert_sticky) ? Mode::INSERT : Mode::NORMAL;
 }
@@ -105,6 +127,8 @@ void Grid::load(const CsvData& data) {
     m_col_widths.resize(m_cols);
     for (int c = 0; c < m_cols; ++c)
         m_col_widths[c] = compute_col_width(c);
+
+    launch_build();
 }
 
 CsvData Grid::to_csv_data(char delimiter) const {
@@ -128,6 +152,7 @@ void Grid::add_row() {
     m_cursor_col = 0;
     m_editing    = false;
     adjust_viewport();
+    launch_build();
 }
 
 void Grid::insert_row(int r) {
@@ -138,6 +163,7 @@ void Grid::insert_row(int r) {
     m_cursor_col = 0;
     m_editing    = false;
     adjust_viewport();
+    launch_build();
 }
 
 void Grid::add_col() {
@@ -151,6 +177,7 @@ void Grid::add_col() {
     m_cursor_row = -1;   // land on the new column's header
     m_editing    = false;
     adjust_viewport();
+    launch_build();
 }
 
 void Grid::insert_col(int c) {
@@ -165,6 +192,7 @@ void Grid::insert_col(int c) {
     m_cursor_row = -1;   // land on the new column's header
     m_editing    = false;
     adjust_viewport();
+    launch_build();
 }
 
 void Grid::delete_col(int c) {
@@ -178,6 +206,7 @@ void Grid::delete_col(int c) {
     m_cursor_col = std::min(m_cursor_col, m_cols - 1);
     m_editing    = false;
     adjust_viewport();
+    launch_build();
 }
 
 void Grid::try_delete_row(int r) {
@@ -200,6 +229,7 @@ void Grid::delete_row(int r) {
     m_cursor_row = std::min(m_cursor_row, m_rows - 1);
     m_editing    = false;
     adjust_viewport();
+    launch_build();
 }
 
 int Grid::rows() const { return m_rows; }
@@ -265,41 +295,12 @@ std::string Grid::context_hint() const {
 }
 
 std::vector<Grid::Suggestion> Grid::cell_suggestions() const {
+    if (m_cursor_row < 0 || m_cursor_col < 0) return {};
+    if (!m_calc_cache.ready()) return {};
+    auto entries = m_calc_cache.get(m_cursor_row, m_cursor_col);
     std::vector<Suggestion> out;
-    if (m_cursor_row < 0 || m_cursor_col < 0) return out;   // header / row-index: nothing
-
-    const std::string raw = m_cells[m_cursor_row][m_cursor_col].value();
-    if (raw.empty() || raw[0] == '=') return out;           // empty, or a formula (autocomplete covers it)
-
-    bool numeric = false;
-    try { std::size_t pos = 0; std::stod(raw, &pos); numeric = (pos == raw.size()); } catch (...) {}
-
-    auto quote = [](const std::string& s) {
-        std::string q = "\"";
-        for (char c : s) { if (c == '"') q += "\"\""; else q += c; }
-        return q + "\"";
-    };
-    auto add = [&](const char* name, const std::string& formula) {
-        Value v = Evaluator::evaluate_formula(formula, *this);
-        if (!v.is_error()) out.push_back({ name, v.to_display() });
-    };
-
-    if (numeric) {
-        add("ABS",   "=ABS("   + raw + ")");
-        add("INT",   "=INT("   + raw + ")");
-        add("SQRT",  "=SQRT("  + raw + ")");
-        add("ROUND", "=ROUND(" + raw + ", 2)");
-        const std::string q = quote(raw);
-        add("LEN",   "=LEN("   + q + ")");
-        add("UPPER", "=UPPER(" + q + ")");
-        add("TRIM",  "=TRIM("  + q + ")");
-    } else {
-        const std::string q = quote(raw);
-        add("LEN",   "=LEN("   + q + ")");
-        add("UPPER", "=UPPER(" + q + ")");
-        add("LOWER", "=LOWER(" + q + ")");
-        add("TRIM",  "=TRIM("  + q + ")");
-    }
+    out.reserve(entries.size());
+    for (auto& e : entries) out.push_back({e.name, e.value});
     return out;
 }
 
@@ -348,6 +349,8 @@ void Grid::commit_edit() {
         m_redo_stack.clear();
         set_value_at(m_cursor_row, m_cursor_col, after);
         m_col_widths[m_cursor_col] = compute_col_width(m_cursor_col);
+        if (m_cursor_row >= 0)
+            m_calc_cache.rebuild_cell(m_cursor_row, m_cursor_col, after);
     }
     m_editing = false;
 }
@@ -381,6 +384,7 @@ void Grid::undo() {
     m_undo_stack.pop_back();
     set_value_at(e.row, e.col, e.before);
     m_col_widths[e.col] = compute_col_width(e.col);
+    if (e.row >= 0) m_calc_cache.rebuild_cell(e.row, e.col, e.before);
     m_cursor_row = e.row;
     m_cursor_col = e.col;
     m_redo_stack.push_back(std::move(e));
@@ -394,6 +398,7 @@ void Grid::redo() {
     m_redo_stack.pop_back();
     set_value_at(e.row, e.col, e.after);
     m_col_widths[e.col] = compute_col_width(e.col);
+    if (e.row >= 0) m_calc_cache.rebuild_cell(e.row, e.col, e.after);
     m_cursor_row = e.row;
     m_cursor_col = e.col;
     m_undo_stack.push_back(std::move(e));
