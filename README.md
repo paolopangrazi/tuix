@@ -199,18 +199,6 @@ cell_width = 12   # minimum column width (min 4)
 
 ---
 
-## How it works
-
-```
-File ──▶ loader ──▶ Grid (in-memory cells) ──▶ writer ──▶ File
-                      │
-                      └─ "=" cell ──▶ Lexer ──▶ Parser ──▶ Evaluator ──▶ Value
-```
-
-Everything lives in-process: load a CSV into an in-memory grid, edit it with full undo history, and write it back out. Formula cells are evaluated lazily on render through a real expression pipeline. There's no hidden state and no network — your data stays exactly where you put it.
-
----
-
 ## License
 
 MIT — see [LICENSE](LICENSE).
