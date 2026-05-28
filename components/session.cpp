@@ -4,6 +4,7 @@
 #include "loader/csv_loader.hpp"
 #include "loader/xlsx_loader.hpp"
 #include "writer/csv_writer.hpp"
+#include "writer/xlsx_writer.hpp"
 
 #include <filesystem>
 #include <algorithm>
@@ -52,8 +53,16 @@ void Session::load(const std::string& path) {
 
 void Session::write(const std::string& path) {
     try {
-        auto data = m_body.grid().to_csv_data(m_delim);
-        CsvWriter::save(path, data);
+        if (is_xlsx(path)) {
+            auto data = m_body.grid().to_csv_data(',');
+            XlsxWriter::save(path, data);
+            m_delim = '\0';
+        } else {
+            char delim = (m_delim != '\0') ? m_delim : ',';
+            auto data = m_body.grid().to_csv_data(delim);
+            CsvWriter::save(path, data);
+            m_delim = delim;
+        }
         m_path = path;
         m_info = build_info(path);
     } catch (const std::exception&) {}

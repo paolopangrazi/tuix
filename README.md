@@ -9,7 +9,7 @@
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C.svg)](https://en.cppreference.com/w/cpp/17)
 [![Built with FTXUI](https://img.shields.io/badge/built%20with-FTXUI-8A2BE2.svg)](https://github.com/ArthurSonzogni/FTXUI)
 
-*Open a CSV. Fly through it with vim keys. Write formulas. Undo anything. Never touch the mouse — unless you want to.*
+*Open a CSV or XLSX. Fly through it with vim keys. Write formulas. Undo anything. Never touch the mouse — unless you want to.*
 
 *Built in [Omarchy](https://omarchy.org). Built for Omarchy and any compatible Linux distro.*
 
@@ -26,7 +26,7 @@ Opening a CSV shouldn't mean waiting on a 300 MB Electron app to boot, or fighti
 - 🚀 **Blazingly fast — always.** A single native binary with a cold start measured in milliseconds. Files are on screen before you finish blinking. Every action — navigation, editing, undo, formula evaluation — is **instantaneous**.
 - ⌨️ **Zero-latency editing.** Type, navigate, undo — the grid redraws on every event with no perceptible delay, ever. Your terminal *is* the UI; there is nothing heavier between you and your data.
 - 💡 **Immediate feedback everywhere.** Formula suggestions appear the instant you land on a cell. Range statistics update live on every keypress as you extend a selection. You never wait for tuiX.
-- 🪶 **Featherweight.** No runtime dependencies, no Node, no browser engine, no background daemon. Just a binary and your CSV.
+- 🪶 **Featherweight.** No runtime dependencies, no Node, no browser engine, no background daemon. Just a binary and your file.
 - 🎨 **Theme-native.** tuiX paints itself from your terminal's ANSI palette, so it adopts your [Omarchy](https://omarchy.org) theme automatically — switch themes, and tuiX follows. (More below.)
 - 🧠 **vim muscle memory.** `h j k l`, `gg`, `G`, `0`, `$`, modes, `:w`, `:q` — if your fingers know vim, they already know tuiX.
 
@@ -37,7 +37,7 @@ If you live in the terminal, tuiX is the spreadsheet that finally feels like it 
 ## What you can actually do
 
 ### 📂 Open and move through data — instantly
-Point tuiX at a CSV and it's on screen **before you blink**. Glide around with `h j k l` or arrow keys, jump to the top/bottom with `gg` / `G`, snap to the first/last column with `0` / `$`, and page through big files with `PgUp` / `PgDn`. Delimiters (comma, semicolon, tab, pipe) are detected for you — no configuration, no delay.
+Point tuiX at a **CSV or XLSX file** and it's on screen **before you blink**. Glide around with `h j k l` or arrow keys, jump to the top/bottom with `gg` / `G`, snap to the first/last column with `0` / `$`, and page through big files with `PgUp` / `PgDn`. CSV delimiters (comma, semicolon, tab, pipe) are auto-detected — no configuration, no delay. XLSX files load the first worksheet automatically.
 
 ### ✏️ Edit like you mean it — with zero friction
 Press `i` or `a` to start typing into a cell. The response is **immediate**: no input lag, no waiting for the cursor to appear. tuiX has a **sticky INSERT mode** — like a real spreadsheet, you can keep typing and arrowing from cell to cell without dropping back to navigation. `Enter` commits and moves down, `Tab` commits and moves right. `Esc` drops you back to NORMAL. Column **headers behave exactly like cells** — edit them the same way, with the same undo.
@@ -76,7 +76,7 @@ Insert and delete **rows and columns** on the fly with `+` / `-` (in the row-ind
 Don't feel like reaching for the keyboard? Click any cell to select it — **it responds immediately**. Click the little `+`/`-` action boxes on rows and columns to insert/delete. Drag the scrollbar or spin the wheel to scroll. tuiX is keyboard-first, not keyboard-only.
 
 ### 💾 Save without leaving home row
-`:w` saves, `:w newname.csv` saves as, `:wq` saves and quits, `:e other.csv` opens another file — all from the command line, vim-style, **with instant execution**. There's a titlebar with **Undo / Redo / Open / Save / Save As / Exit** buttons too, and an overwrite-confirmation prompt so you never clobber a file by accident.
+`:w` saves, `:w newname.csv` saves as, `:wq` saves and quits, `:e other.csv` opens another file — all from the command line, vim-style, **with instant execution**. The format follows the extension: `:w report.xlsx` writes a proper Excel file, `:w export.csv` writes CSV. There's a titlebar with **Undo / Redo / Open / Save / Save As / Exit** buttons too, and an overwrite-confirmation prompt so you never clobber a file by accident.
 
 ### 🆘 Help & live config, built in
 Hit `F1` for a tabbed keybinding reference, and `F2` for a **live configuration editor** that writes your changes straight to `config.toml` — changes take effect the next time you launch.
@@ -184,7 +184,7 @@ tuiX on all 20 built-in Omarchy themes — same app, your palette. Scroll horizo
 
 ## Install & build
 
-**Requirements:** CMake 3.14+, a C++17 compiler (GCC 8+ / Clang 7+), and Git. Every dependency — [FTXUI](https://github.com/ArthurSonzogni/FTXUI), [rapidcsv](https://github.com/d99kris/rapidcsv), and [toml++](https://github.com/marzer/tomlplusplus) — is vendored as a git submodule. **No system packages required.**
+**Requirements:** CMake 3.14+, a C++17 compiler (GCC 8+ / Clang 7+), and Git. Every dependency — [FTXUI](https://github.com/ArthurSonzogni/FTXUI), [rapidcsv](https://github.com/d99kris/rapidcsv), [toml++](https://github.com/marzer/tomlplusplus), and [OpenXLSX](https://github.com/troldal/OpenXLSX) — is vendored as a git submodule. **No system packages required.**
 
 ```bash
 git clone --recurse-submodules https://github.com/paolopangrazi/tuix
@@ -203,8 +203,9 @@ cmake --install build --prefix ~/.local   # → ~/.local/bin/tuix
 ```
 
 ```bash
-tuix                      # start with a blank sheet
-tuix path/to/file.csv     # open a CSV
+tuix                        # start with a blank sheet
+tuix path/to/file.csv       # open a CSV
+tuix path/to/file.xlsx      # open an Excel file
 ```
 
 ---

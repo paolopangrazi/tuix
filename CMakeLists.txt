@@ -77,6 +77,7 @@ add_executable(tuix
     loader/csv_loader.cpp
     loader/xlsx_loader.cpp
     writer/csv_writer.cpp
+    writer/xlsx_writer.cpp
     formulas/value.cpp
     formulas/lexer.cpp
     formulas/parser.cpp
