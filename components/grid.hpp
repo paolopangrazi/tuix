@@ -41,7 +41,8 @@ public:
 
     // Pre-computed formula values applicable to the current cell (empty = hide).
     struct Suggestion { std::string name, value; };
-    std::vector<Suggestion> cell_suggestions() const;
+    std::vector<Suggestion> cell_suggestions()  const;
+    std::vector<Suggestion> range_suggestions() const;  // live, for multi-cell selections
 
     Value cell_value(int row, int col) const override;
 

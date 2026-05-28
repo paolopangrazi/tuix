@@ -100,7 +100,8 @@ int main(int argc, char* argv[]) {
         [&] {
             Elements rows;
             rows.push_back(body_comp->Render() | flex);
-            auto sugg = body.grid().cell_suggestions();
+            auto sugg = body.grid().range_suggestions();
+            if (sugg.empty()) sugg = body.grid().cell_suggestions();
             if (!sugg.empty()) {
                 rows.push_back(separatorLight());
                 rows.push_back(render_suggestion_bar(cfg, sugg));

@@ -296,11 +296,42 @@ std::string Grid::context_hint() const {
 
 std::vector<Grid::Suggestion> Grid::cell_suggestions() const {
     if (m_cursor_row < 0 || m_cursor_col < 0) return {};
+    if (m_has_selection) return {};
     if (!m_calc_cache.ready()) return {};
     auto entries = m_calc_cache.get(m_cursor_row, m_cursor_col);
     std::vector<Suggestion> out;
     out.reserve(entries.size());
     for (auto& e : entries) out.push_back({e.name, e.value});
+    return out;
+}
+
+std::vector<Grid::Suggestion> Grid::range_suggestions() const {
+    if (!m_has_selection || m_cursor_row < 0 || m_cursor_col < 0) return {};
+
+    const int r0 = std::min(m_cursor_row, m_sel_row);
+    const int r1 = std::max(m_cursor_row, m_sel_row);
+    const int c0 = std::min(m_cursor_col, m_sel_col);
+    const int c1 = std::max(m_cursor_col, m_sel_col);
+
+    if (r0 == r1 && c0 == c1) return {};  // single cell — cell_suggestions handles it
+
+    const std::string range = col_letter(c0) + std::to_string(r0 + 1)
+                            + ":"
+                            + col_letter(c1) + std::to_string(r1 + 1);
+
+    std::vector<Suggestion> out;
+    auto add = [&](const char* name, const std::string& formula) {
+        Value v = Evaluator::evaluate_formula(formula, *this);
+        if (!v.is_error()) out.push_back({name, v.to_display()});
+    };
+
+    add("SUM",    "=SUM("     + range + ")");
+    add("AVG",    "=AVERAGE(" + range + ")");
+    add("COUNT",  "=COUNT("   + range + ")");
+    add("COUNTA", "=COUNTA("  + range + ")");
+    add("MIN",    "=MIN("     + range + ")");
+    add("MAX",    "=MAX("     + range + ")");
+
     return out;
 }
 
