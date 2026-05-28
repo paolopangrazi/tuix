@@ -6,6 +6,7 @@
 #include "body.hpp"
 #include "session.hpp"
 #include "status_area.hpp"
+#include "suggestion_bar.hpp"
 #include "cmd_mode.hpp"
 #include "config/config.hpp"
 
@@ -95,13 +96,18 @@ int main(int argc, char* argv[]) {
     auto main_inner = Renderer(
         Container::Vertical({ body_comp, titlebar.component() }),
         [&] {
-            return vbox({
-                body_comp->Render() | flex,
-                separatorLight(),
-                render_status_area(cfg, cmd_mode.is_active(), cmd_mode.buffer(),
-                                   body.grid().mode(), body.grid().context_hint(),
-                                   session.file_info()),
-            });
+            Elements rows;
+            rows.push_back(body_comp->Render() | flex);
+            auto sugg = body.grid().cell_suggestions();
+            if (!sugg.empty()) {
+                rows.push_back(separatorLight());
+                rows.push_back(render_suggestion_bar(cfg, sugg));
+            }
+            rows.push_back(separatorLight());
+            rows.push_back(render_status_area(cfg, cmd_mode.is_active(), cmd_mode.buffer(),
+                                              body.grid().mode(), body.grid().context_hint(),
+                                              session.file_info()));
+            return vbox(std::move(rows));
         });
 
     auto inner_tabs = Container::Tab({

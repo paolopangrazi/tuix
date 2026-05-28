@@ -264,6 +264,45 @@ std::string Grid::context_hint() const {
     return "hjkl: nav  |  i/a: edit  |  o/O: new row  |  x: delete  |  y/p: yank/paste  |  Shift+arrows: select  |  gg/G: top/bottom  |  u/Ctrl+R: undo/redo  |  :: cmd";
 }
 
+std::vector<Grid::Suggestion> Grid::cell_suggestions() const {
+    std::vector<Suggestion> out;
+    if (m_cursor_row < 0 || m_cursor_col < 0) return out;   // header / row-index: nothing
+
+    const std::string raw = m_cells[m_cursor_row][m_cursor_col].value();
+    if (raw.empty() || raw[0] == '=') return out;           // empty, or a formula (autocomplete covers it)
+
+    bool numeric = false;
+    try { std::size_t pos = 0; std::stod(raw, &pos); numeric = (pos == raw.size()); } catch (...) {}
+
+    auto quote = [](const std::string& s) {
+        std::string q = "\"";
+        for (char c : s) { if (c == '"') q += "\"\""; else q += c; }
+        return q + "\"";
+    };
+    auto add = [&](const char* name, const std::string& formula) {
+        Value v = Evaluator::evaluate_formula(formula, *this);
+        if (!v.is_error()) out.push_back({ name, v.to_display() });
+    };
+
+    if (numeric) {
+        add("ABS",   "=ABS("   + raw + ")");
+        add("INT",   "=INT("   + raw + ")");
+        add("SQRT",  "=SQRT("  + raw + ")");
+        add("ROUND", "=ROUND(" + raw + ", 2)");
+        const std::string q = quote(raw);
+        add("LEN",   "=LEN("   + q + ")");
+        add("UPPER", "=UPPER(" + q + ")");
+        add("TRIM",  "=TRIM("  + q + ")");
+    } else {
+        const std::string q = quote(raw);
+        add("LEN",   "=LEN("   + q + ")");
+        add("UPPER", "=UPPER(" + q + ")");
+        add("LOWER", "=LOWER(" + q + ")");
+        add("TRIM",  "=TRIM("  + q + ")");
+    }
+    return out;
+}
+
 void Grid::move(int dr, int dc) {
     int nr = std::clamp(m_cursor_row + dr, -1, m_rows - 1);  // row -1 = header
     int nc = std::clamp(m_cursor_col + dc, -1, m_cols - 1);  // col -1 = row index

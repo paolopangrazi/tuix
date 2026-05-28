@@ -35,6 +35,10 @@ public:
     Mode        mode()         const noexcept;
     std::string context_hint() const;
 
+    // Pre-computed formula values applicable to the current cell (empty = hide).
+    struct Suggestion { std::string name, value; };
+    std::vector<Suggestion> cell_suggestions() const;
+
     Value cell_value(int row, int col) const override;
 
     ftxui::Component make_component();
