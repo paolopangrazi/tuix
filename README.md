@@ -91,6 +91,45 @@ Want to override a specific accent anyway? You can — see [Configuration](#conf
 
 ---
 
+## Theme gallery
+
+tuiX on all 20 built-in Omarchy themes — same app, your palette.
+
+<table>
+  <tr>
+    <td align="center" width="25%"><img src="docs/screenshots/Aether_tuix.jpg" width="100%"/><br/><sub>Aether</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Catppuccin_tuix.jpg" width="100%"/><br/><sub>Catppuccin</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Catppuccin_Latte_tuix.jpg" width="100%"/><br/><sub>Catppuccin Latte</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Ethereal_tuix.jpg" width="100%"/><br/><sub>Ethereal</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="25%"><img src="docs/screenshots/Everforest_tuix.jpg" width="100%"/><br/><sub>Everforest</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Flexoki_Light_tuix.jpg" width="100%"/><br/><sub>Flexoki Light</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Gruvbox_tuix.jpg" width="100%"/><br/><sub>Gruvbox</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Hackerman_tuix.jpg" width="100%"/><br/><sub>Hackerman</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="25%"><img src="docs/screenshots/Kanagawa_tuix.jpg" width="100%"/><br/><sub>Kanagawa</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Lumon_tuix.jpg" width="100%"/><br/><sub>Lumon</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Matte_Black_tuix.jpg" width="100%"/><br/><sub>Matte Black</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Miasma_tuix.jpg" width="100%"/><br/><sub>Miasma</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="25%"><img src="docs/screenshots/Nord_tuix.jpg" width="100%"/><br/><sub>Nord</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Osaka_Jade_tuix.jpg" width="100%"/><br/><sub>Osaka Jade</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Retro_82_tuix.jpg" width="100%"/><br/><sub>Retro 82</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Ristretto_tuix.jpg" width="100%"/><br/><sub>Ristretto</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="25%"><img src="docs/screenshots/Rose_Pine_tuix.jpg" width="100%"/><br/><sub>Rose Pine</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Tokyo_Night_tuix.jpg" width="100%"/><br/><sub>Tokyo Night</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/Vantablack_tuix.jpg" width="100%"/><br/><sub>Vantablack</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/White_tuix.jpg" width="100%"/><br/><sub>White</sub></td>
+  </tr>
+</table>
+
+---
+
 ## Install & build
 
 **Requirements:** CMake 3.14+, a C++17 compiler (GCC 8+ / Clang 7+), and Git. Every dependency — [FTXUI](https://github.com/ArthurSonzogni/FTXUI), [rapidcsv](https://github.com/d99kris/rapidcsv), and [toml++](https://github.com/marzer/tomlplusplus) — is vendored as a git submodule. **No system packages required.**
