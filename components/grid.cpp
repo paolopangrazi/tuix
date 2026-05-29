@@ -181,7 +181,7 @@ void Grid::add_col() {
 }
 
 void Grid::insert_col(int c) {
-    const std::string new_name = unique_col_name(col_letter(m_cols), m_cols);
+    const std::string new_name = unique_col_name(col_letter(c + 1), m_cols);
     for (auto& row : m_cells)
         row.insert(row.begin() + c + 1, Cell{});
     m_col_names.insert(m_col_names.begin() + c + 1, new_name);
