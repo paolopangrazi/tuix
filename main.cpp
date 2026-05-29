@@ -19,11 +19,14 @@
 
 #include <filesystem>
 
+// Tab indices into the root Container::Tab below — order must match it.
+enum Tab { Main, ExitConfirm, Help, SaveConfirm, SaveAs, ConfigEditor, Open };
+
 int main(int argc, char* argv[]) {
     using namespace ftxui;
 
     auto screen = ScreenInteractive::Fullscreen();
-    int  tab    = 0;
+    int  tab    = Main;
 
     const Config cfg = Config::load();
     Body    body(50, 26, cfg);
@@ -69,22 +72,22 @@ int main(int argc, char* argv[]) {
         [&] { return body.grid().can_undo(); },
         [&] { body.grid().redo(); },
         [&] { return body.grid().can_redo(); },
-        [&] { open_dialog.clear_buffer(); tab = 6; },
-        [&] { if (session.has_path()) tab = 3; },
+        [&] { open_dialog.clear_buffer(); tab = Open; },
+        [&] { if (session.has_path()) tab = SaveConfirm; },
         [&] {
             save_as_dialog.set_buffer(session.has_path()
                 ? std::filesystem::path(session.current_path()).filename().string()
                 : "untitled.csv");
-            tab = 4;
+            tab = SaveAs;
         },
-        [&] { tab = 1; },
+        [&] { tab = ExitConfirm; },
         cfg
     );
 
     // ── `:` command line ─────────────────────────────────────────────────────
     CmdMode cmd_mode({
-        /* quit      */ [&] { tab = 1; },
-        /* save      */ [&] { if (session.has_path()) tab = 3; },
+        /* quit      */ [&] { tab = ExitConfirm; },
+        /* save      */ [&] { if (session.has_path()) tab = SaveConfirm; },
         /* save_quit */ [&] {
             if (session.has_path()) session.write(session.current_path());
             screen.ExitLoopClosure()();
@@ -141,22 +144,22 @@ int main(int argc, char* argv[]) {
 
     auto root = CatchEvent(root_chrome, [&](Event e) {
         if (e == Event::F1) {
-            if (tab == 2) go_main();
-            else { help_dialog.reset_tab(); tab = 2; }
+            if (tab == Help) go_main();
+            else { help_dialog.reset_tab(); tab = Help; }
             return true;
         }
         if (e == Event::F2) {
-            if (tab == 5) go_main();
-            else { cfg_dialog.refresh_from_cfg(); tab = 5; }
+            if (tab == ConfigEditor) go_main();
+            else { cfg_dialog.refresh_from_cfg(); tab = ConfigEditor; }
             return true;
         }
         if (e == Event::Special("\x05")) {           // Ctrl+E → toggle exit confirm
-            tab = (tab == 0) ? 1 : 0;
+            tab = (tab == Main) ? ExitConfirm : Main;
             return true;
         }
         if (cmd_mode.handle(e)) return true;
-        if (tab == 0 && body.grid().mode() == Grid::Mode::NORMAL
-                     && cfg.key_is(e, cfg.keys.cmd_mode)) {
+        if (tab == Main && body.grid().mode() == Grid::Mode::NORMAL
+                        && cfg.key_is(e, cfg.keys.cmd_mode)) {
             cmd_mode.enter();
             return true;
         }

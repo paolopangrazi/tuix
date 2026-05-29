@@ -73,10 +73,14 @@ private:
     struct HistoryEntry { int row, col; std::string before, after; };
     std::vector<HistoryEntry> m_undo_stack;
     std::vector<HistoryEntry> m_redo_stack;
+    void apply_history(std::vector<HistoryEntry>& from,
+                       std::vector<HistoryEntry>& to, bool use_after);
 
     std::vector<std::vector<std::string>> m_yank_data;  // [rows][cols] raw values
     int m_yank_row = -1;
     int m_yank_col = -1;
+    void yank_selection();
+    void paste_yanked();
 
     CalcCache              m_calc_cache;
     std::thread            m_bg_thread;

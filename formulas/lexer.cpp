@@ -104,11 +104,10 @@ Token Lexer::read_ident_or_ref() {
     for (char& c : upper) c = (char)std::toupper((unsigned char)c);
 
     Token t;
-    t.text = letters;
-    if (upper == "TRUE")  { t.type = TokenType::BOOLEAN; t.boolean = true;  return t; }
-    if (upper == "FALSE") { t.type = TokenType::BOOLEAN; t.boolean = false; return t; }
+    if (upper == "TRUE")  { t.text = letters; t.type = TokenType::BOOLEAN; t.boolean = true;  return t; }
+    if (upper == "FALSE") { t.text = letters; t.type = TokenType::BOOLEAN; t.boolean = false; return t; }
     t.type = TokenType::IDENT;
-    for (char& c : t.text) c = (char)std::toupper((unsigned char)c);
+    t.text = upper;  // function names are matched upper-cased
     return t;
 }
 

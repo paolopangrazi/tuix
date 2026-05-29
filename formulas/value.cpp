@@ -25,8 +25,7 @@ std::string Value::to_display() const {
     switch (m_type) {
         case Type::NUMBER: {
             double n = m_number;
-            if (std::isnan(n))  return "#NUM!";
-            if (std::isinf(n))  return n > 0 ? "#NUM!" : "#NUM!";
+            if (std::isnan(n) || std::isinf(n)) return "#NUM!";
             if (n == std::floor(n) && std::abs(n) < 1e15)
                 return std::to_string(static_cast<long long>(n));
             std::ostringstream ss;

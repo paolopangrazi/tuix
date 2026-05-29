@@ -25,80 +25,84 @@ void Evaluator::collect(const Expr& expr, const EvalContext& ctx, std::vector<Va
 
 // ── Built-in functions ────────────────────────────────────────────────────────
 
-static Value fn_sum(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    double total = 0.0;
+// Visit every value across all of f's args (ranges expanded). The visitor
+// returns false to stop early — used to bail out on the first error.
+template <class F>
+static void for_each_value(const FuncCallExpr& f, const EvalContext& ctx,
+                           const Evaluator& ev, F&& visit) {
     for (const auto& arg : f.args) {
         std::vector<Value> vals;
         ev.collect(*arg, ctx, vals);
-        for (const auto& v : vals) {
-            if (v.is_error()) return v;
-            double n; if (v.to_number(n)) total += n;
-        }
+        for (const auto& v : vals)
+            if (!visit(v)) return;
     }
-    return Value::number(total);
+}
+
+static Value fn_sum(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
+    double total = 0.0;
+    Value err;
+    for_each_value(f, ctx, ev, [&](const Value& v) {
+        if (v.is_error()) { err = v; return false; }
+        double n; if (v.to_number(n)) total += n;
+        return true;
+    });
+    return err.is_error() ? err : Value::number(total);
 }
 
 static Value fn_average(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     double total = 0.0; int count = 0;
-    for (const auto& arg : f.args) {
-        std::vector<Value> vals;
-        ev.collect(*arg, ctx, vals);
-        for (const auto& v : vals) {
-            if (v.is_error()) return v;
-            double n;
-            if (!v.is_empty() && v.to_number(n)) { total += n; ++count; }
-        }
-    }
+    Value err;
+    for_each_value(f, ctx, ev, [&](const Value& v) {
+        if (v.is_error()) { err = v; return false; }
+        double n;
+        if (!v.is_empty() && v.to_number(n)) { total += n; ++count; }
+        return true;
+    });
+    if (err.is_error()) return err;
     return count == 0 ? Value::error(FormulaError::DIV0) : Value::number(total / count);
 }
 
 static Value fn_count(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     int count = 0;
-    for (const auto& arg : f.args) {
-        std::vector<Value> vals;
-        ev.collect(*arg, ctx, vals);
-        for (const auto& v : vals)
-            if (v.is_number()) ++count;
-    }
+    for_each_value(f, ctx, ev, [&](const Value& v) {
+        if (v.is_number()) ++count;
+        return true;
+    });
     return Value::number(static_cast<double>(count));
 }
 
 static Value fn_counta(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     int count = 0;
-    for (const auto& arg : f.args) {
-        std::vector<Value> vals;
-        ev.collect(*arg, ctx, vals);
-        for (const auto& v : vals)
-            if (!v.is_empty()) ++count;
-    }
+    for_each_value(f, ctx, ev, [&](const Value& v) {
+        if (!v.is_empty()) ++count;
+        return true;
+    });
     return Value::number(static_cast<double>(count));
 }
 
 static Value fn_min(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     double result = std::numeric_limits<double>::infinity(); bool found = false;
-    for (const auto& arg : f.args) {
-        std::vector<Value> vals;
-        ev.collect(*arg, ctx, vals);
-        for (const auto& v : vals) {
-            if (v.is_error()) return v;
-            double n;
-            if (!v.is_empty() && v.to_number(n)) { result = std::min(result, n); found = true; }
-        }
-    }
+    Value err;
+    for_each_value(f, ctx, ev, [&](const Value& v) {
+        if (v.is_error()) { err = v; return false; }
+        double n;
+        if (!v.is_empty() && v.to_number(n)) { result = std::min(result, n); found = true; }
+        return true;
+    });
+    if (err.is_error()) return err;
     return found ? Value::number(result) : Value::error(FormulaError::NUM);
 }
 
 static Value fn_max(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     double result = -std::numeric_limits<double>::infinity(); bool found = false;
-    for (const auto& arg : f.args) {
-        std::vector<Value> vals;
-        ev.collect(*arg, ctx, vals);
-        for (const auto& v : vals) {
-            if (v.is_error()) return v;
-            double n;
-            if (!v.is_empty() && v.to_number(n)) { result = std::max(result, n); found = true; }
-        }
-    }
+    Value err;
+    for_each_value(f, ctx, ev, [&](const Value& v) {
+        if (v.is_error()) { err = v; return false; }
+        double n;
+        if (!v.is_empty() && v.to_number(n)) { result = std::max(result, n); found = true; }
+        return true;
+    });
+    if (err.is_error()) return err;
     return found ? Value::number(result) : Value::error(FormulaError::NUM);
 }
 

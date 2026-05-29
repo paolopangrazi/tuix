@@ -410,33 +410,24 @@ void Grid::commit_and_step(int dr, int dc) {
 bool Grid::can_undo() const noexcept { return !m_undo_stack.empty(); }
 bool Grid::can_redo() const noexcept { return !m_redo_stack.empty(); }
 
-void Grid::undo() {
-    if (m_undo_stack.empty()) return;
+void Grid::apply_history(std::vector<HistoryEntry>& from,
+                         std::vector<HistoryEntry>& to, bool use_after) {
+    if (from.empty()) return;
     m_editing = false;
-    auto e = std::move(m_undo_stack.back());
-    m_undo_stack.pop_back();
-    set_value_at(e.row, e.col, e.before);
+    auto e = std::move(from.back());
+    from.pop_back();
+    const std::string& v = use_after ? e.after : e.before;
+    set_value_at(e.row, e.col, v);
     m_col_widths[e.col] = compute_col_width(e.col);
-    if (e.row >= 0) m_calc_cache.rebuild_cell(e.row, e.col, e.before);
+    if (e.row >= 0) m_calc_cache.rebuild_cell(e.row, e.col, v);
     m_cursor_row = e.row;
     m_cursor_col = e.col;
-    m_redo_stack.push_back(std::move(e));
+    to.push_back(std::move(e));
     adjust_viewport();
 }
 
-void Grid::redo() {
-    if (m_redo_stack.empty()) return;
-    m_editing = false;
-    auto e = std::move(m_redo_stack.back());
-    m_redo_stack.pop_back();
-    set_value_at(e.row, e.col, e.after);
-    m_col_widths[e.col] = compute_col_width(e.col);
-    if (e.row >= 0) m_calc_cache.rebuild_cell(e.row, e.col, e.after);
-    m_cursor_row = e.row;
-    m_cursor_col = e.col;
-    m_undo_stack.push_back(std::move(e));
-    adjust_viewport();
-}
+void Grid::undo() { apply_history(m_undo_stack, m_redo_stack, /*use_after=*/false); }
+void Grid::redo() { apply_history(m_redo_stack, m_undo_stack, /*use_after=*/true ); }
 
 void Grid::scroll_to_mouse_y(int my) {
     const int bar_h   = m_box.y_max - m_box.y_min + 1;
@@ -805,99 +796,73 @@ bool Grid::handle_normal_nav(Event e) {
     if (m_cfg.key_is(e, m_cfg.keys.undo)) { undo(); return true; }
     if (e == Event::Special("\x12"))      { redo(); return true; }  // Ctrl+R
 
+    // Single-key NORMAL-mode commands, only on a data cell (vim-style).
     if (!m_insert_sticky && m_cursor_row >= 0 && m_cursor_col >= 0 && e.is_character()) {
-        const auto ch = e.character();
+        const std::string ch = e.character();
+        // 'g' is the lone multi-key prefix (gg → top); any other key clears it.
         if (ch == "g") {
-            if (m_pending_g) {
-                m_pending_g = false;
-                m_has_selection = false;
-                m_cursor_row = 0;
-                adjust_viewport();
-            } else {
-                m_pending_g = true;
-            }
+            if (m_pending_g) { m_pending_g = false; m_has_selection = false; m_cursor_row = 0; adjust_viewport(); }
+            else             { m_pending_g = true; }
             return true;
         }
         m_pending_g = false;
-        if (ch == "G") {
-            m_has_selection = false;
-            m_cursor_row = m_rows - 1;
-            adjust_viewport();
-            return true;
-        }
-        if (ch == "0") {
-            m_has_selection = false;
-            m_cursor_col = 0;
-            adjust_viewport();
-            return true;
-        }
-        if (ch == "$") {
-            m_has_selection = false;
-            m_cursor_col = m_cols - 1;
-            adjust_viewport();
-            return true;
-        }
-        if (ch == "o") {
-            insert_row(m_cursor_row);
-            start_edit(false);
-            return true;
-        }
-        if (ch == "O") {
-            insert_row(m_cursor_row - 1);
-            start_edit(false);
-            return true;
-        }
-    } else {
-        m_pending_g = false;
+        if (ch == "G") { m_has_selection = false; m_cursor_row = m_rows - 1; adjust_viewport(); return true; }
+        if (ch == "0") { m_has_selection = false; m_cursor_col = 0;          adjust_viewport(); return true; }
+        if (ch == "$") { m_has_selection = false; m_cursor_col = m_cols - 1; adjust_viewport(); return true; }
+        if (ch == "o") { insert_row(m_cursor_row);     start_edit(false);    return true; }
+        if (ch == "O") { insert_row(m_cursor_row - 1); start_edit(false);    return true; }
+        if (ch == "y") { yank_selection(); return true; }
+        if (ch == "p" && !m_yank_data.empty()) { paste_yanked(); return true; }
+        return true;  // swallow any other char while on a data cell
     }
+    m_pending_g = false;
 
-    if (!m_insert_sticky && m_cursor_row >= 0 && m_cursor_col >= 0 && e.is_character() && e.character() == "y") {
-        int r0 = m_cursor_row, r1 = m_cursor_row;
-        int c0 = m_cursor_col, c1 = m_cursor_col;
-        if (m_has_selection) {
-            r0 = std::min(m_cursor_row, m_sel_row); r1 = std::max(m_cursor_row, m_sel_row);
-            c0 = std::min(m_cursor_col, m_sel_col); c1 = std::max(m_cursor_col, m_sel_col);
-        }
-        m_yank_data.clear();
-        for (int r = r0; r <= r1; ++r) {
-            m_yank_data.emplace_back();
-            for (int c = c0; c <= c1; ++c)
-                m_yank_data.back().push_back(at(r, c).value());
-        }
-        m_yank_row = r0;
-        m_yank_col = c0;
-        return true;
-    }
-    if (!m_insert_sticky && m_cursor_row >= 0 && m_cursor_col >= 0 && e.is_character() && e.character() == "p"
-            && !m_yank_data.empty()) {
-        const int need_rows = m_cursor_row + (int)m_yank_data.size();
-        const int need_cols = m_cursor_col + (int)m_yank_data[0].size();
-        while (m_rows < need_rows) {
-            m_cells.emplace_back(m_cols);
-            m_action_boxes.emplace_back();
-            ++m_rows;
-        }
-        while (m_cols < need_cols) {
-            for (auto& row : m_cells) row.emplace_back();
-            m_col_names.push_back(col_letter(m_cols));
-            m_col_widths.push_back(k_cell_w);
-            m_col_action_boxes.emplace_back();
-            ++m_cols;
-        }
-        m_redo_stack.clear();
-        for (int dr = 0; dr < (int)m_yank_data.size(); ++dr) {
-            for (int dc = 0; dc < (int)m_yank_data[dr].size(); ++dc) {
-                auto& cell = at(m_cursor_row + dr, m_cursor_col + dc);
-                m_undo_stack.push_back({m_cursor_row + dr, m_cursor_col + dc, cell.value(), m_yank_data[dr][dc]});
-                cell.set_value(m_yank_data[dr][dc]);
-            }
-        }
-        m_yank_row = -1;
-        m_yank_col = -1;
-        return true;
-    }
     if (!e.is_mouse()) return true;       // consume all other keyboard events in NORMAL
     return false;                         // mouse falls through to handle_mouse
+}
+
+void Grid::yank_selection() {
+    int r0 = m_cursor_row, r1 = m_cursor_row;
+    int c0 = m_cursor_col, c1 = m_cursor_col;
+    if (m_has_selection) {
+        r0 = std::min(m_cursor_row, m_sel_row); r1 = std::max(m_cursor_row, m_sel_row);
+        c0 = std::min(m_cursor_col, m_sel_col); c1 = std::max(m_cursor_col, m_sel_col);
+    }
+    m_yank_data.clear();
+    for (int r = r0; r <= r1; ++r) {
+        m_yank_data.emplace_back();
+        for (int c = c0; c <= c1; ++c)
+            m_yank_data.back().push_back(at(r, c).value());
+    }
+    m_yank_row = r0;
+    m_yank_col = c0;
+}
+
+void Grid::paste_yanked() {
+    const int need_rows = m_cursor_row + (int)m_yank_data.size();
+    const int need_cols = m_cursor_col + (int)m_yank_data[0].size();
+    while (m_rows < need_rows) {
+        m_cells.emplace_back(m_cols);
+        m_action_boxes.emplace_back();
+        ++m_rows;
+    }
+    while (m_cols < need_cols) {
+        for (auto& row : m_cells) row.emplace_back();
+        m_col_names.push_back(col_letter(m_cols));
+        m_col_widths.push_back(k_cell_w);
+        m_col_action_boxes.emplace_back();
+        ++m_cols;
+    }
+    m_redo_stack.clear();
+    for (int dr = 0; dr < (int)m_yank_data.size(); ++dr) {
+        for (int dc = 0; dc < (int)m_yank_data[dr].size(); ++dc) {
+            auto& cell = at(m_cursor_row + dr, m_cursor_col + dc);
+            m_undo_stack.push_back({m_cursor_row + dr, m_cursor_col + dc, cell.value(), m_yank_data[dr][dc]});
+            cell.set_value(m_yank_data[dr][dc]);
+        }
+    }
+    m_yank_row = -1;
+    m_yank_col = -1;
 }
 
 bool Grid::handle_mouse(Event e) {
