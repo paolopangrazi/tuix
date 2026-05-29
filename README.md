@@ -1,8 +1,8 @@
 <div align="center">
 
-<h1><img src="images/logo_tuiX.jpg" alt="" height="55" style="vertical-align:middle;"> &nbsp;tuiX</h1>
-
-### *tui eXcel-lent* — the spreadsheet that lives in your terminal, and feels instant.
+<img src="images/logo_tuiX.jpg" alt="" height="55" style="vertical-align:middle;">
+<h1>tuiX - tui eXcel-lent spreadsheet editor</h1>
+### *the spreadsheet that lives in your terminal, and feels instant.
 
 [![CI](https://github.com/paolopangrazi/tuix/actions/workflows/ci.yml/badge.svg)](https://github.com/paolopangrazi/tuix/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -10,9 +10,7 @@
 [![Built with FTXUI](https://img.shields.io/badge/built%20with-FTXUI-8A2BE2.svg)](https://github.com/ArthurSonzogni/FTXUI)
 
 *Open a CSV or XLSX. Fly through it with vim keys. Write formulas. Undo anything.*
-
 *Never touch the mouse — unless you want to.*
-
 *Built in [Omarchy](https://omarchy.org). Built for Omarchy ([see gallery](#omarchy-theme-gallery)) and any compatible Linux distro.*
 
 ![demo](screenshots/Hackerman_tuix.jpg)
