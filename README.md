@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ tuiX
+<h1><img src="images/logo_tuiX.jpg" alt="" height="55" style="vertical-align:middle;"> &nbsp;tuiX</h1>
 
 ### *tui eXcel-lent* — the spreadsheet that lives in your terminal, and feels instant.
 
