@@ -366,8 +366,10 @@ void Grid::start_edit(bool clear) {
     if (m_cursor_col < 0) return;   // the row-index gutter has nothing to edit
     m_editing       = true;
     m_insert_sticky = true;
-    m_edit_orig = value_at(m_cursor_row, m_cursor_col);
-    m_edit_buf  = clear ? "" : m_edit_orig;
+    m_edit_orig   = value_at(m_cursor_row, m_cursor_col);
+    m_edit_buf    = clear ? "" : m_edit_orig;
+    m_edit_cursor = (int)m_edit_buf.size();
+    m_edit_typed  = false;
 }
 
 void Grid::commit_edit() {
@@ -511,7 +513,7 @@ Element Grid::formula_bar() const {
     std::string label = cursor_label();
     std::string content;
     if (m_cursor_col < 0)       content = "";                          // row-index gutter
-    else if (m_editing)         content = m_edit_buf + "_";
+    else if (m_editing)         content = m_edit_buf.substr(0, m_edit_cursor) + "_" + m_edit_buf.substr(m_edit_cursor);
     else if (m_cursor_row < 0)  content = m_col_names[m_cursor_col];   // column header
     else                        content = at(m_cursor_row, m_cursor_col).display();
     return window(
@@ -532,7 +534,9 @@ Element Grid::render() const {
         header.push_back(separator());
         const bool hsel    = (m_cursor_row < 0 && c == m_cursor_col);
         const int  name_w  = m_col_widths[c] - ActionBox::k_width - 1;
-        std::string name = (hsel && m_editing) ? m_edit_buf : m_col_names[c];
+        std::string name = (hsel && m_editing)
+            ? m_edit_buf.substr(0, m_edit_cursor) + "_" + m_edit_buf.substr(m_edit_cursor)
+            : m_col_names[c];
         if ((int)name.size() > name_w) name = name.substr(0, name_w);
         auto name_e = text(name) | center | size(WIDTH, EQUAL, name_w) | bold;
         name_e = hsel ? name_e | bgcolor(m_cfg.colors.cursor_bg) | color(m_cfg.colors.cursor_fg)
@@ -711,19 +715,38 @@ bool Grid::handle_cell_editing(Event e) {
     }
 
     if (e == Event::Escape)     { commit_edit(); m_insert_sticky = false; return true; }
-    if (e == Event::Delete)     { m_edit_buf.clear(); return true; }
+    if (e == Event::Delete)     { m_edit_buf.clear(); m_edit_cursor = 0; return true; }
     if (e == Event::Return)     { commit_and_step( 1,  0); return true; }
     if (e == Event::Tab)        { commit_and_step( 0,  1); return true; }
     if (e == Event::TabReverse) { commit_and_step( 0, -1); return true; }
     if (e == Event::ArrowDown)  { commit_and_step( 1,  0); return true; }
-    if (e == Event::ArrowLeft)  { commit_and_step( 0, -1); return true; }
-    if (e == Event::ArrowRight) { commit_and_step( 0,  1); return true; }
+    if (e == Event::ArrowLeft)  {
+        if (m_edit_typed) { if (m_edit_cursor > 0) --m_edit_cursor; return true; }
+        commit_and_step(0, -1); return true;
+    }
+    if (e == Event::ArrowRight) {
+        if (m_edit_typed) { if (m_edit_cursor < (int)m_edit_buf.size()) ++m_edit_cursor; return true; }
+        commit_and_step(0,  1); return true;
+    }
     if (e == Event::ArrowUp) {
         if (m_cursor_row < 0) return true;       // already in the header, keep editing
         commit_and_step(-1, 0); return true;     // row 0 → header, else up one row
     }
-    if (e == Event::Backspace)  { m_ac_sel = 0; if (!m_edit_buf.empty()) m_edit_buf.pop_back(); return true; }
-    if (e.is_character())       { m_ac_sel = 0; m_edit_buf += e.character(); return true; }
+    if (e == Event::Backspace)  {
+        m_ac_sel = 0;
+        if (m_edit_cursor > 0) {
+            m_edit_buf.erase(m_edit_cursor - 1, 1);
+            --m_edit_cursor;
+        }
+        return true;
+    }
+    if (e.is_character()) {
+        m_ac_sel = 0;
+        m_edit_typed = true;
+        m_edit_buf.insert(m_edit_cursor, e.character());
+        m_edit_cursor += (int)e.character().size();
+        return true;
+    }
     return true;  // consume all other keyboard events while editing
 }
 

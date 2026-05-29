@@ -89,6 +89,8 @@ private:
     bool        m_insert_sticky  = false;
     std::string m_edit_buf;
     std::string m_edit_orig;
+    int         m_edit_cursor    = 0;
+    bool        m_edit_typed     = false;  // true once user has pressed a character key
 
     void move(int dr, int dc);
     void move_home();
