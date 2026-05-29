@@ -57,6 +57,7 @@ ConfigDialog::ConfigDialog(const Config& cfg, std::function<void()> on_close)
     in_cmd_mode    = Input(&kb_cmd_mode,    "");
 
     in_cell_width  = Input(&gb_cell_width,  "");
+    in_start_mode  = Input(&gb_start_mode,  "");
 
     m_tab_toggle = Menu(&m_tab_names, &m_tab, MenuOption::Horizontal());
 
@@ -73,7 +74,7 @@ ConfigDialog::ConfigDialog(const Config& cfg, std::function<void()> on_close)
         in_insert_row, in_delete_row, in_insert_col, in_delete_col,
         in_rename_col, in_cmd_mode,
     });
-    auto grid_tab = Container::Vertical({ in_cell_width });
+    auto grid_tab = Container::Vertical({ in_cell_width, in_start_mode });
 
     m_content = Container::Tab({ colors_tab, keys_tab, grid_tab }, &m_tab);
 
@@ -113,6 +114,7 @@ void ConfigDialog::refresh_from_cfg() {
     kb_rename_col  = kstr(m_cfg.keys.rename_col);
     kb_cmd_mode    = kstr(m_cfg.keys.cmd_mode);
     gb_cell_width  = std::to_string(m_cfg.grid.cell_width);
+    gb_start_mode  = m_cfg.grid.start_insert ? "insert" : "normal";
     m_tab          = 0;
     m_status.clear();
 }
@@ -154,6 +156,7 @@ void ConfigDialog::save_to_file() {
 
     toml::table gt;
     try { gt.insert("cell_width", std::stoi(gb_cell_width)); } catch (...) {}
+    gt.insert("start_mode", (gb_start_mode == "insert") ? "insert" : "normal");
     tbl.insert("grid", std::move(gt));
 
     auto path = Config::config_file_path();
@@ -219,9 +222,16 @@ Component ConfigDialog::component() {
                 hbox({ text("  "), text(keys_hint) | color(m_cfg.colors.dimmed) }),
             });
             break;
-        case 2:
-            page = vbox({ crow("cell_width", in_cell_width) });
+        case 2: {
+            const char* grid_hint = "start_mode: normal  or  insert";
+            page = vbox({
+                crow("cell_width",  in_cell_width),
+                crow("start_mode",  in_start_mode),
+                text(""),
+                hbox({ text("  "), text(grid_hint) | color(m_cfg.colors.dimmed) }),
+            });
             break;
+        }
         }
         auto inner = window(
             hbox({ text(" "), text("Configuration") | bold, text(" ") }),

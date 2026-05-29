@@ -39,7 +39,8 @@ struct Keys {
 };
 
 struct GridCfg {
-    int cell_width = 12;
+    int  cell_width   = 12;
+    bool start_insert = false;
 };
 
 struct Config {

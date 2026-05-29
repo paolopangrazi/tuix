@@ -125,6 +125,8 @@ Config Config::load() {
     if (auto* g = tbl["grid"].as_table()) {
         if (auto w = (*g)["cell_width"].value<int>())
             cfg.grid.cell_width = std::max(4, *w);
+        if (auto s = (*g)["start_mode"].value<std::string>())
+            cfg.grid.start_insert = (*s == "insert");
     }
 
     return cfg;

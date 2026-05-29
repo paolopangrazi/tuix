@@ -65,7 +65,7 @@ Grid::Grid(int rows, int cols, const Config& cfg)
       m_col_action_boxes(cols) {
     for (int c = 0; c < cols; ++c)
         m_col_names[c] = col_letter(c);
-    start_edit(false);
+    if (cfg.grid.start_insert) start_edit(false);
 }
 
 Grid::~Grid() {

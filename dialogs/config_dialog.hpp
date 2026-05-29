@@ -30,6 +30,7 @@ private:
                 kb_insert_row, kb_delete_row, kb_insert_col, kb_delete_col,
                 kb_rename_col, kb_cmd_mode;
     std::string gb_cell_width;
+    std::string gb_start_mode;
     std::string m_status;
 
     int m_tab = 0;
@@ -46,5 +47,6 @@ private:
                      in_insert_row, in_delete_row, in_insert_col, in_delete_col,
                      in_rename_col, in_cmd_mode;
     ftxui::Component in_cell_width;
+    ftxui::Component in_start_mode;
     ftxui::Component m_tab_toggle, m_content, m_save_btn, m_container;
 };
