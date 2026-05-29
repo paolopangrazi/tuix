@@ -13,7 +13,7 @@ Never touch the mouse — unless you want to.<br>
 Built in [Omarchy](https://omarchy.org). Built for Omarchy ([see gallery](#omarchy-theme-gallery)) and any compatible Linux distro.<br>
 (Mac, Win versions: in progress)
 
-![demo](screenshots/Hackerman_tuix.jpg)
+<video src="videos/demo.mp4" autoplay loop muted playsinline width="800"></video>
 **Built for people who never leave the terminal.**
 
 **[Why tuiX?](#why-tuix) · [What you can do](#what-you-can-actually-do) · [Omarchy themes](#omarchy-theme-gallery) · [Install & build](#install--build) · [Key bindings](#key-bindings) · [Configuration](#configuration) · [License](#license)**
