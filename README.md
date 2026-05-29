@@ -13,7 +13,7 @@ Never touch the mouse — unless you want to.<br>
 Built in [Omarchy](https://omarchy.org). Built for Omarchy ([see gallery](#omarchy-theme-gallery)) and any compatible Linux distro.<br>
 (Mac, Win versions: in progress)
 
-<video src="https://raw.githubusercontent.com/paolopangrazi/hub/main/videos/tuix_demo.mp4" autoplay loop muted playsinline width="800"></video>
+<video src="https://github.com/user-attachments/assets/651a9673-4791-4660-a642-3d17b1e80670" autoplay loop muted playsinline width="800"></video>
 **Built for people who never leave the terminal.**
 
 **[Why tuiX?](#why-tuix) · [What you can do](#what-you-can-actually-do) · [Omarchy themes](#omarchy-theme-gallery) · [Install & build](#install--build) · [Key bindings](#key-bindings) · [Configuration](#configuration) · [License](#license)**
