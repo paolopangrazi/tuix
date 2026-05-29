@@ -103,83 +103,83 @@ tuiX on all 20 built-in Omarchy themes — same app, your palette.
 
 <div style="overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; display: flex; gap: 10px; padding: 10px 0;">
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Aether_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Aether">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Aether_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Aether">
     <p><strong>Aether</strong> &nbsp;·&nbsp; 1 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Catppuccin_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Catppuccin">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Catppuccin_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Catppuccin">
     <p><strong>Catppuccin</strong> &nbsp;·&nbsp; 2 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Catppuccin_Latte_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Catppuccin Latte">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Catppuccin_Latte_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Catppuccin Latte">
     <p><strong>Catppuccin Latte</strong> &nbsp;·&nbsp; 3 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Ethereal_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Ethereal">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Ethereal_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Ethereal">
     <p><strong>Ethereal</strong> &nbsp;·&nbsp; 4 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Everforest_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Everforest">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Everforest_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Everforest">
     <p><strong>Everforest</strong> &nbsp;·&nbsp; 5 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Flexoki_Light_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Flexoki Light">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Flexoki_Light_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Flexoki Light">
     <p><strong>Flexoki Light</strong> &nbsp;·&nbsp; 6 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Gruvbox_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Gruvbox">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Gruvbox_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Gruvbox">
     <p><strong>Gruvbox</strong> &nbsp;·&nbsp; 7 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Hackerman_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Hackerman">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Hackerman_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Hackerman">
     <p><strong>Hackerman</strong> &nbsp;·&nbsp; 8 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Kanagawa_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Kanagawa">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Kanagawa_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Kanagawa">
     <p><strong>Kanagawa</strong> &nbsp;·&nbsp; 9 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Lumon_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Lumon">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Lumon_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Lumon">
     <p><strong>Lumon</strong> &nbsp;·&nbsp; 10 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Matte_Black_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Matte Black">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Matte_Black_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Matte Black">
     <p><strong>Matte Black</strong> &nbsp;·&nbsp; 11 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Miasma_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Miasma">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Miasma_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Miasma">
     <p><strong>Miasma</strong> &nbsp;·&nbsp; 12 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Nord_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Nord">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Nord_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Nord">
     <p><strong>Nord</strong> &nbsp;·&nbsp; 13 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Osaka_Jade_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Osaka Jade">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Osaka_Jade_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Osaka Jade">
     <p><strong>Osaka Jade</strong> &nbsp;·&nbsp; 14 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Retro_82_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Retro 82">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Retro_82_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Retro 82">
     <p><strong>Retro 82</strong> &nbsp;·&nbsp; 15 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Ristretto_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Ristretto">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Ristretto_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Ristretto">
     <p><strong>Ristretto</strong> &nbsp;·&nbsp; 16 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Rose_Pine_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Rose Pine">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Rose_Pine_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Rose Pine">
     <p><strong>Rose Pine</strong> &nbsp;·&nbsp; 17 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Tokyo_Night_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Tokyo Night">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Tokyo_Night_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Tokyo Night">
     <p><strong>Tokyo Night</strong> &nbsp;·&nbsp; 18 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/Vantablack_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Vantablack">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/Vantablack_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="Vantablack">
     <p><strong>Vantablack</strong> &nbsp;·&nbsp; 19 / 20</p>
   </div>
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
-    <img src="screenshots/White_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="White">
+    <img src="https://github.com/paolopangrazi/hub/raw/main/images/White_tuix.jpg" style="max-width: 100%; height: auto; border-radius: 8px;" alt="White">
     <p><strong>White</strong> &nbsp;·&nbsp; 20 / 20</p>
   </div>
 </div>
