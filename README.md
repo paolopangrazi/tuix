@@ -21,6 +21,10 @@
 
 ---
 
+**[Why tuiX?](#why-tuix) · [What you can do](#what-you-can-actually-do) · [Omarchy themes](#omarchy-theme-gallery) · [Install & build](#install--build) · [Key bindings](#key-bindings) · [Configuration](#configuration) · [License](#license)**
+
+---
+
 ## Why tuiX?
 
 Opening a CSV shouldn't mean waiting on a 300 MB Electron app to boot, or fighting a web grid that lags one keystroke behind your fingers. tuiX is a **native C++ binary** built on [FTXUI](https://github.com/ArthurSonzogni/FTXUI). It launches in the time it takes your terminal to draw a frame, and **every single keystroke lands immediately** — no spinners, no debounce, no "syncing…", no flicker.
@@ -185,6 +189,8 @@ tuiX on all 20 built-in Omarchy themes — same app, your palette.
 ---
 
 ## Install & build
+
+> **Platform support:** Linux is the primary target and fully tested. macOS and Windows support is **in progress** — the code is portable in principle but has not been built or tested on those platforms yet.
 
 **Requirements:** CMake 3.14+, a C++17 compiler (GCC 8+ / Clang 7+), and Git. Every dependency — [FTXUI](https://github.com/ArthurSonzogni/FTXUI), [rapidcsv](https://github.com/d99kris/rapidcsv), [toml++](https://github.com/marzer/tomlplusplus), and [OpenXLSX](https://github.com/troldal/OpenXLSX) — is vendored as a git submodule. **No system packages required.**
 
