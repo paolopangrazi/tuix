@@ -9,9 +9,9 @@
 
 ### *the spreadsheet that lives in your terminal, and feels instant.*
 
-*Open a CSV or XLSX. Fly through it with vim keys. Write formulas. Undo anything.*
-*Never touch the mouse — unless you want to.*
-*Built in [Omarchy](https://omarchy.org). Built for Omarchy ([see gallery](#omarchy-theme-gallery)) and any compatible Linux distro.*
+- Open a CSV or XLSX. Fly through it with vim keys. Write formulas. Undo anything.
+- Never touch the mouse — unless you want to.
+- Built in [Omarchy](https://omarchy.org). Built for Omarchy ([see gallery](#omarchy-theme-gallery)) and any compatible Linux distro.
 
 ![demo](screenshots/Hackerman_tuix.jpg)
 
