@@ -2,6 +2,7 @@
 
 <img src="images/logo_tuiX.jpg" alt="" height="55" style="vertical-align:middle;">
 <h1>tuiX - tui eXcel-lent spreadsheet editor</h1>
+
 ### *the spreadsheet that lives in your terminal, and feels instant.
 
 [![CI](https://github.com/paolopangrazi/tuix/actions/workflows/ci.yml/badge.svg)](https://github.com/paolopangrazi/tuix/actions/workflows/ci.yml)
