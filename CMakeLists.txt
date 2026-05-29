@@ -46,6 +46,7 @@ add_subdirectory(deps/tomlplusplus)
 # ---------------------------------------------------------------------------
 # miniz (fetched by OpenXLSX) requires this policy flag on CMake >= 3.30
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+set(OPENXLSX_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(deps/openxlsx)
 
 # ---------------------------------------------------------------------------
@@ -93,8 +94,6 @@ target_include_directories(tuix PRIVATE
 
 target_link_libraries(tuix PRIVATE
     ftxui::component
-    ftxui::dom
-    ftxui::screen
     tomlplusplus::tomlplusplus
     OpenXLSX::OpenXLSX
     Threads::Threads
