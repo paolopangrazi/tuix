@@ -334,10 +334,10 @@ std::string Grid::context_hint() const {
         return "Enter: confirm & ↓  |  Tab: confirm & →  |  Arrows: confirm & move  |  Del: clear";
     }
     if (m_cursor_row < 0)
-        return "hjkl/arrows: nav  |  +: insert col  |  -/x: delete col  |  i/a: rename  |  ↓: into grid";
+        return "hjkl/arrows: nav  |  +: insert col  |  -/x: delete col  |  i/a/F2: rename  |  ↓: into grid";
     if (m_cursor_col < 0)
         return "hjkl/arrows: nav  |  +: insert row  |  -/x: delete row  |  u/Ctrl+R: undo/redo  |  →: enter row";
-    return "hjkl: nav  |  i/a: edit  |  o/O: new row  |  x: delete  |  y/p: yank/paste  |  Shift+arrows: select  |  gg/G: top/bottom  |  u/Ctrl+R: undo/redo  |  :: cmd";
+    return "hjkl: nav  |  i/a/F2: edit  |  o/O: new row  |  x: delete  |  y/p: yank/paste  |  Shift+arrows: select  |  gg/G: top/bottom  |  u/Ctrl+R: undo/redo  |  :: cmd";
 }
 
 std::vector<Grid::Suggestion> Grid::cell_suggestions() const {
@@ -816,7 +816,7 @@ bool Grid::handle_normal_nav(Event e) {
     if (e == Event::Return)     { m_has_selection = false; move(1, 0); return true; }
     if (e == Event::Tab)        { m_has_selection = false; move(0, 1); return true; }
     if (e == Event::TabReverse) { move(0,-1); return true; }
-    if (m_cfg.key_is(e, m_cfg.keys.insert_mode)) { start_edit(false); return true; }  // i/a: edit (cell or header name)
+    if (m_cfg.key_is(e, m_cfg.keys.insert_mode) || e == Event::F2) { start_edit(false); return true; }  // i/a/F2: edit (cell or header name)
     if (m_cursor_row < 0) {  // column header: action box inserts / deletes columns
         if (m_cfg.key_is(e, m_cfg.keys.insert_col)) { insert_col(m_cursor_col);     return true; }
         if (m_cfg.key_is(e, m_cfg.keys.delete_col)) { try_delete_col(m_cursor_col); return true; }

@@ -45,6 +45,8 @@ Element render_status_area(const Config& cfg,
         : hbox({ text("  "), text("i") | bold | color(cfg.colors.insert_badge_bg),
                  text(" / "),
                  text("a") | bold | color(cfg.colors.insert_badge_bg),
+                 text(" / "),
+                 text("F2") | bold | color(cfg.colors.insert_badge_bg),
                  text("  →  INSERT") | color(cfg.colors.dimmed) });
 
     lines.push_back(flexbox({

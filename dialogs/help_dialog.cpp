@@ -31,7 +31,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
             krow("↑  from first row",        "Enter column header"),
         }); }),
         Renderer([krow] { return vbox({
-            krow("i  /  a",                  "Enter INSERT mode"),
+            krow("i  /  a  /  F2",           "Enter INSERT mode"),
             krow("Esc",                      "Exit INSERT → NORMAL"),
             krow("o  /  O",                  "Insert row below / above & edit"),
             krow("Enter",                    "Confirm & move down"),
