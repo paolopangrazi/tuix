@@ -8,6 +8,7 @@
 #include <ftxui/screen/terminal.hpp>
 
 #include "formulas/evaluator.hpp"
+#include "sheet.hpp"
 
 using namespace ftxui;
 
@@ -127,6 +128,51 @@ void Grid::load(const SheetData& data) {
     m_col_widths.resize(m_cols);
     for (int c = 0; c < m_cols; ++c)
         m_col_widths[c] = compute_col_width(c);
+
+    launch_build();
+}
+
+void Grid::save_to(Sheet& s) const {
+    s.cells       = m_cells;
+    s.col_names   = m_col_names;
+    s.col_widths  = m_col_widths;
+    s.cursor_row  = m_cursor_row;
+    s.cursor_col  = m_cursor_col;
+    s.offset_row  = m_offset_row;
+    s.offset_col  = m_offset_col;
+    s.undo_stack  = m_undo_stack;
+    s.redo_stack  = m_redo_stack;
+}
+
+void Grid::load_from(const Sheet& s) {
+    commit_edit();
+    m_editing            = false;
+    m_insert_sticky      = false;
+    m_pending_g          = false;
+    m_pending_delete_row = -1;
+    m_pending_delete_col = -1;
+    m_has_selection      = false;
+    m_edit_buf.clear();
+    m_edit_orig.clear();
+    m_edit_cursor        = 0;
+
+    m_cells      = s.cells;
+    m_col_names  = s.col_names;
+    m_col_widths = s.col_widths;
+    m_rows       = static_cast<int>(m_cells.size());
+    m_cols       = m_rows ? static_cast<int>(m_cells[0].size()) : static_cast<int>(m_col_names.size());
+    if (m_rows == 0) { m_rows = 1; m_cells.assign(1, std::vector<Cell>(std::max(1, m_cols))); }
+    if (m_cols == 0) { m_cols = 1; for (auto& r : m_cells) r.assign(1, Cell{}); m_col_names.assign(1, col_letter(0)); m_col_widths.assign(1, k_cell_w); }
+
+    m_action_boxes.assign(m_rows, ActionBox{});
+    m_col_action_boxes.assign(m_cols, ActionBox{});
+
+    m_cursor_row = std::min(s.cursor_row, m_rows - 1);
+    m_cursor_col = std::min(s.cursor_col, m_cols - 1);
+    m_offset_row = std::max(0, std::min(s.offset_row, m_rows - 1));
+    m_offset_col = std::max(0, std::min(s.offset_col, m_cols - 1));
+    m_undo_stack = s.undo_stack;
+    m_redo_stack = s.redo_stack;
 
     launch_build();
 }

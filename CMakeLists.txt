@@ -68,6 +68,8 @@ add_executable(tuix
     components/status_area.cpp
     components/suggestion_bar.cpp
     components/session.cpp
+    components/workbook.cpp
+    components/tab_bar.cpp
     components/cmd_mode.cpp
     dialogs/dialog_shell.cpp
     dialogs/exit_dialog.cpp

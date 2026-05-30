@@ -8,6 +8,7 @@
 #include "status_area.hpp"
 #include "suggestion_bar.hpp"
 #include "file_bar.hpp"
+#include "tab_bar.hpp"
 #include "cmd_mode.hpp"
 #include "config/config.hpp"
 
@@ -20,7 +21,7 @@
 #include <filesystem>
 
 // Tab indices into the root Container::Tab below — order must match it.
-enum Tab { Main, ExitConfirm, Help, SaveConfirm, SaveAs, ConfigEditor, Open };
+enum Tab { Main, ExitConfirm, Help, SaveConfirm, SaveAs, ConfigEditor, Open, RenameSheet };
 
 int main(int argc, char* argv[]) {
     using namespace ftxui;
@@ -35,6 +36,7 @@ int main(int argc, char* argv[]) {
     body.grid().set_calc_ready_cb([&] { screen.PostEvent(ftxui::Event::Custom); });
 
     if (argc > 1) session.load(argv[1]);
+    session.init_empty_if_needed();
 
     auto body_comp = body.make_component();
     auto go_main   = [&] { tab = 0; body_comp->TakeFocus(); };
@@ -65,6 +67,23 @@ int main(int argc, char* argv[]) {
 
     HelpDialog   help_dialog(cfg, [&] { go_main(); });
     ConfigDialog cfg_dialog (cfg, [&] { go_main(); });
+
+    PathInputDialog rename_sheet_dialog(cfg,
+        "Rename Sheet", "rename", "sheet name",
+        [&] { return std::string{}; },
+        [&](const std::string& name) { session.rename_active(name); go_main(); },
+        [&] { go_main(); });
+
+    TabBar tab_bar(cfg,
+        [&] { return session.workbook().active_index(); },
+        [&] { return session.workbook().size(); },
+        [&](int i) { return session.workbook().at(i).name; },
+        [&](int i) { session.switch_to(i); },
+        [&] { session.add_sheet(); },
+        [&](int i) {
+            rename_sheet_dialog.set_buffer(session.workbook().at(i).name);
+            tab = RenameSheet;
+        });
 
     // ── Titlebar actions route straight to the dialogs above ─────────────────
     TitleBar titlebar(
@@ -100,10 +119,14 @@ int main(int argc, char* argv[]) {
     // The titlebar component lives in this Vertical (body_comp is child 0, so
     // the grid keeps keyboard focus); its buttons are *rendered* at the root.
     auto main_inner = Renderer(
-        Container::Vertical({ body_comp, titlebar.component() }),
+        Container::Vertical({ body_comp, titlebar.component(), tab_bar.component() }),
         [&] {
             Elements rows;
             rows.push_back(body_comp->Render() | flex);
+            if (session.is_xlsx_workflow()) {
+                rows.push_back(separatorLight());
+                rows.push_back(tab_bar.render());
+            }
             auto sugg = body.grid().range_suggestions();
             if (sugg.empty()) sugg = body.grid().cell_suggestions();
             if (!sugg.empty()) {
@@ -128,6 +151,7 @@ int main(int argc, char* argv[]) {
         save_as_dialog.component(),
         cfg_dialog.component(),
         open_dialog.component(),
+        rename_sheet_dialog.component(),
     }, &tab);
 
     // ── Root chrome: titlebar logo + buttons wrap every tab ──────────────────
@@ -156,6 +180,24 @@ int main(int argc, char* argv[]) {
         if (e == Event::Special("\x05")) {           // Ctrl+E → toggle exit confirm
             tab = (tab == Main) ? ExitConfirm : Main;
             return true;
+        }
+        if (tab == Main && session.is_xlsx_workflow()
+                        && body.grid().mode() == Grid::Mode::NORMAL) {
+            // Ctrl+PageDown / Ctrl+PageUp cycle sheets; Ctrl+T adds a new sheet.
+            if (e == Event::Special("\x1B[6;5~")) {
+                int n = session.workbook().size();
+                if (n > 1) session.switch_to((session.workbook().active_index() + 1) % n);
+                return true;
+            }
+            if (e == Event::Special("\x1B[5;5~")) {
+                int n = session.workbook().size();
+                if (n > 1) session.switch_to((session.workbook().active_index() - 1 + n) % n);
+                return true;
+            }
+            if (e == Event::Special("\x14")) {        // Ctrl+T
+                session.add_sheet();
+                return true;
+            }
         }
         if (cmd_mode.handle(e)) return true;
         if (tab == Main && body.grid().mode() == Grid::Mode::NORMAL

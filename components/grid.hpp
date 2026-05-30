@@ -16,8 +16,12 @@
 #include "formulas/value.hpp"
 #include "config/config.hpp"
 
+struct Sheet;
+
 class Grid : public EvalContext {
 public:
+    struct HistoryEntry { int row, col; std::string before, after; };
+
     Grid(int rows, int cols, const Config& cfg = {});
     ~Grid();
 
@@ -29,6 +33,10 @@ public:
 
     void    load(const SheetData& data);
     SheetData to_csv_data(char delimiter = ',') const;
+
+    // Swap the grid's full editable state in/out of a Sheet snapshot.
+    void save_to  (Sheet& s) const;
+    void load_from(const Sheet& s);
 
     void undo();
     void redo();
@@ -70,7 +78,6 @@ private:
     int                            m_pending_delete_row = -1;
     int                            m_pending_delete_col = -1;
 
-    struct HistoryEntry { int row, col; std::string before, after; };
     std::vector<HistoryEntry> m_undo_stack;
     std::vector<HistoryEntry> m_redo_stack;
     void apply_history(std::vector<HistoryEntry>& from,

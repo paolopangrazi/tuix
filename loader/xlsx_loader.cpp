@@ -28,25 +28,15 @@ std::string cell_to_string(const OpenXLSX::XLCellValue& val) {
     return "";
 }
 
-} // namespace
-
-SheetData XlsxLoader::load(const std::string& path) {
-    OpenXLSX::XLDocument doc;
-    doc.open(path);
-
-    auto wks = doc.workbook().worksheet(1);
+SheetData read_sheet(OpenXLSX::XLWorksheet wks) {
     uint32_t nrows = wks.rowCount();
     uint16_t ncols = wks.columnCount();
 
     SheetData data;
     data.delimiter = ',';
 
-    if (nrows == 0) {
-        doc.close();
-        return data;
-    }
+    if (nrows == 0) return data;
 
-    // First row → headers
     auto hdr_row = wks.rows(1, 1);
     for (auto& row : hdr_row) {
         auto cells = row.cells(ncols);
@@ -54,7 +44,6 @@ SheetData XlsxLoader::load(const std::string& path) {
             data.headers.push_back(cell_to_string(cell.value()));
     }
 
-    // Remaining rows → data
     if (nrows > 1) {
         for (auto& row : wks.rows(2, nrows)) {
             std::vector<std::string> r;
@@ -65,7 +54,27 @@ SheetData XlsxLoader::load(const std::string& path) {
             data.rows.push_back(std::move(r));
         }
     }
+    return data;
+}
 
+} // namespace
+
+SheetData XlsxLoader::load(const std::string& path) {
+    OpenXLSX::XLDocument doc;
+    doc.open(path);
+    SheetData data = read_sheet(doc.workbook().worksheet(1));
     doc.close();
     return data;
+}
+
+WorkbookData XlsxLoader::load_workbook(const std::string& path) {
+    OpenXLSX::XLDocument doc;
+    doc.open(path);
+
+    WorkbookData wb;
+    for (const auto& name : doc.workbook().worksheetNames())
+        wb.sheets.emplace_back(name, read_sheet(doc.workbook().worksheet(name)));
+
+    doc.close();
+    return wb;
 }
