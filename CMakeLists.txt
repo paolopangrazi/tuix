@@ -77,6 +77,8 @@ add_executable(tuix
     dialogs/path_input_dialog.cpp
     dialogs/help_dialog.cpp
     dialogs/config_dialog.cpp
+    dialogs/sheet_actions_dialog.cpp
+    dialogs/delete_sheet_confirm_dialog.cpp
     loader/csv_loader.cpp
     loader/xlsx_loader.cpp
     writer/csv_writer.cpp

@@ -17,11 +17,14 @@
 #include "path_input_dialog.hpp"
 #include "help_dialog.hpp"
 #include "config_dialog.hpp"
+#include "sheet_actions_dialog.hpp"
+#include "delete_sheet_confirm_dialog.hpp"
 
 #include <filesystem>
 
 // Tab indices into the root Container::Tab below — order must match it.
-enum Tab { Main, ExitConfirm, Help, SaveConfirm, SaveAs, ConfigEditor, Open, RenameSheet };
+enum Tab { Main, ExitConfirm, Help, SaveConfirm, SaveAs, ConfigEditor, Open, RenameSheet,
+           SheetActions, DeleteSheetConfirm };
 
 int main(int argc, char* argv[]) {
     using namespace ftxui;
@@ -74,16 +77,32 @@ int main(int argc, char* argv[]) {
         [&](const std::string& name) { session.rename_active(name); go_main(); },
         [&] { go_main(); });
 
+    auto active_sheet_name = [&] {
+        return session.workbook().at(session.workbook().active_index()).name;
+    };
+
+    SheetActionsDialog sheet_actions_dialog(cfg,
+        active_sheet_name,
+        [&] { return session.workbook().size() > 1; },
+        [&] {
+            rename_sheet_dialog.set_buffer(active_sheet_name());
+            tab = RenameSheet;
+        },
+        [&] { tab = DeleteSheetConfirm; },
+        [&] { go_main(); });
+
+    DeleteSheetConfirmDialog delete_sheet_confirm(cfg,
+        active_sheet_name,
+        [&] { session.delete_active(); go_main(); },
+        [&] { go_main(); });
+
     TabBar tab_bar(cfg,
         [&] { return session.workbook().active_index(); },
         [&] { return session.workbook().size(); },
         [&](int i) { return session.workbook().at(i).name; },
         [&](int i) { session.switch_to(i); },
         [&] { session.add_sheet(); },
-        [&](int i) {
-            rename_sheet_dialog.set_buffer(session.workbook().at(i).name);
-            tab = RenameSheet;
-        });
+        [&](int) { tab = SheetActions; });
 
     // ── Titlebar actions route straight to the dialogs above ─────────────────
     TitleBar titlebar(
@@ -152,6 +171,8 @@ int main(int argc, char* argv[]) {
         cfg_dialog.component(),
         open_dialog.component(),
         rename_sheet_dialog.component(),
+        sheet_actions_dialog.component(),
+        delete_sheet_confirm.component(),
     }, &tab);
 
     // ── Root chrome: titlebar logo + buttons wrap every tab ──────────────────

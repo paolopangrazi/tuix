@@ -168,6 +168,14 @@ void Session::add_sheet() {
     refresh_info();
 }
 
+void Session::delete_active() {
+    if (m_workbook.size() <= 1) return;
+    // Don't flush the grid back — we're throwing the active sheet away.
+    m_workbook.remove(m_workbook.active_index());
+    m_body.grid().load_from(m_workbook.active());
+    refresh_info();
+}
+
 void Session::rename_active(std::string name) {
     if (name.empty()) return;
     const int idx = m_workbook.active_index();

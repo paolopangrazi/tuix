@@ -34,6 +34,7 @@ public:
     void            switch_to(int sheet_index);
     void            add_sheet();
     void            rename_active(std::string name);
+    void            delete_active();          // no-op when only one sheet exists
 
     // Seeds an empty workbook with a single "Sheet1" if none is loaded.
     // Call once at startup, after any argv load attempt.
