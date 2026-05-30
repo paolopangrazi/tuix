@@ -83,7 +83,7 @@ Don't feel like reaching for the keyboard? Click any cell to select it — **it 
 `:w` saves, `:w newname.csv` saves as, `:wq` saves and quits, `:e other.csv` opens another file — all from the command line, vim-style, **with instant execution**. The format follows the extension: `:w report.xlsx` writes a proper Excel file, `:w export.csv` writes CSV. There's a titlebar with **Undo / Redo / Open / Save / Save As / Exit** buttons too, and an overwrite-confirmation prompt so you never clobber a file by accident.
 
 ### 🆘 Help & live config, built in
-Hit `F1` for a tabbed keybinding reference, and `F2` for a **live configuration editor** that writes your changes straight to `config.toml` — changes take effect the next time you launch.
+Hit `F1` for a tabbed keybinding reference, and `F12` for a **live configuration editor** that writes your changes straight to `config.toml` — changes take effect the next time you launch.
 
 ---
 
@@ -255,7 +255,7 @@ tuix path/to/file.xlsx      # open an Excel file
 | `↑`/`↓`, `Tab`/`Enter` | Browse / complete a formula |
 | `u` / `Ctrl+R` | Undo / redo |
 | `:` | Command mode — `:w`, `:w file`, `:wq`, `:q`, `:q!`, `:e file` |
-| `F1` / `F2` | Help · live config editor |
+| `F1` / `F12` | Help · live config editor |
 | `Ctrl+E` | Toggle exit confirmation |
 
 ---

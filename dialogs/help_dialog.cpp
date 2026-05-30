@@ -77,7 +77,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
             krow(":q  /  :q!",               "Quit via command mode"),
             krow("Ctrl+E",                   "Toggle quit confirmation dialog"),
             krow("F1",                       "This help screen"),
-            krow("F2",                       "Configuration editor"),
+            krow("F12",                      "Configuration editor"),
         }); }),
     }, &m_tab);
 

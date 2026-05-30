@@ -193,7 +193,7 @@ int main(int argc, char* argv[]) {
             else { help_dialog.reset_tab(); tab = Help; }
             return true;
         }
-        if (e == Event::F2) {
+        if (e == Event::F12) {
             if (tab == ConfigEditor) go_main();
             else { cfg_dialog.refresh_from_cfg(); tab = ConfigEditor; }
             return true;

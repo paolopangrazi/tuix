@@ -52,7 +52,7 @@ Element render_status_area(const Config& cfg,
         std::move(switch_key),
         hbox({ text("    F1") | bold | color(cfg.colors.header),
                text(": Help    ") | color(cfg.colors.dimmed) }),
-        hbox({ text("F2") | bold | color(cfg.colors.header),
+        hbox({ text("F12") | bold | color(cfg.colors.header),
                text(": Config") | color(cfg.colors.dimmed) }),
     }, flex_left));
 
