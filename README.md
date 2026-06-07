@@ -1,59 +1,68 @@
 <div align="center">
 
 
-<h1>tuiX - tui eXcel-lent spreadsheet editor</h1>
+<h1>tuiX</h1>
+
+**tui eXcel-lent — a fast, keyboard-driven spreadsheet editor for the terminal.**
 
 [![CI](https://github.com/paolopangrazi/tuix/actions/workflows/ci.yml/badge.svg)](https://github.com/paolopangrazi/tuix/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C.svg)](https://en.cppreference.com/w/cpp/17)
 [![Built with FTXUI](https://img.shields.io/badge/built%20with-FTXUI-8A2BE2.svg)](https://github.com/ArthurSonzogni/FTXUI)
 
-### Instant load. Instant feedback. The spreadsheet that lives in your terminal.
-Open a CSV or XLSX. Fly through it with vim keys.<br>
-Never touch the mouse — unless you want to.<br>
-Built in [Omarchy](https://omarchy.org). Built for Omarchy ([see gallery](#omarchy-theme-gallery)) and any compatible Linux distro.<br>
-(Mac, Win versions: in progress)
+Open a CSV or XLSX file, move through it with vim keys, evaluate formulas, and save —
+without leaving your terminal. tuiX is a single native C++ binary built on
+[FTXUI](https://github.com/ArthurSonzogni/FTXUI), with no runtime dependencies.
 
 <video src="https://github.com/user-attachments/assets/651a9673-4791-4660-a642-3d17b1e80670" autoplay loop muted playsinline width="800"></video>
-**Built for people who never leave the terminal.**
 
-**[Why tuiX?](#why-tuix) · [What you can do](#what-you-can-actually-do) · [Omarchy themes](#omarchy-theme-gallery) · [Install & build](#install--build) · [Key bindings](#key-bindings) · [Configuration](#configuration) · [License](#license)**
+**[Overview](#overview) · [Features](#features) · [Theming](#theming) · [Gallery](#theme-gallery) · [Installation](#installation) · [Usage](#usage) · [Key bindings](#key-bindings) · [Configuration](#configuration) · [License](#license)**
 
 </div>
 
 ---
 
-## Why tuiX?
+## Overview
 
-Opening a CSV shouldn't mean waiting on a 300 MB Electron app to boot, or fighting a web grid that lags one keystroke behind your fingers. tuiX is a **native C++ binary** built on [FTXUI](https://github.com/ArthurSonzogni/FTXUI). It launches in the time it takes your terminal to draw a frame, and **every single keystroke lands immediately** — no spinners, no debounce, no "syncing…", no flicker.
+tuiX is a terminal spreadsheet editor written in C++17. It opens CSV and XLSX files
+as a single native binary — no browser engine, no Node runtime, no background daemon.
+Navigation and editing follow vim conventions, and a built-in formula engine evaluates
+expressions on the fly.
 
-- 🚀 **Blazingly fast — always.** A single native binary with a cold start measured in milliseconds. Files are on screen before you finish blinking. Every action — navigation, editing, undo, formula evaluation — is **instantaneous**.
-- ⌨️ **Zero-latency editing.** Type, navigate, undo — the grid redraws on every event with no perceptible delay, ever. Your terminal *is* the UI; there is nothing heavier between you and your data.
-- 💡 **Immediate feedback everywhere.** Formula suggestions appear the instant you land on a cell. Range statistics update live on every keypress as you extend a selection. You never wait for tuiX.
-- 🪶 **Featherweight.** No runtime dependencies, no Node, no browser engine, no background daemon. Just a binary and your file.
-- 🎨 **Theme-native.** tuiX paints itself from your terminal's ANSI palette, so it adopts your [Omarchy](https://omarchy.org) theme automatically — switch themes, and tuiX follows. (More below.)
-- 🧠 **vim muscle memory.** `h j k l`, `gg`, `G`, `0`, `$`, `/` search with `n`/`N`, modes, `:w`, `:q` — if your fingers know vim, they already know tuiX.
+It is developed on and for [Omarchy](https://omarchy.org) ([see gallery](#theme-gallery))
+and works on any compatible Linux distribution. macOS and Windows builds are in progress.
 
-If you live in the terminal, tuiX is the spreadsheet that finally feels like it belongs there.
+**Highlights**
+
+- **Native and lightweight** — a single binary with a sub-second cold start and no runtime dependencies.
+- **vim-style editing** — `h j k l`, `gg`, `G`, `0`, `$`, `/` search, modal editing, and `:` commands.
+- **Formula engine** — 18 functions, cell references, and ranges, evaluated live.
+- **Live feedback** — per-cell formula suggestions and range statistics update as you work.
+- **Theme-aware** — colors map to your terminal's ANSI palette, so tuiX adopts your theme automatically.
 
 ---
 
-## What you can actually do
+## Features
 
-### 📂 Open and move through data — instantly
-Point tuiX at a **CSV or XLSX file** and it's on screen **before you blink**. Glide around with `h j k l` or arrow keys, jump to the top/bottom with `gg` / `G`, snap to the first/last column with `0` / `$`, and page through big files with `PgUp` / `PgDn`. CSV delimiters (comma, semicolon, tab, pipe) are auto-detected — no configuration, no delay. XLSX files load the first worksheet automatically.
+### Files and navigation
 
-### 🔎 Find & jump — vim-style search
-Press `/` to search and start typing — tuiX filters **incrementally**, jumping to the first match and **highlighting every hit** as you type, with a live match count in the search bar. `Enter` confirms; `n` / `N` step forward / backward through matches (wrapping around); `Esc` cancels and snaps you back to where you started. Search is case-insensitive and matches what you *see* — including evaluated formula results. Know exactly where you're going? Type `:B12` in command mode to **jump straight to that cell**.
+- Opens **CSV and XLSX** files. CSV delimiters (comma, semicolon, tab, pipe) are auto-detected; XLSX files load the first worksheet.
+- vim-style movement: `h j k l` or arrow keys, `gg` / `G` for first/last row, `0` / `$` for first/last column, and `PgUp` / `PgDn` to page.
+- **Incremental search** with `/` — matches are highlighted as you type, with a live match count; `n` / `N` step through results, and `Esc` restores your position.
+- **Jump to any cell** by typing its address in command mode, e.g. `:B12`.
 
-### ✏️ Edit like you mean it — with zero friction
-Press `i` or `a` to start typing into a cell. The response is **immediate**: no input lag, no waiting for the cursor to appear. tuiX has a **sticky INSERT mode** — like a real spreadsheet, you can keep typing and arrowing from cell to cell without dropping back to navigation. `Enter` commits and moves down, `Tab` commits and moves right. `Esc` drops you back to NORMAL. Column **headers behave exactly like cells** — edit them the same way, with the same undo.
+### Editing
 
-### ↩️ Undo & redo — instantly
-Every edit — cell values *and* column renames — is on a single undo stack. `u` to undo, `Ctrl+R` to redo, and the grid snaps back **immediately**. Experiment freely; you can always walk it back.
+- Press `i` or `a` to edit a cell or a column header. A **sticky INSERT mode** lets you type and move across cells without returning to NORMAL.
+- `Enter` commits and moves down; `Tab` commits and moves right; `Esc` returns to NORMAL.
+- Insert or delete **rows and columns** with `+` / `-` (in the row gutter or column header).
+- Select a range with `Shift`+arrows, **yank** with `y`, and **paste** with `p`.
+- A single undo/redo stack covers both cell edits and column renames (`u` / `Ctrl+R`).
 
-### 🧮 Real formulas — evaluated on the spot
-Start any cell with `=` and tuiX evaluates it **live, right away**. A full lexer → parser → evaluator pipeline backs **18 functions**, cell references, and ranges:
+### Formulas
+
+Cells beginning with `=` are evaluated through a lexer → parser → evaluator pipeline that
+supports cell references, ranges, and 18 functions:
 
 ```
 =A1 + B2 * 3                 arithmetic & precedence
@@ -65,44 +74,42 @@ Start any cell with `=` and tuiX evaluates it **live, right away**. A full lexer
 
 > **Functions:** `ABS` · `AVERAGE` · `CONCATENATE` · `COUNT` · `COUNTA` · `IF` · `IFERROR` · `INT` · `LEN` · `LOWER` · `MAX` · `MIN` · `MOD` · `ROUND` · `SQRT` · `SUM` · `TRIM` · `UPPER`
 
-Type `=` and a name, and an **autocomplete popup** appears **instantly** with signatures and descriptions — `↑`/`↓` to browse, `Tab`/`Enter` to complete. Circular references are detected and flagged instead of hanging.
+Typing `=` followed by a function name opens an **autocomplete popup** with signatures and
+descriptions — `↑` / `↓` to browse, `Tab` / `Enter` to complete. Circular references are
+detected and flagged rather than left to hang.
 
-### 💡 Smart formula suggestions — always ready, always instant
+### Live suggestions and statistics
 
-Land on a cell and a **suggestion bar** appears below the grid **immediately**, showing you what the most useful formulas would produce *right now*, without you having to type anything:
+- Landing on a cell shows a **suggestion bar** with the results of the most relevant formulas for that value:
+  - On a **number** → `ABS` · `INT` · `SQRT` · `ROUND` · `LEN` · `UPPER` · `TRIM`
+  - On a **text cell** → `LEN` · `UPPER` · `LOWER` · `TRIM`
+- Selecting **multiple cells** with `Shift`+arrows switches the bar to live range statistics — `SUM`, `AVG`, `COUNT`, `COUNTA`, `MIN`, `MAX` — recalculated as the selection changes.
 
-- On a **number** → `ABS` · `INT` · `SQRT` · `ROUND` · `LEN` · `UPPER` · `TRIM`
-- On a **text cell** → `LEN` · `UPPER` · `LOWER` · `TRIM`
+### Interface
 
-Select **multiple cells** with `Shift`+arrows and the bar switches to **live range statistics** — `SUM`, `AVG`, `COUNT`, `COUNTA`, `MIN`, `MAX` — **recalculated on every single keystroke** as your selection grows or shrinks. No configuration, no extra step, no delay: select cells, see the numbers.
-
-### 📐 Reshape your sheet — immediately
-Insert and delete **rows and columns** on the fly with `+` / `-` (in the row-index gutter for rows, in the header for columns) — the grid reflows **instantly**. Select a region with `Shift`+arrows, **yank** it with `y`, and **paste** it elsewhere with `p`.
-
-### 🖱️ Mouse, if you want it
-Don't feel like reaching for the keyboard? Click any cell to select it — **it responds immediately**. Click the little `+`/`-` action boxes on rows and columns to insert/delete. Drag the scrollbar or spin the wheel to scroll. tuiX is keyboard-first, not keyboard-only.
-
-### 💾 Save without leaving home row
-`:w` saves, `:w newname.csv` saves as, `:wq` saves and quits, `:e other.csv` opens another file — all from the command line, vim-style, **with instant execution**. The format follows the extension: `:w report.xlsx` writes a proper Excel file, `:w export.csv` writes CSV. There's a titlebar with **Undo / Redo / Open / Save / Save As / Exit** buttons too, and an overwrite-confirmation prompt so you never clobber a file by accident.
-
-### 🆘 Help & live config, built in
-Hit `F1` for a tabbed keybinding reference, and `F12` for a **live configuration editor** that writes your changes straight to `config.toml` — changes take effect the next time you launch.
+- **Mouse support**, if you want it: click to select, use the `+` / `-` action boxes to insert or delete rows and columns, and drag the scrollbar or use the wheel to scroll.
+- **Command line**: `:w` saves, `:w file.csv` saves as, `:wq` saves and quits, `:e other.csv` opens another file. The output format follows the extension (`.xlsx` or `.csv`). An overwrite-confirmation prompt prevents accidental clobbering.
+- A **titlebar** provides Undo / Redo / Open / Save / Save As / Exit buttons.
+- `F1` opens a tabbed keybinding reference; `F12` opens a live configuration editor that writes changes to `config.toml`.
 
 ---
 
-## 🎨 Made for Omarchy (and any themed terminal)
+## Theming
 
-tuiX never hardcodes RGB values. Every color it draws — cursor, selection, headers, mode badges, formulas — is a reference to one of your terminal's **16 ANSI palette slots** (or a named color / index `0–15`).
+tuiX never hardcodes RGB values. Every color it draws — cursor, selection, headers, mode
+badges, formulas — references one of your terminal's **16 ANSI palette slots** (or a named
+color / index `0–15`).
 
-That means tuiX **inherits your terminal theme for free**. On [Omarchy](https://omarchy.org), when you switch your selected theme, your terminal's palette changes — and tuiX instantly wears the same colors as the rest of your desktop. No tuiX-specific theme files to maintain, no mismatch between your editor and your spreadsheet. It just blends in, perfectly, with whatever you're running.
-
-Want to override a specific accent anyway? You can — see [Configuration](#configuration).
+As a result, tuiX **inherits your terminal theme automatically**. On
+[Omarchy](https://omarchy.org), switching your theme changes the terminal palette, and tuiX
+follows — no application-specific theme files to maintain. Individual accents can still be
+overridden; see [Configuration](#configuration).
 
 ---
 
-## Omarchy Theme Gallery
+## Theme gallery
 
-tuiX on all 20 built-in Omarchy themes — same app, your palette.
+tuiX on all 20 built-in Omarchy themes — the same app, your palette.
 
 <div style="overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; display: flex; gap: 10px; padding: 10px 0;">
   <div style="scroll-snap-align: center; flex: 0 0 100%; text-align: center;">
@@ -189,11 +196,17 @@ tuiX on all 20 built-in Omarchy themes — same app, your palette.
 
 ---
 
-## Install & build
+## Installation
 
-> **Platform support:** Linux is the primary target and fully tested. macOS and Windows support is **in progress** — the code is portable in principle but has not been built or tested on those platforms yet.
+> **Platform support:** Linux is the primary target and is fully tested. macOS and Windows
+> support is in progress — the code is portable in principle but has not yet been built or
+> tested on those platforms.
 
-**Requirements:** CMake 3.14+, a C++17 compiler (GCC 8+ / Clang 7+), and Git. Every dependency — [FTXUI](https://github.com/ArthurSonzogni/FTXUI), [rapidcsv](https://github.com/d99kris/rapidcsv), [toml++](https://github.com/marzer/tomlplusplus), and [OpenXLSX](https://github.com/troldal/OpenXLSX) — is vendored as a git submodule. **No system packages required.**
+**Requirements:** CMake 3.14+, a C++17 compiler (GCC 8+ / Clang 7+), and Git. Every
+dependency — [FTXUI](https://github.com/ArthurSonzogni/FTXUI),
+[rapidcsv](https://github.com/d99kris/rapidcsv), [toml++](https://github.com/marzer/tomlplusplus),
+and [OpenXLSX](https://github.com/troldal/OpenXLSX) — is vendored as a git submodule. No
+system packages are required.
 
 ```bash
 git clone --recurse-submodules https://github.com/paolopangrazi/tuix
@@ -210,6 +223,10 @@ Install it onto your `PATH`:
 ```bash
 cmake --install build --prefix ~/.local   # → ~/.local/bin/tuix
 ```
+
+---
+
+## Usage
 
 ```bash
 tuix                        # start with a blank sheet
@@ -267,7 +284,10 @@ tuix path/to/file.xlsx      # open an Excel file
 
 ## Configuration
 
-tuiX reads `~/.config/tuix/config.toml` at startup (XDG-compliant — respects `$XDG_CONFIG_HOME`). Every setting is optional; missing keys fall back to sensible defaults. Colors accept an **ANSI name** or a **palette index `0–15`**, which is exactly what lets tuiX track your terminal theme.
+tuiX reads `~/.config/tuix/config.toml` at startup (XDG-compliant — it respects
+`$XDG_CONFIG_HOME`). Every setting is optional; missing keys fall back to sensible defaults.
+Colors accept an **ANSI name** or a **palette index `0–15`**, which is what allows tuiX to
+track your terminal theme.
 
 ```toml
 [colors]
@@ -308,7 +328,8 @@ cmd_mode    = [":"]
 cell_width = 12   # minimum column width (min 4)
 ```
 
-> 💡 Tip: leave the colors as palette names and let your Omarchy theme drive them. Only pin a value here if you want tuiX to deviate from your terminal's palette.
+> **Tip:** leave the colors as palette names and let your Omarchy theme drive them. Only pin
+> a value here if you want tuiX to deviate from your terminal's palette.
 
 ---
 
