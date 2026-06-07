@@ -1,5 +1,7 @@
 #include "cmd_mode.hpp"
 
+#include "col_label.hpp"
+
 using namespace ftxui;
 
 CmdMode::CmdMode(Actions actions) : m_actions(std::move(actions)) {}
@@ -25,6 +27,10 @@ bool CmdMode::handle(Event e) {
         bool edit      = (m_buf.size() > 3 && m_buf.compare(0, 3, ":e ") == 0);
         std::string sp = save_as ? m_buf.substr(3) : "";
         std::string ep = edit    ? m_buf.substr(3) : "";
+        // A bare A1 address (":B12") jumps the cursor. parse_a1 rejects the
+        // command words above (":w", ":wq", ":e file"), so there's no overlap.
+        std::string ref = m_buf.substr(1);
+        bool is_goto    = parse_a1(ref).has_value();
 
         m_active = false;
         m_buf.clear();
@@ -34,6 +40,7 @@ bool CmdMode::handle(Event e) {
         if (save_quit && m_actions.save_quit)          m_actions.save_quit();
         if (save_as && !sp.empty() && m_actions.save_as) m_actions.save_as(sp);
         if (edit    && !ep.empty() && m_actions.edit)    m_actions.edit(ep);
+        if (is_goto && m_actions.goto_cell)            m_actions.goto_cell(ref);
         return true;
     }
     if (e == Event::Backspace) {

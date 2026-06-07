@@ -142,6 +142,7 @@ int main(int argc, char* argv[]) {
         },
         /* save_as   */ [&](const std::string& p) { session.write(session.resolve(p)); },
         /* edit      */ [&](const std::string& p) { session.load (session.resolve(p)); },
+        /* goto_cell */ [&](const std::string& r) { body.grid().goto_ref(r); },
     });
 
     // ── Main view: grid + status (chrome is drawn at the root) ───────────────
@@ -213,7 +214,8 @@ int main(int argc, char* argv[]) {
             return true;
         }
         if (tab == Main && session.is_xlsx_workflow()
-                        && body.grid().mode() == Grid::Mode::NORMAL) {
+                        && body.grid().mode() == Grid::Mode::NORMAL
+                        && !body.grid().searching()) {
             // Ctrl+PageDown / Ctrl+PageUp cycle sheets; Ctrl+T adds a new sheet.
             if (e == Event::Special("\x1B[6;5~")) {
                 int n = session.workbook().size();
@@ -232,6 +234,7 @@ int main(int argc, char* argv[]) {
         }
         if (cmd_mode.handle(e)) return true;
         if (tab == Main && body.grid().mode() == Grid::Mode::NORMAL
+                        && !body.grid().searching()
                         && cfg.key_is(e, cfg.keys.cmd_mode)) {
             cmd_mode.enter();
             return true;

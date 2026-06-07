@@ -13,6 +13,7 @@ public:
         std::function<void()> save_quit;  // :wq
         std::function<void(const std::string&)> save_as; // :w <path>
         std::function<void(const std::string&)> edit;    // :e <path>
+        std::function<void(const std::string&)> goto_cell; // :B12  (bare A1 ref)
     };
 
     explicit CmdMode(Actions actions);

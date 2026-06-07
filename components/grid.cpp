@@ -325,6 +325,8 @@ std::string Grid::cell_display(int r, int c) const {
 }
 
 std::string Grid::context_hint() const {
+    if (m_searching)
+        return "type to search  |  Enter: confirm  |  Esc: cancel  |  then n/N to step";
     if (m_pending_delete_row >= 0 || m_pending_delete_col >= 0)
         return "y: confirm delete  |  n/Esc: cancel";
     if (m_editing) {
@@ -338,7 +340,7 @@ std::string Grid::context_hint() const {
         return "hjkl/arrows: nav  |  +: insert col  |  -/x: delete col  |  i/a/F2: rename  |  ↓: into grid";
     if (m_cursor_col < 0)
         return "hjkl/arrows: nav  |  +: insert row  |  -/x: delete row  |  u/Ctrl+R: undo/redo  |  →: enter row";
-    return "hjkl: nav  |  i/a/F2: edit  |  o/O: new row  |  x: delete  |  y/p: yank/paste  |  Shift+arrows: select  |  gg/G: top/bottom  |  u/Ctrl+R: undo/redo  |  :: cmd";
+    return "hjkl: nav  |  i/a/F2: edit  |  o/O: new row  |  x: delete  |  y/p: yank/paste  |  Shift+arrows: select  |  gg/G: top/bottom  |  /n N: search  |  u/Ctrl+R: undo/redo  |  :: cmd";
 }
 
 std::vector<Grid::Suggestion> Grid::cell_suggestions() const {
@@ -476,6 +478,93 @@ void Grid::apply_history(std::vector<HistoryEntry>& from,
 void Grid::undo() { apply_history(m_undo_stack, m_redo_stack, /*use_after=*/false); }
 void Grid::redo() { apply_history(m_redo_stack, m_undo_stack, /*use_after=*/true ); }
 
+// ── Search & jump ───────────────────────────────────────────────────────────
+
+bool Grid::goto_ref(const std::string& a1) {
+    auto rc = parse_a1(a1);
+    if (!rc) return false;
+    const auto [r, c] = *rc;
+    if (r < 0 || r >= m_rows || c < 0 || c >= m_cols) return false;
+    commit_edit();
+    m_has_selection = false;
+    m_cursor_row = r;
+    m_cursor_col = c;
+    adjust_viewport();
+    return true;
+}
+
+void Grid::recompute_hits(const std::string& q) {
+    m_search_hits.clear();
+    if (q.empty()) return;
+    std::string needle = q;
+    for (char& ch : needle) ch = (char)std::tolower((unsigned char)ch);
+    for (int r = 0; r < m_rows; ++r)
+        for (int c = 0; c < m_cols; ++c) {
+            std::string hay = cell_display(r, c);
+            for (char& ch : hay) ch = (char)std::tolower((unsigned char)ch);
+            if (hay.find(needle) != std::string::npos)
+                m_search_hits.emplace_back(r, c);   // row-major → already sorted
+        }
+}
+
+void Grid::start_search() {
+    commit_edit();
+    m_has_selection     = false;
+    m_searching         = true;
+    m_search_buf.clear();
+    m_search_origin_row = std::max(0, m_cursor_row);
+    m_search_origin_col = std::max(0, m_cursor_col);
+}
+
+void Grid::update_search() {
+    m_search_query = m_search_buf;
+    recompute_hits(m_search_query);
+    if (m_search_hits.empty()) return;
+    // Jump to the first match at or after the anchor the search began on.
+    const std::pair<int, int> anchor{m_search_origin_row, m_search_origin_col};
+    auto it = std::lower_bound(m_search_hits.begin(), m_search_hits.end(), anchor);
+    if (it == m_search_hits.end()) it = m_search_hits.begin();
+    m_cursor_row = it->first;
+    m_cursor_col = it->second;
+    adjust_viewport();
+}
+
+void Grid::commit_search() {
+    m_searching    = false;
+    m_search_query = m_search_buf;
+    recompute_hits(m_search_query);   // keep highlights live for n/N
+}
+
+void Grid::cancel_search() {
+    m_searching = false;
+    m_search_buf.clear();
+    m_search_query.clear();
+    m_search_hits.clear();
+    m_cursor_row = m_search_origin_row;
+    m_cursor_col = m_search_origin_col;
+    adjust_viewport();
+}
+
+void Grid::search_step(int dir) {
+    recompute_hits(m_search_query);
+    if (m_search_hits.empty()) return;
+    const std::pair<int, int> cur{m_cursor_row, m_cursor_col};
+    std::pair<int, int> target;
+    if (dir > 0) {   // n: first match after the cursor, wrapping to the top
+        auto it = std::upper_bound(m_search_hits.begin(), m_search_hits.end(), cur);
+        if (it == m_search_hits.end()) it = m_search_hits.begin();
+        target = *it;
+    } else {         // N: last match before the cursor, wrapping to the bottom
+        auto it = std::lower_bound(m_search_hits.begin(), m_search_hits.end(), cur);
+        if (it == m_search_hits.begin()) it = m_search_hits.end();
+        target = *--it;
+    }
+    m_has_selection = false;
+    m_cursor_row = target.first;
+    m_cursor_col = target.second;
+    adjust_viewport();
+}
+
 void Grid::scroll_to_mouse_y(int my) {
     const int bar_h   = m_box.y_max - m_box.y_min + 1;
     const int ry      = my - m_box.y_min;
@@ -546,6 +635,16 @@ Element Grid::formula_bar() const {
                 text("   [Y] confirm   [N] cancel") | color(m_cfg.colors.dimmed),
                 filler(),
             })
+        );
+    }
+    if (m_searching) {
+        const std::string count = m_search_hits.empty()
+            ? "no matches"
+            : std::to_string(m_search_hits.size()) + (m_search_hits.size() == 1 ? " match" : " matches");
+        return window(
+            hbox({ text(" "), text("search") | bold | color(m_cfg.colors.header), text(" ") }),
+            hbox({ text(" /"), text(m_search_buf), text("_"), filler(),
+                   text(count + " ") | color(m_cfg.colors.dimmed) })
         );
     }
     std::string label = cursor_label();
@@ -623,6 +722,9 @@ Element Grid::render() const {
                 e = e | color(Color::Yellow);
             else if (in_selection(r, c))
                 e = e | bgcolor(m_cfg.colors.selection_bg) | color(m_cfg.colors.selection_fg);
+            else if (!m_search_hits.empty() &&
+                     std::binary_search(m_search_hits.begin(), m_search_hits.end(), std::make_pair(r, c)))
+                e = e | bgcolor(Color::Cyan) | color(Color::Black);
             else if (is_formula)
                 e = e | color(m_cfg.colors.formula_fg);
             row.push_back(e);
@@ -708,6 +810,7 @@ Component Grid::make_component() {
     return CatchEvent(renderer, [this](Event e) -> bool {
         if (m_pending_delete_row >= 0 || m_pending_delete_col >= 0)
             return handle_pending_delete(e);
+        if (m_searching && !e.is_mouse()) return handle_search(e);
         if (m_editing && !e.is_mouse()) return handle_cell_editing(e);
         if (handle_normal_nav(e)) return true;
         return handle_mouse(e);
@@ -788,6 +891,23 @@ bool Grid::handle_cell_editing(Event e) {
     return true;  // consume all other keyboard events while editing
 }
 
+bool Grid::handle_search(Event e) {
+    if (e == Event::Escape) { cancel_search(); return true; }
+    if (e == Event::Return) { commit_search(); return true; }
+    if (e == Event::Backspace) {
+        if (m_search_buf.empty()) { cancel_search(); return true; }
+        m_search_buf.pop_back();
+        update_search();
+        return true;
+    }
+    if (e.is_character()) {
+        m_search_buf += e.character();
+        update_search();
+        return true;
+    }
+    return true;  // swallow other keys while the search prompt is open
+}
+
 bool Grid::handle_normal_nav(Event e) {
     if (m_cursor_row >= 0 && m_cursor_col >= 0) {   // selection only over data cells
         if (e == ShiftArrowUp)    { extend_selection(-1,  0); return true; }
@@ -804,6 +924,9 @@ bool Grid::handle_normal_nav(Event e) {
 
     if (e == Event::Escape && m_insert_sticky) { m_insert_sticky = false; return true; }
     if (e == Event::Escape && m_has_selection)  { m_has_selection = false; return true; }
+    if (e == Event::Escape && !m_search_query.empty()) {  // clear match highlight
+        m_search_query.clear(); m_search_hits.clear(); return true;
+    }
     if (e == Event::ArrowUp || m_cfg.key_is(e, m_cfg.keys.nav_up)) {
         nav_move(-1, 0); return true;   // row 0 → header (-1); sticky auto-edits the name
     }
@@ -842,6 +965,11 @@ bool Grid::handle_normal_nav(Event e) {
     }
     if (m_cfg.key_is(e, m_cfg.keys.undo)) { undo(); return true; }
     if (e == Event::Special("\x12"))      { redo(); return true; }  // Ctrl+R
+
+    // `/` opens search; n/N step through matches (vim-style).
+    if (!m_insert_sticky && e == Event::Character('/')) { start_search();  return true; }
+    if (!m_insert_sticky && e == Event::Character('n')) { search_step( 1); return true; }
+    if (!m_insert_sticky && e == Event::Character('N')) { search_step(-1); return true; }
 
     // Single-key NORMAL-mode commands, only on a data cell (vim-style).
     if (!m_insert_sticky && m_cursor_row >= 0 && m_cursor_col >= 0 && e.is_character()) {

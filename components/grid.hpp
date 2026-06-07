@@ -2,6 +2,7 @@
 #include <functional>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include <ftxui/component/component.hpp>
@@ -42,6 +43,12 @@ public:
     void redo();
     bool can_undo() const noexcept;
     bool can_redo() const noexcept;
+
+    // Move the cursor to an A1 cell address (e.g. "B12"); false if out of range.
+    bool goto_ref(const std::string& a1);
+
+    // True while the `/` search prompt is capturing keys.
+    bool searching() const noexcept { return m_searching; }
 
     enum class Mode { NORMAL, INSERT };
     Mode        mode()         const noexcept;
@@ -103,6 +110,22 @@ private:
     int         m_edit_cursor    = 0;
     bool        m_edit_typed     = false;  // true once user has pressed a character key
 
+    // `/` incremental search. m_search_query is the active term that drives
+    // n/N stepping and match highlighting; m_search_hits is its row-major matches.
+    bool        m_searching      = false;
+    std::string m_search_buf;            // live text while the prompt is open
+    std::string m_search_query;          // committed/active term (empty = no highlight)
+    int         m_search_origin_row = 0; // cursor before search, restored on cancel
+    int         m_search_origin_col = 0;
+    std::vector<std::pair<int, int>> m_search_hits;
+
+    void start_search();
+    void update_search();        // recompute hits from m_search_buf, preview-jump
+    void commit_search();
+    void cancel_search();
+    void search_step(int dir);   // n (+1) / N (-1)
+    void recompute_hits(const std::string& q);
+
     void move(int dr, int dc);
     void move_home();
     void move_end();
@@ -130,6 +153,7 @@ private:
     // Event dispatch (called from CatchEvent in make_component)
     bool handle_pending_delete (ftxui::Event e);
     bool handle_cell_editing   (ftxui::Event e);
+    bool handle_search         (ftxui::Event e);
     bool handle_normal_nav     (ftxui::Event e);
     bool handle_mouse          (ftxui::Event e);
 

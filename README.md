@@ -32,7 +32,7 @@ Opening a CSV shouldn't mean waiting on a 300 MB Electron app to boot, or fighti
 - 💡 **Immediate feedback everywhere.** Formula suggestions appear the instant you land on a cell. Range statistics update live on every keypress as you extend a selection. You never wait for tuiX.
 - 🪶 **Featherweight.** No runtime dependencies, no Node, no browser engine, no background daemon. Just a binary and your file.
 - 🎨 **Theme-native.** tuiX paints itself from your terminal's ANSI palette, so it adopts your [Omarchy](https://omarchy.org) theme automatically — switch themes, and tuiX follows. (More below.)
-- 🧠 **vim muscle memory.** `h j k l`, `gg`, `G`, `0`, `$`, modes, `:w`, `:q` — if your fingers know vim, they already know tuiX.
+- 🧠 **vim muscle memory.** `h j k l`, `gg`, `G`, `0`, `$`, `/` search with `n`/`N`, modes, `:w`, `:q` — if your fingers know vim, they already know tuiX.
 
 If you live in the terminal, tuiX is the spreadsheet that finally feels like it belongs there.
 
@@ -42,6 +42,9 @@ If you live in the terminal, tuiX is the spreadsheet that finally feels like it 
 
 ### 📂 Open and move through data — instantly
 Point tuiX at a **CSV or XLSX file** and it's on screen **before you blink**. Glide around with `h j k l` or arrow keys, jump to the top/bottom with `gg` / `G`, snap to the first/last column with `0` / `$`, and page through big files with `PgUp` / `PgDn`. CSV delimiters (comma, semicolon, tab, pipe) are auto-detected — no configuration, no delay. XLSX files load the first worksheet automatically.
+
+### 🔎 Find & jump — vim-style search
+Press `/` to search and start typing — tuiX filters **incrementally**, jumping to the first match and **highlighting every hit** as you type, with a live match count in the search bar. `Enter` confirms; `n` / `N` step forward / backward through matches (wrapping around); `Esc` cancels and snaps you back to where you started. Search is case-insensitive and matches what you *see* — including evaluated formula results. Know exactly where you're going? Type `:B12` in command mode to **jump straight to that cell**.
 
 ### ✏️ Edit like you mean it — with zero friction
 Press `i` or `a` to start typing into a cell. The response is **immediate**: no input lag, no waiting for the cursor to appear. tuiX has a **sticky INSERT mode** — like a real spreadsheet, you can keep typing and arrowing from cell to cell without dropping back to navigation. `Enter` commits and moves down, `Tab` commits and moves right. `Esc` drops you back to NORMAL. Column **headers behave exactly like cells** — edit them the same way, with the same undo.
@@ -227,6 +230,8 @@ tuix path/to/file.xlsx      # open an Excel file
 | `0` `Home` / `$` `End` | Jump to first / last column |
 | `PgUp` / `PgDn` | Scroll one page |
 | `↑` from row 0 | Enter the column header |
+| `/` | Search — type to filter, `Enter` to confirm, `Esc` to cancel |
+| `n` / `N` | Jump to next / previous match |
 
 ### Edit
 
@@ -254,7 +259,7 @@ tuix path/to/file.xlsx      # open an Excel file
 | `=` | Start a formula (opens autocomplete) |
 | `↑`/`↓`, `Tab`/`Enter` | Browse / complete a formula |
 | `u` / `Ctrl+R` | Undo / redo |
-| `:` | Command mode — `:w`, `:w file`, `:wq`, `:q`, `:q!`, `:e file` |
+| `:` | Command mode — `:w`, `:w file`, `:wq`, `:q`, `:q!`, `:e file`, `:B12` (jump to cell) |
 | `F1` / `F12` | Help · live config editor |
 | `Ctrl+E` | Toggle exit confirmation |
 
