@@ -12,13 +12,11 @@
 #include "cmd_mode.hpp"
 #include "config/config.hpp"
 
-#include "exit_dialog.hpp"
-#include "save_confirm_dialog.hpp"
+#include "confirm_dialog.hpp"
 #include "path_input_dialog.hpp"
 #include "help_dialog.hpp"
 #include "config_dialog.hpp"
 #include "sheet_actions_dialog.hpp"
-#include "delete_sheet_confirm_dialog.hpp"
 
 #include <filesystem>
 
@@ -45,12 +43,16 @@ int main(int argc, char* argv[]) {
     auto go_main   = [&] { tab = 0; body_comp->TakeFocus(); };
 
     // ── Dialogs (tabs 1..6) ──────────────────────────────────────────────────
-    ExitDialog exit_dialog(cfg,
+    ConfirmDialog exit_dialog(cfg, 44,
+        [] { return text("  Are you sure you want to exit?  ") | bold | center; },
         [&] { screen.ExitLoopClosure()(); },
         [&] { go_main(); });
 
-    SaveConfirmDialog save_confirm(cfg,
-        [&] { return session.current_path(); },
+    ConfirmDialog save_confirm(cfg, 60,
+        [&] {
+            std::string fname = std::filesystem::path(session.current_path()).filename().string();
+            return hbox({ text("  Overwrite "), text(fname) | bold, text("?  ") }) | center;
+        },
         [&] { session.write(session.current_path()); go_main(); },
         [&] { go_main(); });
 
@@ -91,8 +93,16 @@ int main(int argc, char* argv[]) {
         [&] { tab = DeleteSheetConfirm; },
         [&] { go_main(); });
 
-    DeleteSheetConfirmDialog delete_sheet_confirm(cfg,
-        active_sheet_name,
+    ConfirmDialog delete_sheet_confirm(cfg, 56,
+        [&] {
+            return vbox({
+                hbox({ text("  Delete sheet "),
+                       text("'" + active_sheet_name() + "'") | bold,
+                       text("?  ") }) | center,
+                text("  This cannot be undone.  ")
+                    | color(cfg.colors.dimmed) | center,
+            });
+        },
         [&] { session.delete_active(); go_main(); },
         [&] { go_main(); });
 

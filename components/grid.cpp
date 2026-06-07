@@ -8,6 +8,7 @@
 #include <ftxui/screen/terminal.hpp>
 
 #include "formulas/evaluator.hpp"
+#include "col_label.hpp"
 #include "sheet.hpp"
 
 using namespace ftxui;
@@ -981,12 +982,6 @@ int Grid::compute_col_width(int c) const {
     for (int r = 0; r < m_rows; ++r)
         w = std::max(w, static_cast<int>(cell_display(r, c).size()));
     return std::max(w, ActionBox::k_width + 3);
-}
-
-std::string Grid::col_letter(int c) const {
-    std::string s;
-    do { s = char('A' + c % 26) + s; c = c / 26 - 1; } while (c >= 0);
-    return s;
 }
 
 std::string Grid::unique_col_name(const std::string& name, int skip_col) const {

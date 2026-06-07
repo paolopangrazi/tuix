@@ -1,37 +1,35 @@
-#include "delete_sheet_confirm_dialog.hpp"
+#include "confirm_dialog.hpp"
 #include "dialog_shell.hpp"
 
 #include "config/config.hpp"
 
 using namespace ftxui;
 
-DeleteSheetConfirmDialog::DeleteSheetConfirmDialog(const Config& cfg,
-                                                   std::function<std::string()> get_sheet_name,
-                                                   std::function<void()> on_yes,
-                                                   std::function<void()> on_close)
+ConfirmDialog::ConfirmDialog(const Config& cfg,
+                             int width,
+                             std::function<ftxui::Element()> body,
+                             std::function<void()> on_yes,
+                             std::function<void()> on_close)
     : m_cfg(cfg),
-      m_get_sheet_name(std::move(get_sheet_name)),
+      m_width(width),
+      m_body(std::move(body)),
       m_on_close(std::move(on_close)) {
     auto style = make_dialog_btn_style(m_cfg);
-    m_yes = Button("  Yes  ", std::move(on_yes),    style);
+    m_yes = Button("  Yes  ", std::move(on_yes),      style);
     m_no  = Button("  No   ", [this]{ m_on_close(); }, style);
     m_container = Container::Horizontal({ m_yes, m_no });
 }
 
-Component DeleteSheetConfirmDialog::component() {
+Component ConfirmDialog::component() {
     auto renderer = Renderer(m_container, [this] {
         auto inner = window(
             text(" Confirm ") | bold,
             vbox({
-                hbox({ text("  Delete sheet "),
-                       text("'" + m_get_sheet_name() + "'") | bold,
-                       text("?  ") }) | center,
-                text("  This cannot be undone.  ")
-                    | color(m_cfg.colors.dimmed) | center,
+                m_body(),
                 separatorLight(),
                 hbox({ filler(), m_yes->Render(), text("    "), m_no->Render(), filler() }),
             })
-        ) | size(WIDTH, LESS_THAN, 56) | center;
+        ) | size(WIDTH, LESS_THAN, m_width) | center;
         auto bottom = hbox({
             text("  "), text("Esc") | bold | color(m_cfg.colors.header),
             text("  cancel") | color(m_cfg.colors.dimmed), filler(),

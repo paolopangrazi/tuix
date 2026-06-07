@@ -144,7 +144,6 @@ private:
     int  vis_cols() const;
     void adjust_viewport();
     int         compute_col_width(int c) const;
-    std::string col_letter(int c) const;
     std::string unique_col_name(const std::string& name, int skip_col) const;
 
     // formula autocomplete

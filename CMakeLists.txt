@@ -72,13 +72,11 @@ add_executable(tuix
     components/tab_bar.cpp
     components/cmd_mode.cpp
     dialogs/dialog_shell.cpp
-    dialogs/exit_dialog.cpp
-    dialogs/save_confirm_dialog.cpp
+    dialogs/confirm_dialog.cpp
     dialogs/path_input_dialog.cpp
     dialogs/help_dialog.cpp
     dialogs/config_dialog.cpp
     dialogs/sheet_actions_dialog.cpp
-    dialogs/delete_sheet_confirm_dialog.cpp
     loader/csv_loader.cpp
     loader/xlsx_loader.cpp
     writer/csv_writer.cpp

@@ -1,6 +1,7 @@
 #include "session.hpp"
 
 #include "body.hpp"
+#include "col_label.hpp"
 #include "loader/csv_loader.hpp"
 #include "loader/xlsx_loader.hpp"
 #include "writer/csv_writer.hpp"
@@ -76,12 +77,8 @@ Sheet Session::new_empty_sheet(std::string name) const {
     constexpr int kRows = 50, kCols = 26;
     s.cells.assign(kRows, std::vector<Cell>(kCols));
     s.col_names.resize(kCols);
-    for (int c = 0; c < kCols; ++c) {
-        std::string letter;
-        int n = c;
-        while (true) { letter.insert(letter.begin(), 'A' + (n % 26)); if (n < 26) break; n = n / 26 - 1; }
-        s.col_names[c] = letter;
-    }
+    for (int c = 0; c < kCols; ++c)
+        s.col_names[c] = col_letter(c);
     s.col_widths.assign(kCols, 12);
     return s;
 }
