@@ -30,7 +30,8 @@ Navigation and editing follow vim conventions, and a built-in formula engine eva
 expressions on the fly.
 
 It is developed on and for [Omarchy](https://omarchy.org) ([see gallery](#theme-gallery))
-and works on any compatible Linux distribution. macOS and Windows builds are in progress.
+and works on any compatible Linux distribution. Prebuilt binaries are available for Linux
+and macOS; Windows is not yet supported.
 
 **Highlights**
 
@@ -198,9 +199,40 @@ tuiX on all 20 built-in Omarchy themes — the same app, your palette.
 
 ## Installation
 
-> **Platform support:** Linux is the primary target and is fully tested. macOS and Windows
-> support is in progress — the code is portable in principle but has not yet been built or
-> tested on those platforms.
+Prebuilt binaries are available for **Linux (x86_64)** and **macOS (Apple Silicon)**.
+Windows is not yet supported — on Windows or any other platform, build from source.
+
+### Download a release
+
+Get the latest archive from the [**Releases**](https://github.com/paolopangrazi/tuix/releases)
+page, or from the command line (set `VERSION` to the current release):
+
+```bash
+VERSION=v0.1.0
+
+# Linux (x86_64)
+curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-linux-x86_64.tar.gz
+tar -xzf tuix-$VERSION-linux-x86_64.tar.gz
+install -Dm755 tuix-$VERSION-linux-x86_64/bin/tuix ~/.local/bin/tuix
+
+# macOS (Apple Silicon)
+curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-macos-arm64.tar.gz
+tar -xzf tuix-$VERSION-macos-arm64.tar.gz
+install -Dm755 tuix-$VERSION-macos-arm64/bin/tuix ~/.local/bin/tuix
+```
+
+Make sure `~/.local/bin` is on your `PATH`. Each release also ships a `SHA256SUMS` file so
+you can verify the download:
+
+```bash
+curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/SHA256SUMS
+sha256sum --check --ignore-missing SHA256SUMS   # macOS: shasum -a 256 -c SHA256SUMS
+```
+
+> **macOS:** if Gatekeeper blocks the unsigned binary, clear the quarantine flag with
+> `xattr -d com.apple.quarantine ~/.local/bin/tuix`.
+
+### Build from source
 
 **Requirements:** CMake 3.14+, a C++17 compiler (GCC 8+ / Clang 7+), and Git. Every
 dependency — [FTXUI](https://github.com/ArthurSonzogni/FTXUI),
