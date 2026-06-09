@@ -14,6 +14,7 @@ public:
         std::function<void(const std::string&)> save_as; // :w <path>
         std::function<void(const std::string&)> edit;    // :e <path>
         std::function<void(const std::string&)> goto_cell; // :B12  (bare A1 ref)
+        std::function<void(const std::string&, const std::string&)> replace; // :s/old/new/
     };
 
     explicit CmdMode(Actions actions);

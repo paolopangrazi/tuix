@@ -336,6 +336,8 @@ std::string Grid::context_hint() const {
             return "↑↓: navigate  |  Tab/Enter: complete  |  type to filter";
         return "Enter: confirm & ↓  |  Tab: confirm & →  |  Arrows: confirm & move  |  Del: clear";
     }
+    if (!m_status_msg.empty())
+        return m_status_msg;
     if (m_cursor_row < 0)
         return "hjkl/arrows: nav  |  +: insert col  |  -/x: delete col  |  i/a/F2: rename  |  ↓: into grid";
     if (m_cursor_col < 0)
@@ -385,6 +387,7 @@ std::vector<Grid::Suggestion> Grid::range_suggestions() const {
 }
 
 void Grid::move(int dr, int dc) {
+    m_status_msg.clear();                                    // dismiss transient message
     int nr = std::clamp(m_cursor_row + dr, -1, m_rows - 1);  // row -1 = header
     int nc = std::clamp(m_cursor_col + dc, -1, m_cols - 1);  // col -1 = row index
     // There is no cell at the (header, row-index) corner; stay on the axis we came from.
@@ -491,6 +494,37 @@ bool Grid::goto_ref(const std::string& a1) {
     m_cursor_col = c;
     adjust_viewport();
     return true;
+}
+
+int Grid::replace_all(const std::string& find, const std::string& repl) {
+    if (find.empty()) return 0;
+    commit_edit();
+
+    int total = 0;   // occurrences replaced
+    int cells = 0;   // distinct cells touched
+    for (int r = 0; r < m_rows; ++r)
+        for (int c = 0; c < m_cols; ++c) {
+            const std::string before = m_cells[r][c].value();
+            std::string after = before;
+            int hits = 0;
+            for (size_t pos = after.find(find); pos != std::string::npos;
+                 pos = after.find(find, pos + repl.size())) {
+                after.replace(pos, find.size(), repl);
+                ++hits;
+            }
+            if (hits == 0) continue;
+            m_undo_stack.push_back({r, c, before, after});
+            m_cells[r][c].set_value(after);
+            total += hits;
+            ++cells;
+        }
+
+    if (total > 0) m_redo_stack.clear();
+    m_status_msg = total == 0
+        ? "no matches for \"" + find + "\""
+        : std::to_string(total) + (total == 1 ? " replacement" : " replacements")
+              + " in " + std::to_string(cells) + (cells == 1 ? " cell" : " cells");
+    return total;
 }
 
 void Grid::recompute_hits(const std::string& q) {

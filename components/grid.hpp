@@ -47,6 +47,11 @@ public:
     // Move the cursor to an A1 cell address (e.g. "B12"); false if out of range.
     bool goto_ref(const std::string& a1);
 
+    // Replace every occurrence of `find` with `repl` across all data cells
+    // (raw values, case-sensitive). Returns the number of replacements made and
+    // posts a transient status message. A no-op when `find` is empty.
+    int replace_all(const std::string& find, const std::string& repl);
+
     // True while the `/` search prompt is capturing keys.
     bool searching() const noexcept { return m_searching; }
 
@@ -113,6 +118,7 @@ private:
     // `/` incremental search. m_search_query is the active term that drives
     // n/N stepping and match highlighting; m_search_hits is its row-major matches.
     bool        m_searching      = false;
+    std::string m_status_msg;            // transient one-shot message (e.g. replace count)
     std::string m_search_buf;            // live text while the prompt is open
     std::string m_search_query;          // committed/active term (empty = no highlight)
     int         m_search_origin_row = 0; // cursor before search, restored on cancel

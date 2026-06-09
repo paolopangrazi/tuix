@@ -143,6 +143,9 @@ int main(int argc, char* argv[]) {
         /* save_as   */ [&](const std::string& p) { session.write(session.resolve(p)); },
         /* edit      */ [&](const std::string& p) { session.load (session.resolve(p)); },
         /* goto_cell */ [&](const std::string& r) { body.grid().goto_ref(r); },
+        /* replace   */ [&](const std::string& f, const std::string& r) {
+            body.grid().replace_all(f, r);
+        },
     });
 
     // ── Main view: grid + status (chrome is drawn at the root) ───────────────

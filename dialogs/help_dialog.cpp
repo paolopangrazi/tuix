@@ -73,6 +73,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
             krow(":w",                       "Save current file"),
             krow(":w filename",              "Save as (relative or absolute path)"),
             krow(":e filename",              "Open a CSV file"),
+            krow(":s/old/new/",              "Find & replace across all cells"),
             krow(":wq",                      "Save and quit"),
             krow(":q  /  :q!",               "Quit via command mode"),
             krow("Ctrl+E",                   "Toggle quit confirmation dialog"),

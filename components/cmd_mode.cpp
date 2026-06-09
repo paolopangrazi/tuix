@@ -1,8 +1,31 @@
 #include "cmd_mode.hpp"
 
+#include <cctype>
+#include <optional>
+#include <utility>
+
 #include "col_label.hpp"
 
 using namespace ftxui;
+
+// Parse `s/find/replace/` (any non-alphanumeric delimiter; trailing one optional).
+// Returns {find, replace} when the syntax matches and find is non-empty.
+static std::optional<std::pair<std::string, std::string>>
+parse_subst(const std::string& cmd) {
+    if (cmd.size() < 3 || cmd[0] != 's') return std::nullopt;
+    char delim = cmd[1];
+    if (std::isalnum(static_cast<unsigned char>(delim))) return std::nullopt;
+
+    size_t mid = cmd.find(delim, 2);
+    if (mid == std::string::npos) return std::nullopt;       // need a second delimiter
+    std::string find = cmd.substr(2, mid - 2);
+    if (find.empty()) return std::nullopt;
+
+    size_t end = cmd.find(delim, mid + 1);                   // optional trailing delimiter
+    std::string repl = (end == std::string::npos) ? cmd.substr(mid + 1)
+                                                  : cmd.substr(mid + 1, end - mid - 1);
+    return std::make_pair(find, repl);
+}
 
 CmdMode::CmdMode(Actions actions) : m_actions(std::move(actions)) {}
 
@@ -30,7 +53,9 @@ bool CmdMode::handle(Event e) {
         // A bare A1 address (":B12") jumps the cursor. parse_a1 rejects the
         // command words above (":w", ":wq", ":e file"), so there's no overlap.
         std::string ref = m_buf.substr(1);
-        bool is_goto    = parse_a1(ref).has_value();
+        auto subst      = parse_subst(ref);
+        // parse_a1 and parse_subst reject the command words above, so no overlap.
+        bool is_goto    = !subst && parse_a1(ref).has_value();
 
         m_active = false;
         m_buf.clear();
@@ -40,6 +65,7 @@ bool CmdMode::handle(Event e) {
         if (save_quit && m_actions.save_quit)          m_actions.save_quit();
         if (save_as && !sp.empty() && m_actions.save_as) m_actions.save_as(sp);
         if (edit    && !ep.empty() && m_actions.edit)    m_actions.edit(ep);
+        if (subst   && m_actions.replace)              m_actions.replace(subst->first, subst->second);
         if (is_goto && m_actions.goto_cell)            m_actions.goto_cell(ref);
         return true;
     }

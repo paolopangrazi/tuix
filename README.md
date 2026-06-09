@@ -50,6 +50,7 @@ and macOS; Windows is not yet supported.
 - Opens **CSV and XLSX** files. CSV delimiters (comma, semicolon, tab, pipe) are auto-detected; XLSX files load the first worksheet.
 - vim-style movement: `h j k l` or arrow keys, `gg` / `G` for first/last row, `0` / `$` for first/last column, and `PgUp` / `PgDn` to page.
 - **Incremental search** with `/` — matches are highlighted as you type, with a live match count; `n` / `N` step through results, and `Esc` restores your position.
+- **Find & replace** across the whole sheet with `:s/old/new/` — case-sensitive, undoable (`u`), with a replacement count reported in the status bar.
 - **Jump to any cell** by typing its address in command mode, e.g. `:B12`.
 
 ### Editing
@@ -308,7 +309,7 @@ tuix path/to/file.xlsx      # open an Excel file
 | `=` | Start a formula (opens autocomplete) |
 | `↑`/`↓`, `Tab`/`Enter` | Browse / complete a formula |
 | `u` / `Ctrl+R` | Undo / redo |
-| `:` | Command mode — `:w`, `:w file`, `:wq`, `:q`, `:q!`, `:e file`, `:B12` (jump to cell) |
+| `:` | Command mode — `:w`, `:w file`, `:wq`, `:q`, `:q!`, `:e file`, `:s/old/new/` (find & replace), `:B12` (jump to cell) |
 | `F1` / `F12` | Help · live config editor |
 | `Ctrl+E` | Toggle exit confirmation |
 
