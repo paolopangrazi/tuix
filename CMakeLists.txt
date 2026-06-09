@@ -50,12 +50,12 @@ set(OPENXLSX_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(deps/openxlsx)
 
 # ---------------------------------------------------------------------------
-# tuix
+# tuix_core — all application logic, minus main(). The executable is a thin
+# shell over this library so the same code can be linked into the test suite.
 # ---------------------------------------------------------------------------
 find_package(Threads REQUIRED)
 
-add_executable(tuix
-    main.cpp
+add_library(tuix_core STATIC
     config/config.cpp
     components/actionbox.cpp
     components/calc_cache.cpp
@@ -87,18 +87,35 @@ add_executable(tuix
     formulas/evaluator.cpp
 )
 
-target_include_directories(tuix PRIVATE
+# PUBLIC so consumers (the executable and the tests) inherit them.
+target_include_directories(tuix_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}            # for loader/csv_loader.hpp from within components/
-    ${CMAKE_CURRENT_SOURCE_DIR}/components # for body.hpp, grid.hpp, etc. from main.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/dialogs    # for dialog_shell.hpp etc. from main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components # for body.hpp, grid.hpp, etc.
+    ${CMAKE_CURRENT_SOURCE_DIR}/dialogs    # for dialog_shell.hpp etc.
     ${RAPIDCSV_INCLUDE_DIR}
 )
 
-target_link_libraries(tuix PRIVATE
+target_link_libraries(tuix_core PUBLIC
     ftxui::component
     tomlplusplus::tomlplusplus
     OpenXLSX::OpenXLSX
     Threads::Threads
 )
 
+# ---------------------------------------------------------------------------
+# tuix — the executable
+# ---------------------------------------------------------------------------
+add_executable(tuix main.cpp)
+target_link_libraries(tuix PRIVATE tuix_core)
+
 install(TARGETS tuix DESTINATION bin)
+
+# ---------------------------------------------------------------------------
+# Tests — opt-in (off by default to keep the standard build lean).
+#   cmake -B build -DTUIX_BUILD_TESTS=ON && cmake --build build && ctest --test-dir build
+# ---------------------------------------------------------------------------
+option(TUIX_BUILD_TESTS "Build the tuix test suite" OFF)
+if(TUIX_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
