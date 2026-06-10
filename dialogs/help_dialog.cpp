@@ -8,8 +8,8 @@ using namespace ftxui;
 HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
     : m_cfg(cfg), m_on_close(std::move(on_close)),
       m_tab_names{
-          "Navigation", "Editing", "Selection", "Col Header",
-          "Row Index", "History", "Formulas", "File", "App",
+          "Navigation", "Editing", "Selection", "Search", "Col Header",
+          "Row Index", "History", "Formulas", "Sheets", "File", "App",
       } {
     auto krow = [&](const char* keys, const char* desc) -> Element {
         return hbox({
@@ -44,6 +44,14 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
         Renderer([krow] { return vbox({
             krow("Shift+Arrows  (NORMAL)",   "Start / extend selection"),
             krow("Esc  (NORMAL)",            "Clear selection"),
+            krow("y",                        "Yank cell / selection"),
+            krow("p",                        "Paste yanked cell(s)"),
+        }); }),
+        Renderer([krow] { return vbox({
+            krow("/",                        "Start incremental search"),
+            krow("n  /  N",                  "Jump to next / previous match"),
+            krow("Enter  (search)",          "Confirm search, keep highlight"),
+            krow("Esc  (search)",            "Cancel search, restore cursor"),
         }); }),
         Renderer([krow] { return vbox({
             krow("i  /  a",                  "Rename column"),
@@ -65,6 +73,13 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
             krow("Tab / Enter  (popup)",     "Complete with selected formula"),
         }); }),
         Renderer([krow] { return vbox({
+            krow("Ctrl+PgDn / Ctrl+PgUp",    "Cycle to next / previous sheet"),
+            krow("Ctrl+T",                   "Add a new sheet"),
+            krow("Click tab",                "Switch to that sheet"),
+            krow("Click active tab",         "Rename / delete sheet"),
+            krow("Click  +",                 "Add a new sheet"),
+        }); }),
+        Renderer([krow] { return vbox({
             krow("Save  (titlebar)",         "Save current file (prompts on overwrite)"),
             krow("Save As  (titlebar)",      "Choose a path; prompts on overwrite"),
             krow("Open  (titlebar)",         "Open a CSV file"),
@@ -73,6 +88,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
             krow(":w",                       "Save current file"),
             krow(":w filename",              "Save as (relative or absolute path)"),
             krow(":e filename",              "Open a CSV file"),
+            krow(":B12  (bare A1 ref)",      "Jump to that cell"),
             krow(":s/old/new/",              "Find & replace across all cells"),
             krow(":wq",                      "Save and quit"),
             krow(":q  /  :q!",               "Quit via command mode"),

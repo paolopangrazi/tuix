@@ -38,6 +38,7 @@ and macOS; Windows is not yet supported.
 - **Native and lightweight** — a single binary with a sub-second cold start and no runtime dependencies.
 - **vim-style editing** — `h j k l`, `gg`, `G`, `0`, `$`, `/` search, modal editing, and `:` commands.
 - **Formula engine** — 18 functions, cell references, and ranges, evaluated live.
+- **Multi-sheet** — XLSX workbooks open with a tab per worksheet; cycle, add, rename, and delete them.
 - **Live feedback** — per-cell formula suggestions and range statistics update as you work.
 - **Theme-aware** — colors map to your terminal's ANSI palette, so tuiX adopts your theme automatically.
 
@@ -47,7 +48,7 @@ and macOS; Windows is not yet supported.
 
 ### Files and navigation
 
-- Opens **CSV and XLSX** files. CSV delimiters (comma, semicolon, tab, pipe) are auto-detected; XLSX files load the first worksheet.
+- Opens **CSV and XLSX** files. CSV delimiters (comma, semicolon, tab, pipe) are auto-detected; XLSX files load **every worksheet** into a row of tabs.
 - vim-style movement: `h j k l` or arrow keys, `gg` / `G` for first/last row, `0` / `$` for first/last column, and `PgUp` / `PgDn` to page.
 - **Incremental search** with `/` — matches are highlighted as you type, with a live match count; `n` / `N` step through results, and `Esc` restores your position.
 - **Find & replace** across the whole sheet with `:s/old/new/` — case-sensitive, undoable (`u`), with a replacement count reported in the status bar.
@@ -60,6 +61,11 @@ and macOS; Windows is not yet supported.
 - Insert or delete **rows and columns** with `+` / `-` (in the row gutter or column header).
 - Select a range with `Shift`+arrows, **yank** with `y`, and **paste** with `p`.
 - A single undo/redo stack covers both cell edits and column renames (`u` / `Ctrl+R`).
+
+### Sheets
+
+- XLSX workbooks open with **one tab per worksheet**. Cycle them with `Ctrl+PgDn` / `Ctrl+PgUp`, or click a tab to jump straight to it.
+- Add a sheet with `Ctrl+T` (or the `+` button on the tab bar). Click the **active** tab to rename or delete it.
 
 ### Formulas
 
@@ -301,6 +307,14 @@ tuix path/to/file.xlsx      # open an Excel file
 | `Shift`+arrows | Select a range |
 | `y` / `p` | Yank / paste |
 | `+` / `-` | Insert / delete row (gutter) or column (header) |
+
+### Sheets (XLSX)
+
+| Key | Action |
+|---|---|
+| `Ctrl+PgDn` / `Ctrl+PgUp` | Cycle to next / previous sheet |
+| `Ctrl+T` | Add a new sheet |
+| Click tab · click active tab | Switch · rename / delete |
 
 ### Formulas, history & app
 
