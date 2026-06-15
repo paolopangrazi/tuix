@@ -883,6 +883,7 @@ bool Grid::handle_cell_editing(Event e) {
                 const std::string pfx = ac_prefix(m_edit_buf);
                 m_edit_buf = m_edit_buf.substr(0, m_edit_buf.size() - pfx.size())
                              + k_formulas[matches[idx]].name + "(";
+                m_edit_cursor = (int)m_edit_buf.size();
                 m_ac_sel = 0;
                 return true;
             }
