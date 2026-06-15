@@ -59,6 +59,23 @@ public:
     Mode        mode()         const noexcept;
     std::string context_hint() const;
 
+    // Live summary of the column under the cursor (for the column-stats strip).
+    // `valid` is false when the cursor is not on a data column (header/gutter).
+    struct ColumnStats {
+        bool        valid   = false;
+        std::string name;
+        int         total   = 0;   // data rows in the column
+        int         nonnull = 0;   // non-empty cells
+        int         nulls   = 0;   // empty cells
+        int         numeric = 0;   // cells that coerce to a number
+        double      sum     = 0.0;
+        double      mean    = 0.0;
+        double      median  = 0.0;
+        double      min     = 0.0;
+        double      max     = 0.0;
+    };
+    ColumnStats column_stats() const;
+
     // Pre-computed formula values applicable to the current cell (empty = hide).
     struct Suggestion { std::string name, value; };
     std::vector<Suggestion> cell_suggestions()  const;

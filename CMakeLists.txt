@@ -67,6 +67,7 @@ add_library(tuix_core STATIC
     components/statusbar.cpp
     components/status_area.cpp
     components/suggestion_bar.cpp
+    components/column_stats.cpp
     components/session.cpp
     components/workbook.cpp
     components/tab_bar.cpp

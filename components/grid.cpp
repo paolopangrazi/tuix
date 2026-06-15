@@ -1,6 +1,7 @@
 #include "grid.hpp"
 
 #include <algorithm>
+#include <numeric>
 #include <set>
 
 #include <ftxui/component/event.hpp>
@@ -384,6 +385,42 @@ std::vector<Grid::Suggestion> Grid::range_suggestions() const {
     add("MAX",    "=MAX("     + range + ")");
 
     return out;
+}
+
+Grid::ColumnStats Grid::column_stats() const {
+    ColumnStats st;
+    // Only summarize while the cursor sits on a column header (row -1).
+    if (m_cursor_row >= 0) return st;
+    if (m_cursor_col < 0 || m_cursor_col >= m_cols) return st;  // gutter — nothing to summarize
+    const int c = m_cursor_col;
+    st.valid = true;
+    st.name  = m_col_names[c];
+    st.total = m_rows;
+
+    std::vector<double> nums;
+    nums.reserve(m_rows);
+    for (int r = 0; r < m_rows; ++r) {
+        Value v = cell_value(r, c);
+        if (v.is_empty()) { ++st.nulls; continue; }
+        ++st.nonnull;
+        double d;
+        if (v.to_number(d)) {
+            ++st.numeric;
+            nums.push_back(d);
+        }
+    }
+
+    if (!nums.empty()) {
+        st.sum = std::accumulate(nums.begin(), nums.end(), 0.0);
+        st.mean = st.sum / static_cast<double>(nums.size());
+        st.min = *std::min_element(nums.begin(), nums.end());
+        st.max = *std::max_element(nums.begin(), nums.end());
+        std::sort(nums.begin(), nums.end());
+        const size_t n = nums.size();
+        st.median = (n % 2) ? nums[n / 2]
+                            : (nums[n / 2 - 1] + nums[n / 2]) / 2.0;
+    }
+    return st;
 }
 
 void Grid::move(int dr, int dc) {

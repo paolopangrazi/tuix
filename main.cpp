@@ -7,6 +7,7 @@
 #include "session.hpp"
 #include "status_area.hpp"
 #include "suggestion_bar.hpp"
+#include "column_stats.hpp"
 #include "file_bar.hpp"
 #include "tab_bar.hpp"
 #include "cmd_mode.hpp"
@@ -165,6 +166,11 @@ int main(int argc, char* argv[]) {
             if (!sugg.empty()) {
                 rows.push_back(separatorLight());
                 rows.push_back(render_suggestion_bar(cfg, sugg));
+            }
+            auto col_stats = body.grid().column_stats();
+            if (col_stats.valid) {
+                rows.push_back(separatorLight());
+                rows.push_back(render_column_stats(cfg, col_stats));
             }
             if (!session.file_info().empty()) {
                 rows.push_back(separatorLight());
