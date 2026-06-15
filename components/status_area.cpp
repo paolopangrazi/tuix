@@ -8,7 +8,9 @@ Element render_status_area(const Config& cfg,
                            bool cmd_mode,
                            const std::string& cmd_buf,
                            Grid::Mode mode,
-                           const std::string& hint) {
+                           const std::string& hint,
+                           int rows,
+                           int cols) {
     if (cmd_mode) {
         return vbox({
             hbox({ text(" "), text(cmd_buf) | bold, text("_") | bold, filler() }),
@@ -56,6 +58,10 @@ Element render_status_area(const Config& cfg,
                text(": Help    ") | color(cfg.colors.dimmed) }),
         hbox({ text("F12") | bold | color(cfg.colors.header),
                text(": Config") | color(cfg.colors.dimmed) }),
+        hbox({ text("    Rows: ") | color(cfg.colors.dimmed),
+               text(std::to_string(rows)) | bold | color(cfg.colors.header),
+               text("  Columns: ") | color(cfg.colors.dimmed),
+               text(std::to_string(cols)) | bold | color(cfg.colors.header) }),
     }, flex_left));
 
     return vbox(std::move(lines));

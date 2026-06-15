@@ -172,7 +172,8 @@ int main(int argc, char* argv[]) {
             }
             rows.push_back(separatorLight());
             rows.push_back(render_status_area(cfg, cmd_mode.is_active(), cmd_mode.buffer(),
-                                              body.grid().mode(), body.grid().context_hint()));
+                                              body.grid().mode(), body.grid().context_hint(),
+                                              body.grid().rows(), body.grid().cols()));
             return vbox(std::move(rows));
         });
 
