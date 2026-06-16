@@ -37,7 +37,7 @@ and macOS; Windows is not yet supported.
 
 - **Native and lightweight** — a single binary with a sub-second cold start and no runtime dependencies.
 - **vim-style editing** — `h j k l`, `gg`, `G`, `0`, `$`, `/` search, modal editing, and `:` commands.
-- **Formula engine** — 18 functions, cell references, and ranges, evaluated live.
+- **Formula engine** — 26 functions, cell references, and ranges, evaluated live.
 - **Multi-sheet** — XLSX workbooks open with a tab per worksheet; cycle, add, rename, and delete them.
 - **Live feedback** — per-cell formula suggestions and range statistics update as you work.
 - **Theme-aware** — colors map to your terminal's ANSI palette, so tuiX adopts your theme automatically.
@@ -70,17 +70,53 @@ and macOS; Windows is not yet supported.
 ### Formulas
 
 Cells beginning with `=` are evaluated through a lexer → parser → evaluator pipeline that
-supports cell references, ranges, and 18 functions:
+supports cell references, ranges, and 26 functions:
 
 ```
-=A1 + B2 * 3                 arithmetic & precedence
-=SUM(A1:A10)                 ranges
-=IF(C2 > 100, "hi", "lo")    conditionals
-=IFERROR(A1 / B1, 0)         error handling
-=ROUND(AVERAGE(B1:B5), 2)    nesting
+=A1 + B2 * 3                     arithmetic & precedence
+=SUM(A1:A10)                     ranges
+=IF(C2 > 100, "hi", "lo")        conditionals
+=IFERROR(A1 / B1, 0)             error handling
+=SUMIF(D1:D9, ">100", C1:C9)     conditional aggregates
+=VLOOKUP("banana", A1:C9, 2)     lookups
+=INDEX(B1:B9, MATCH(99, A1:A9))  index / match
+=ROUND(AVERAGE(B1:B5), 2)        nesting
 ```
 
-> **Functions:** `ABS` · `AVERAGE` · `CONCATENATE` · `COUNT` · `COUNTA` · `IF` · `IFERROR` · `INT` · `LEN` · `LOWER` · `MAX` · `MIN` · `MOD` · `ROUND` · `SQRT` · `SUM` · `TRIM` · `UPPER`
+#### Supported functions
+
+| Category | Function | Signature | Description |
+|---|---|---|---|
+| **Math** | `ABS` | `ABS(number)` | Absolute value (removes sign) |
+| | `INT` | `INT(number)` | Truncate to integer toward zero |
+| | `MOD` | `MOD(number, divisor)` | Remainder after division |
+| | `ROUND` | `ROUND(number, digits)` | Round to given decimal places |
+| | `SQRT` | `SQRT(number)` | Square root |
+| **Aggregate** | `SUM` | `SUM(range)` | Sum all numeric values in range |
+| | `AVERAGE` | `AVERAGE(range)` | Arithmetic mean of numeric cells |
+| | `COUNT` | `COUNT(range)` | Count cells that contain numbers |
+| | `COUNTA` | `COUNTA(range)` | Count non-empty cells |
+| | `MIN` | `MIN(range)` | Smallest numeric value in range |
+| | `MAX` | `MAX(range)` | Largest numeric value in range |
+| **Conditional aggregate** | `COUNTIF` | `COUNTIF(range, criterion)` | Count cells meeting a criterion |
+| | `SUMIF` | `SUMIF(range, criterion, [sum_range])` | Sum cells meeting a criterion |
+| | `AVERAGEIF` | `AVERAGEIF(range, criterion, [avg_range])` | Mean of cells meeting a criterion |
+| **Logical** | `IF` | `IF(cond, true, false)` | Return one of two values based on a test |
+| | `IFS` | `IFS(cond1, val1, …)` | First value whose condition is true |
+| | `IFERROR` | `IFERROR(expr, fallback)` | Return fallback if expr errors |
+| | `IFNA` | `IFNA(expr, fallback)` | Return fallback if expr is `#N/A` |
+| **Lookup** | `VLOOKUP` | `VLOOKUP(key, range, col, [exact])` | Look up key in range's first column |
+| | `MATCH` | `MATCH(key, range, [type])` | Position of key within a 1-D range |
+| | `INDEX` | `INDEX(range, row, [col])` | Cell at a position within a range |
+| **Text** | `CONCATENATE` | `CONCATENATE(text1, text2, …)` | Join two or more text strings |
+| | `LEN` | `LEN(text)` | Number of characters in text |
+| | `UPPER` | `UPPER(text)` | Convert text to upper case |
+| | `LOWER` | `LOWER(text)` | Convert text to lower case |
+| | `TRIM` | `TRIM(text)` | Remove leading/trailing whitespace |
+
+Criteria for `COUNTIF` / `SUMIF` / `AVERAGEIF` accept a comparison operator
+(`">10"`, `"<=5"`, `"<>x"`) or a plain value for equality; text matching is
+case-insensitive.
 
 Typing `=` followed by a function name opens an **autocomplete popup** with signatures and
 descriptions — `↑` / `↓` to browse, `Tab` / `Enter` to complete. Circular references are

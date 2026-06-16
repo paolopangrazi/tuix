@@ -14,6 +14,7 @@ include(${doctest_SOURCE_DIR}/scripts/cmake/doctest.cmake)
 add_executable(tuix_tests
     doctest_main.cpp
     unit/evaluator_test.cpp
+    unit/lookup_functions_test.cpp
 )
 
 target_link_libraries(tuix_tests PRIVATE tuix_core doctest::doctest)
