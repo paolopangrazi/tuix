@@ -96,6 +96,10 @@ bool Session::is_xlsx_workflow() const {
 }
 
 void Session::load(const std::string& path) {
+    if (!std::filesystem::exists(path)) {
+        m_body.grid().set_status("Cannot open: no such file: " + path);
+        return;
+    }
     try {
         Workbook fresh;
         char     delim = m_delim;
@@ -119,7 +123,9 @@ void Session::load(const std::string& path) {
         m_body.grid().load_from(m_workbook.active());
         m_path = path;
         refresh_info();
-    } catch (const std::exception&) {}
+    } catch (const std::exception& e) {
+        m_body.grid().set_status("Failed to open " + path + ": " + e.what());
+    }
 }
 
 void Session::write(const std::string& path) {
@@ -146,7 +152,9 @@ void Session::write(const std::string& path) {
         }
         m_path = path;
         refresh_info();
-    } catch (const std::exception&) {}
+    } catch (const std::exception& e) {
+        m_body.grid().set_status("Failed to save " + path + ": " + e.what());
+    }
 }
 
 void Session::switch_to(int i) {

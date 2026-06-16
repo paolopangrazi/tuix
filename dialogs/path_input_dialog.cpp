@@ -17,6 +17,9 @@ PathInputDialog::PathInputDialog(const Config& cfg,
       m_on_submit(std::move(on_submit)),
       m_on_close(std::move(on_close)) {
     InputOption opt;
+    opt.multiline = false;   // single-line path entry; Enter submits. FTXUI's
+                             // multiline default would otherwise append a '\n'
+                             // to the buffer before on_enter, corrupting the path.
     opt.on_enter = [this] {
         if (!m_buf.empty()) m_on_submit(m_buf);
         m_on_close();

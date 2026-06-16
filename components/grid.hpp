@@ -59,6 +59,9 @@ public:
     Mode        mode()         const noexcept;
     std::string context_hint() const;
 
+    // Post a transient one-shot message (e.g. an I/O error). Cleared on next move.
+    void set_status(std::string msg) { m_status_msg = std::move(msg); }
+
     // Live summary of the column under the cursor (for the column-stats strip).
     // `valid` is false when the cursor is not on a data column (header/gutter).
     struct ColumnStats {
