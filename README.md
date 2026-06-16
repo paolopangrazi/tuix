@@ -352,6 +352,16 @@ tuix path/to/file.xlsx      # open an Excel file
 | `Ctrl+T` | Add a new sheet |
 | Click tab · click active tab | Switch · rename / delete |
 
+### Mouse
+
+| Action | Result |
+|---|---|
+| Click cell | Move cursor to that cell |
+| Click column header | Select that column header |
+| Wheel up / down | Scroll three rows |
+| Click / drag scrollbar | Scroll to that position |
+| Click `+` / `-` | Insert / delete row or column |
+
 ### Formulas, history & app
 
 | Key | Action |

@@ -9,7 +9,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
     : m_cfg(cfg), m_on_close(std::move(on_close)),
       m_tab_names{
           "Navigation", "Editing", "Selection", "Search", "Col Header",
-          "Row Index", "History", "Formulas", "Sheets", "File", "App",
+          "Row Header", "History", "Formulas", "Sheets", "Mouse", "File", "App",
       } {
     auto krow = [&](const char* keys, const char* desc) -> Element {
         return hbox({
@@ -61,7 +61,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
         }); }),
         Renderer([krow] { return vbox({
             krow("+",                        "Insert row below"),
-            krow("-  /  x",                  "Delete row"),
+            krow("-  /  x  /  Backspace",    "Delete row"),
         }); }),
         Renderer([krow] { return vbox({
             krow("u",                        "Undo last change"),
@@ -78,6 +78,13 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
             krow("Click tab",                "Switch to that sheet"),
             krow("Click active tab",         "Rename / delete sheet"),
             krow("Click  +",                 "Add a new sheet"),
+        }); }),
+        Renderer([krow] { return vbox({
+            krow("Click cell",               "Move cursor to that cell"),
+            krow("Click column header",      "Select that column header"),
+            krow("Wheel up / down",          "Scroll three rows"),
+            krow("Click / drag scrollbar",   "Scroll to that position"),
+            krow("Click  +  /  -",           "Insert / delete row or column"),
         }); }),
         Renderer([krow] { return vbox({
             krow("Save  (titlebar)",         "Save current file (prompts on overwrite)"),
