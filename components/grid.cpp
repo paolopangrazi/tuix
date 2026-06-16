@@ -1,8 +1,10 @@
 #include "grid.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <numeric>
 #include <set>
+#include <tuple>
 
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
@@ -166,6 +168,7 @@ void Grid::load_from(const Sheet& s) {
     m_edit_orig.clear();
     m_edit_cursor        = 0;
 
+    m_sheet_name = s.name;
     m_cells      = s.cells;
     m_col_names  = s.col_names;
     m_col_widths = s.col_widths;
@@ -307,23 +310,78 @@ std::string Grid::cursor_label() const {
     return m_col_names[m_cursor_col] + std::to_string(m_cursor_row + 1);
 }
 
-static thread_local std::set<std::pair<int,int>> s_eval_guard;
+namespace {
 
-Value Grid::cell_value(int row, int col) const {
-    if (row < 0 || row >= m_rows || col < 0 || col >= m_cols)
-        return Value::error(FormulaError::REF);
-    const std::string& raw = m_cells[row][col].value();
+// Recursion guard keyed by (sheet, row, col) so cycles are caught both within
+// a sheet and across sheets (Sheet1!A1 → Sheet2!A1 → Sheet1!A1).
+using EvalKey = std::tuple<std::string, int, int>;
+thread_local std::set<EvalKey> s_eval_guard;
+
+// Interpret a raw cell string: evaluate formulas through `ctx`, otherwise
+// coerce to a number or fall back to text. `sheet` identifies the owning sheet
+// for cycle detection.
+Value eval_raw(const std::string& raw, const std::string& sheet,
+               int row, int col, const EvalContext& ctx) {
     if (raw.empty()) return Value::empty();
-    auto key = std::make_pair(row, col);
+    EvalKey key{sheet, row, col};
     if (s_eval_guard.count(key)) return Value::error(FormulaError::REF); // circular
     if (raw[0] == '=') {
         s_eval_guard.insert(key);
-        Value result = Evaluator::evaluate_formula(raw, *this);
+        Value result = Evaluator::evaluate_formula(raw, ctx);
         s_eval_guard.erase(key);
         return result;
     }
     try { return Value::number(std::stod(raw)); } catch (...) {}
     return Value::string(raw);
+}
+
+bool iequals(const std::string& a, const std::string& b) {
+    if (a.size() != b.size()) return false;
+    for (size_t i = 0; i < a.size(); ++i)
+        if (std::tolower((unsigned char)a[i]) != std::tolower((unsigned char)b[i])) return false;
+    return true;
+}
+
+// Read-only EvalContext over an inactive sheet's snapshot. Same-sheet refs
+// resolve against the snapshot; qualified refs funnel back through the Grid so
+// the active sheet stays authoritative and one cycle guard covers everything.
+class SheetView : public EvalContext {
+public:
+    SheetView(const Sheet& s, const Grid& grid) : m_sheet(s), m_grid(grid) {}
+    int rows() const override { return static_cast<int>(m_sheet.cells.size()); }
+    int cols() const override { return rows() ? static_cast<int>(m_sheet.cells[0].size()) : 0; }
+    Value cell_value(int r, int c) const override {
+        if (r < 0 || r >= rows() || c < 0 || c >= cols())
+            return Value::error(FormulaError::REF);
+        return eval_raw(m_sheet.cells[r][c].value(), m_sheet.name, r, c, *this);
+    }
+    Value cell_value_in(const std::string& sheet, int r, int c) const override {
+        return m_grid.cell_value_in(sheet, r, c);
+    }
+private:
+    const Sheet& m_sheet;
+    const Grid&  m_grid;
+};
+
+}  // namespace
+
+Value Grid::cell_value(int row, int col) const {
+    if (row < 0 || row >= m_rows || col < 0 || col >= m_cols)
+        return Value::error(FormulaError::REF);
+    return eval_raw(m_cells[row][col].value(), m_sheet_name, row, col, *this);
+}
+
+Value Grid::cell_value_in(const std::string& sheet, int row, int col) const {
+    // The live grid holds the authoritative copy of the active sheet.
+    if (iequals(sheet, m_sheet_name))
+        return cell_value(row, col);
+    const Sheet* s = m_sheet_lookup ? m_sheet_lookup(sheet) : nullptr;
+    if (!s) return Value::error(FormulaError::REF);
+    return SheetView(*s, *this).cell_value(row, col);
+}
+
+void Grid::set_sheet_lookup(std::function<const Sheet*(const std::string&)> fn) {
+    m_sheet_lookup = std::move(fn);
 }
 
 std::string Grid::cell_display(int r, int c) const {

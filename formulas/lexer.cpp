@@ -66,6 +66,36 @@ static int col_letters_to_index(const std::string& s) {
 }
 
 Token Lexer::read_ident_or_ref() {
+    // Optional sheet qualifier: Sheet2!A1  or  'My Sheet'!A1
+    std::string sheet;
+    bool have_sheet = false;
+    if (peek() == '\'') {
+        size_t save = m_pos;
+        advance();  // opening quote
+        std::string name;
+        bool closed = false;
+        while (m_pos < m_input.size()) {
+            char c = advance();
+            if (c == '\'') {
+                if (peek() == '\'') { name += '\''; advance(); }  // '' → literal '
+                else { closed = true; break; }
+            } else {
+                name += c;
+            }
+        }
+        if (closed && peek() == '!') { advance(); sheet = name; have_sheet = true; }
+        else { m_pos = save; }  // not a sheet ref — let normal handling error on '
+    } else if (std::isalpha((unsigned char)peek()) || peek() == '_') {
+        size_t save = m_pos;
+        std::string name;
+        while (m_pos < m_input.size() &&
+               (std::isalnum((unsigned char)m_input[m_pos]) ||
+                m_input[m_pos] == '_' || m_input[m_pos] == '.'))
+            name += m_input[m_pos++];
+        if (peek() == '!') { advance(); sheet = name; have_sheet = true; }
+        else { m_pos = save; }  // backtrack — ordinary identifier / cell ref
+    }
+
     bool abs_col = false;
     if (peek() == '$') { abs_col = true; advance(); }
 
@@ -94,11 +124,15 @@ Token Lexer::read_ident_or_ref() {
         t.coord.row     = std::stoi(row_str) - 1;
         t.coord.abs_col = abs_col;
         t.coord.abs_row = abs_row;
+        t.coord.sheet   = sheet;
         return t;
     }
 
     // Not a cell ref — backtrack the $ we may have consumed
     m_pos = saved;
+
+    // A sheet qualifier must be followed by a cell reference.
+    if (have_sheet) { Token t; t.type = TokenType::ERROR; t.text = sheet + "!"; return t; }
 
     std::string upper = letters;
     for (char& c : upper) c = (char)std::toupper((unsigned char)c);
@@ -128,7 +162,7 @@ std::vector<Token> Lexer::tokenize() {
             tokens.push_back(read_number());
         } else if (c == '"') {
             tokens.push_back(read_string());
-        } else if (c == '$' || std::isalpha((unsigned char)c)) {
+        } else if (c == '$' || c == '\'' || std::isalpha((unsigned char)c)) {
             tokens.push_back(read_ident_or_ref());
         } else {
             advance();

@@ -15,6 +15,8 @@ add_executable(tuix_tests
     doctest_main.cpp
     unit/evaluator_test.cpp
     unit/lookup_functions_test.cpp
+    unit/cross_sheet_test.cpp
+    integration/cross_sheet_grid_test.cpp
 )
 
 target_link_libraries(tuix_tests PRIVATE tuix_core doctest::doctest)

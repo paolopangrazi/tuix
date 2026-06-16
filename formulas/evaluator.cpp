@@ -15,9 +15,11 @@ void Evaluator::collect(const Expr& expr, const EvalContext& ctx, std::vector<Va
         const auto& r = static_cast<const RangeExpr&>(expr);
         int r0 = std::min(r.from.row, r.to.row), r1 = std::max(r.from.row, r.to.row);
         int c0 = std::min(r.from.col, r.to.col), c1 = std::max(r.from.col, r.to.col);
+        const std::string& sheet = r.from.sheet;
         for (int row = r0; row <= r1; ++row)
             for (int col = c0; col <= c1; ++col)
-                out.push_back(ctx.cell_value(row, col));
+                out.push_back(sheet.empty() ? ctx.cell_value(row, col)
+                                            : ctx.cell_value_in(sheet, row, col));
     } else {
         out.push_back(eval(expr, ctx));
     }
@@ -506,6 +508,8 @@ Value Evaluator::eval(const Expr& expr, const EvalContext& ctx) const {
 
         case Expr::Kind::CELL_REF: {
             const auto& e = static_cast<const CellRefExpr&>(expr);
+            if (!e.sheet.empty())
+                return ctx.cell_value_in(e.sheet, e.row, e.col);
             if (e.row < 0 || e.row >= ctx.rows() || e.col < 0 || e.col >= ctx.cols())
                 return Value::error(FormulaError::REF);
             return ctx.cell_value(e.row, e.col);

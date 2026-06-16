@@ -113,6 +113,7 @@ std::unique_ptr<Expr> Parser::parse_primary() {
         ref->col     = t.coord.col;
         ref->abs_row = t.coord.abs_row;
         ref->abs_col = t.coord.abs_col;
+        ref->sheet   = t.coord.sheet;
         if (peek().type == TokenType::COLON) {
             consume();
             Token t2 = expect(TokenType::CELL_REF);
@@ -122,6 +123,8 @@ std::unique_ptr<Expr> Parser::parse_primary() {
             range->to.col     = t2.coord.col;
             range->to.abs_row = t2.coord.abs_row;
             range->to.abs_col = t2.coord.abs_col;
+            // A qualifier on the start (Sheet2!A1:B3) covers the whole range.
+            range->to.sheet   = t2.coord.sheet.empty() ? ref->sheet : t2.coord.sheet;
             return range;
         }
         return ref;

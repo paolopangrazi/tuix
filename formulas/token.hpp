@@ -13,8 +13,9 @@ enum class TokenType {
 };
 
 struct CellCoord {
-    int  col = 0, row = 0;
-    bool abs_col = false, abs_row = false;
+    int         col = 0, row = 0;
+    bool        abs_col = false, abs_row = false;
+    std::string sheet;   // empty = current sheet (e.g. "Sheet2" in Sheet2!A1)
 };
 
 struct Token {

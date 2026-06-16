@@ -26,8 +26,9 @@ struct BoolExpr : Expr {
 };
 
 struct CellRefExpr : Expr {
-    int  row = 0, col = 0;
-    bool abs_row = false, abs_col = false;
+    int         row = 0, col = 0;
+    bool        abs_row = false, abs_col = false;
+    std::string sheet;   // empty = current sheet
     CellRefExpr() : Expr(Kind::CELL_REF) {}
 };
 

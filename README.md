@@ -38,7 +38,7 @@ and macOS; Windows is not yet supported.
 - **Native and lightweight** — a single binary with a sub-second cold start and no runtime dependencies.
 - **vim-style editing** — `h j k l`, `gg`, `G`, `0`, `$`, `/` search, modal editing, and `:` commands.
 - **Formula engine** — 26 functions, cell references, and ranges, evaluated live.
-- **Multi-sheet** — XLSX workbooks open with a tab per worksheet; cycle, add, rename, and delete them.
+- **Multi-sheet** — XLSX workbooks open with a tab per worksheet; cycle, add, rename, and delete them, and reference across them with `Sheet2!A1`.
 - **Live feedback** — per-cell formula suggestions and range statistics update as you work.
 - **Theme-aware** — colors map to your terminal's ANSI palette, so tuiX adopts your theme automatically.
 
@@ -80,8 +80,14 @@ supports cell references, ranges, and 26 functions:
 =SUMIF(D1:D9, ">100", C1:C9)     conditional aggregates
 =VLOOKUP("banana", A1:C9, 2)     lookups
 =INDEX(B1:B9, MATCH(99, A1:A9))  index / match
+=Sheet2!A1 + 'Q1 Data'!B2        cross-sheet references
 =ROUND(AVERAGE(B1:B5), 2)        nesting
 ```
+
+References can point at other sheets in the workbook with a `SheetName!` qualifier —
+`Sheet2!A1`, a whole range like `Sheet2!A1:B3`, or a quoted name when it contains
+spaces: `'Q1 Data'!B2`. Sheet names are matched case-insensitively; an unknown sheet
+yields `#REF!`, and cycles across sheets are detected just like on a single sheet.
 
 #### Supported functions
 

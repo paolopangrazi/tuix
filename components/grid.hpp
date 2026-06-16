@@ -85,6 +85,12 @@ public:
     std::vector<Suggestion> range_suggestions() const;  // live, for multi-cell selections
 
     Value cell_value(int row, int col) const override;
+    Value cell_value_in(const std::string& sheet, int row, int col) const override;
+
+    // Install a resolver mapping a sheet name to its snapshot (for cross-sheet
+    // references like =Sheet2!A1). Returns nullptr for an unknown sheet.
+    void set_sheet_lookup(std::function<const Sheet*(const std::string&)> fn);
+    void set_sheet_name(std::string name) { m_sheet_name = std::move(name); }
 
     void set_calc_ready_cb(std::function<void()> cb);
 
@@ -100,6 +106,9 @@ private:
     int m_offset_row = 0, m_offset_col = 0;
     int  m_sel_row = 0, m_sel_col = 0;
     bool m_has_selection = false;
+
+    std::string                    m_sheet_name;   // active sheet's name (for self-qualified refs)
+    std::function<const Sheet*(const std::string&)> m_sheet_lookup;  // cross-sheet resolver
 
     std::vector<std::vector<Cell>> m_cells;
     std::vector<std::string>       m_col_names;
