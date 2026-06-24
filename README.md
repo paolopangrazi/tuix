@@ -59,7 +59,7 @@ and macOS; Windows is not yet supported.
 - Press `i` or `a` to edit a cell or a column header. A **sticky INSERT mode** lets you type and move across cells without returning to NORMAL.
 - `Enter` commits and moves down; `Tab` commits and moves right; `Esc` returns to NORMAL.
 - Insert or delete **rows and columns** with `+` / `-` (in the row gutter or column header).
-- Select a range with `Shift`+arrows, **yank** with `y`, and **paste** with `p`.
+- Select a range with `Shift`+arrows, **yank** with `y`, and **paste** with `p`. Yanking also copies the selection to your **system clipboard** (as tab-separated text via OSC 52), so it pastes into other apps — even over SSH.
 - A single undo/redo stack covers both cell edits and column renames (`u` / `Ctrl+R`).
 
 ### Sheets
@@ -347,7 +347,7 @@ tuix path/to/file.xlsx      # open an Excel file
 | Key | Action |
 |---|---|
 | `Shift`+arrows | Select a range |
-| `y` / `p` | Yank / paste |
+| `y` / `p` | Yank (→ system clipboard) / paste |
 | `+` / `-` | Insert / delete row (gutter) or column (header) |
 
 ### Sheets (XLSX)

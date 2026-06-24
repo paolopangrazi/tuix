@@ -16,6 +16,7 @@ add_executable(tuix_tests
     unit/evaluator_test.cpp
     unit/lookup_functions_test.cpp
     unit/cross_sheet_test.cpp
+    unit/clipboard_test.cpp
     integration/cross_sheet_grid_test.cpp
 )
 

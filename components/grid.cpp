@@ -13,6 +13,7 @@
 #include "formulas/evaluator.hpp"
 #include "col_label.hpp"
 #include "sheet.hpp"
+#include "util/clipboard.hpp"
 
 using namespace ftxui;
 
@@ -1149,6 +1150,25 @@ void Grid::yank_selection() {
     }
     m_yank_row = r0;
     m_yank_col = c0;
+
+    // Mirror the selection onto the system clipboard as TSV (tab between cells,
+    // newline between rows) so it can be pasted into other applications. The
+    // internal m_yank_data above still drives structured in-app paste (`p`).
+    std::string tsv;
+    for (size_t r = 0; r < m_yank_data.size(); ++r) {
+        if (r) tsv += '\n';
+        for (size_t c = 0; c < m_yank_data[r].size(); ++c) {
+            if (c) tsv += '\t';
+            tsv += m_yank_data[r][c];
+        }
+    }
+    tuix::copy_to_clipboard(tsv);
+
+    const int nr = r1 - r0 + 1, nc = c1 - c0 + 1;
+    set_status(nr == 1 && nc == 1
+                   ? "Yanked cell → clipboard"
+                   : "Yanked " + std::to_string(nr) + "×" + std::to_string(nc) +
+                         " → clipboard");
 }
 
 void Grid::paste_yanked() {

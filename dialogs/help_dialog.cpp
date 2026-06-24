@@ -44,7 +44,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
         Renderer([krow] { return vbox({
             krow("Shift+Arrows  (NORMAL)",   "Start / extend selection"),
             krow("Esc  (NORMAL)",            "Clear selection"),
-            krow("y",                        "Yank cell / selection"),
+            krow("y",                        "Yank cell / selection (→ system clipboard)"),
             krow("p",                        "Paste yanked cell(s)"),
         }); }),
         Renderer([krow] { return vbox({
