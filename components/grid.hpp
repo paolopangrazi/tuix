@@ -174,6 +174,9 @@ private:
     void try_delete_row(int r);
     void delete_col(int c);
     void try_delete_col(int c);
+    // Shared tail for every row/column insert or delete: leave edit mode, fix
+    // the viewport, and kick off a background recalc.
+    void after_structural_change();
     bool select_at_mouse(int mx, int my);
     void scroll_to_mouse_y(int my);
     void start_edit(bool clear);
@@ -184,6 +187,8 @@ private:
     // Cursor target is the header row when m_cursor_row < 0, else a grid cell.
     std::string value_at(int r, int c) const;
     void        set_value_at(int r, int c, const std::string& v);
+    // Clear a single cell's value, recording one undo entry (no-op if empty).
+    void        clear_cell(int r, int c);
 
     // Event dispatch (called from CatchEvent in make_component)
     bool handle_pending_delete (ftxui::Event e);

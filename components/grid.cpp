@@ -210,9 +210,7 @@ void Grid::add_row() {
     ++m_rows;
     m_cursor_row = m_rows - 1;
     m_cursor_col = 0;
-    m_editing    = false;
-    adjust_viewport();
-    launch_build();
+    after_structural_change();
 }
 
 void Grid::insert_row(int r) {
@@ -221,9 +219,7 @@ void Grid::insert_row(int r) {
     ++m_rows;
     m_cursor_row = r + 1;
     m_cursor_col = 0;
-    m_editing    = false;
-    adjust_viewport();
-    launch_build();
+    after_structural_change();
 }
 
 void Grid::add_col() {
@@ -235,9 +231,7 @@ void Grid::add_col() {
     ++m_cols;
     m_cursor_col = m_cols - 1;
     m_cursor_row = -1;   // land on the new column's header
-    m_editing    = false;
-    adjust_viewport();
-    launch_build();
+    after_structural_change();
 }
 
 void Grid::insert_col(int c) {
@@ -250,9 +244,7 @@ void Grid::insert_col(int c) {
     ++m_cols;
     m_cursor_col = c + 1;
     m_cursor_row = -1;   // land on the new column's header
-    m_editing    = false;
-    adjust_viewport();
-    launch_build();
+    after_structural_change();
 }
 
 void Grid::delete_col(int c) {
@@ -264,9 +256,7 @@ void Grid::delete_col(int c) {
     m_col_action_boxes.erase(m_col_action_boxes.begin() + c);
     --m_cols;
     m_cursor_col = std::min(m_cursor_col, m_cols - 1);
-    m_editing    = false;
-    adjust_viewport();
-    launch_build();
+    after_structural_change();
 }
 
 void Grid::try_delete_row(int r) {
@@ -287,7 +277,11 @@ void Grid::delete_row(int r) {
     m_action_boxes.erase(m_action_boxes.begin() + r);
     --m_rows;
     m_cursor_row = std::min(m_cursor_row, m_rows - 1);
-    m_editing    = false;
+    after_structural_change();
+}
+
+void Grid::after_structural_change() {
+    m_editing = false;
     adjust_viewport();
     launch_build();
 }
@@ -542,6 +536,15 @@ void Grid::commit_edit() {
             m_calc_cache.rebuild_cell(m_cursor_row, m_cursor_col, after);
     }
     m_editing = false;
+}
+
+void Grid::clear_cell(int r, int c) {
+    Cell& cell = at(r, c);
+    if (cell.value().empty()) return;
+    m_undo_stack.push_back({r, c, cell.value(), ""});
+    m_redo_stack.clear();
+    cell.set_value("");
+    m_col_widths[c] = compute_col_width(c);
 }
 
 void Grid::extend_selection(int dr, int dc) {
@@ -1091,15 +1094,7 @@ bool Grid::handle_normal_nav(Event e) {
     if (e == Event::Backspace || m_cfg.key_is(e, m_cfg.keys.delete_cell)) {
         if (m_cursor_row < 0)      { try_delete_col(m_cursor_col); }
         else if (m_cursor_col < 0) { try_delete_row(m_cursor_row); }
-        else {
-            auto& cell = at(m_cursor_row, m_cursor_col);
-            if (!cell.value().empty()) {
-                m_undo_stack.push_back({m_cursor_row, m_cursor_col, cell.value(), ""});
-                m_redo_stack.clear();
-                cell.set_value("");
-                m_col_widths[m_cursor_col] = compute_col_width(m_cursor_col);
-            }
-        }
+        else                       { clear_cell(m_cursor_row, m_cursor_col); }
         return true;
     }
     if (m_cfg.key_is(e, m_cfg.keys.undo)) { undo(); return true; }
