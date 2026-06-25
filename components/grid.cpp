@@ -4,6 +4,7 @@
 #include <cctype>
 #include <numeric>
 #include <set>
+#include <sstream>
 #include <tuple>
 
 #include <ftxui/component/event.hpp>
@@ -75,6 +76,8 @@ Grid::Grid(int rows, int cols, const Config& cfg)
       m_cells(rows, std::vector<Cell>(cols)),
       m_col_names(cols),
       m_col_widths(cols, k_cell_w),
+      m_col_manual(cols, false),
+      m_row_heights(rows, 1),
       m_action_boxes(rows),
       m_col_action_boxes(cols) {
     for (int c = 0; c < cols; ++c)
@@ -589,6 +592,21 @@ void Grid::apply_history(std::vector<HistoryEntry>& from,
     m_editing = false;
     auto e = std::move(from.back());
     from.pop_back();
+    if (e.kind == HistoryKind::Reorder) {
+        // Undo applies the inverse of the recorded permutation; redo re-applies it.
+        std::vector<int> perm = e.order;
+        if (!use_after) {
+            std::vector<int> inv(perm.size());
+            for (int i = 0; i < (int)perm.size(); ++i) inv[perm[i]] = i;
+            perm = std::move(inv);
+        }
+        apply_row_permutation(perm);
+        m_cursor_row = std::clamp(m_cursor_row, 0, m_rows - 1);
+        to.push_back(std::move(e));
+        adjust_viewport();
+        launch_build();
+        return;
+    }
     const std::string& v = use_after ? e.after : e.before;
     set_value_at(e.row, e.col, v);
     refit_col(e.col);
@@ -601,6 +619,132 @@ void Grid::apply_history(std::vector<HistoryEntry>& from,
 
 void Grid::undo() { apply_history(m_undo_stack, m_redo_stack, /*use_after=*/false); }
 void Grid::redo() { apply_history(m_redo_stack, m_undo_stack, /*use_after=*/true ); }
+
+void Grid::apply_row_permutation(const std::vector<int>& order) {
+    if ((int)order.size() != m_rows) return;
+    std::vector<std::vector<Cell>> nc;  nc.reserve(m_rows);
+    std::vector<int>               nh;  nh.reserve(m_rows);
+    std::vector<ActionBox>         nb;  nb.reserve(m_rows);
+    for (int i : order) {                       // order is a permutation: each i once
+        nc.push_back(std::move(m_cells[i]));
+        nh.push_back(m_row_heights[i]);
+        nb.push_back(std::move(m_action_boxes[i]));
+    }
+    m_cells        = std::move(nc);
+    m_row_heights  = std::move(nh);
+    m_action_boxes = std::move(nb);
+}
+
+// Order two evaluated cell values: numbers numerically (and before text),
+// otherwise case-insensitive text. (Empties are handled by the caller.)
+static int cmp_values(const Value& a, const Value& b) {
+    double da, db;
+    const bool an = a.to_number(da), bn = b.to_number(db);
+    if (an && bn) return (da < db) ? -1 : (da > db ? 1 : 0);
+    if (an != bn) return an ? -1 : 1;
+    auto lower = [](std::string s) {
+        for (char& c : s) c = (char)std::tolower((unsigned char)c);
+        return s;
+    };
+    const std::string sa = lower(a.to_display()), sb = lower(b.to_display());
+    return (sa < sb) ? -1 : (sa > sb ? 1 : 0);
+}
+
+void Grid::sort_by(const std::vector<SortKey>& keys) {
+    if (m_rows <= 1 || keys.empty()) return;
+    for (const auto& k : keys)
+        if (k.col < 0 || k.col >= m_cols) return;   // reject bad columns wholesale
+
+    // Evaluate each key column once per row so the comparator never re-evaluates
+    // formulas during the O(n log n) sort.
+    std::vector<std::vector<Value>> kv(keys.size(), std::vector<Value>(m_rows));
+    for (size_t k = 0; k < keys.size(); ++k)
+        for (int r = 0; r < m_rows; ++r)
+            kv[k][r] = cell_value(r, keys[k].col);
+
+    std::vector<int> order(m_rows);
+    std::iota(order.begin(), order.end(), 0);
+    std::stable_sort(order.begin(), order.end(), [&](int a, int b) {
+        for (size_t k = 0; k < keys.size(); ++k) {
+            const Value& va = kv[k][a];
+            const Value& vb = kv[k][b];
+            const bool ea = va.is_empty(), eb = vb.is_empty();
+            if (ea || eb) {
+                if (ea && eb) continue;                 // tie on this key → next key
+                return eb;                              // blanks sort last, both directions
+            }
+            const int c = cmp_values(va, vb);
+            if (c != 0) return keys[k].descending ? c > 0 : c < 0;
+        }
+        return false;                                   // stable: equal keys keep order
+    });
+
+    m_sort_col  = keys[0].col;
+    m_sort_desc = keys[0].descending;
+
+    bool identity = true;
+    for (int i = 0; i < m_rows; ++i)
+        if (order[i] != i) { identity = false; break; }
+    if (!identity) {
+        HistoryEntry h;
+        h.kind  = HistoryKind::Reorder;
+        h.order = order;
+        m_undo_stack.push_back(std::move(h));
+        m_redo_stack.clear();
+        apply_row_permutation(order);
+        adjust_viewport();
+        launch_build();
+    }
+
+    const std::string label = col_letter(keys[0].col) + (keys[0].descending ? " ▼" : " ▲");
+    bool has_formula = false;
+    for (int r = 0; r < m_rows && !has_formula; ++r)
+        for (int c = 0; c < m_cols; ++c) {
+            const std::string& raw = m_cells[r][c].value();
+            if (!raw.empty() && raw[0] == '=') { has_formula = true; break; }
+        }
+    set_status(has_formula ? "Sorted by " + label + "  (formula refs not adjusted)"
+                           : "Sorted by " + label);
+}
+
+void Grid::sort_spec(const std::string& spec) {
+    auto dir_is_desc = [](std::string w) {
+        for (char& c : w) c = (char)std::tolower((unsigned char)c);
+        return w == "desc" || w == "descending" || w == "d";
+    };
+
+    std::vector<SortKey> keys;
+    auto add_key = [&](const std::string& token) {
+        std::istringstream iss(token);
+        std::string w1, w2;
+        iss >> w1 >> w2;
+        int  col  = m_cursor_col;     // default: the current column
+        bool desc = false;
+        if (!w1.empty()) {
+            if (auto c = parse_col_label(w1)) {        // "B [dir]"
+                col = *c;
+                if (!w2.empty()) desc = dir_is_desc(w2);
+            } else {                                   // bare direction on current column
+                desc = dir_is_desc(w1);
+            }
+        }
+        if (col >= 0 && col < m_cols) keys.push_back({col, desc});
+    };
+
+    if (spec.find_first_not_of(" \t") == std::string::npos) {
+        if (m_cursor_col >= 0 && m_cursor_col < m_cols) keys.push_back({m_cursor_col, false});
+    } else {
+        for (size_t pos = 0; pos <= spec.size(); ) {
+            const size_t comma = spec.find(',', pos);
+            add_key(spec.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos));
+            if (comma == std::string::npos) break;
+            pos = comma + 1;
+        }
+    }
+
+    if (keys.empty()) { set_status("sort: no valid column"); return; }
+    sort_by(keys);
+}
 
 // ── Search & jump ───────────────────────────────────────────────────────────
 
@@ -886,10 +1030,17 @@ Element Grid::render() const {
         // width = name + " " + action box + trailing " " (gap before the column's
         // right separator, so the +/- box never crowds the resize ⇔ handle).
         const int  name_w  = m_col_widths[c] - ActionBox::k_width - 2;
+        std::string sort_mark;
+        if (!(hsel && m_editing)) {
+            if (c == m_sort_col)            sort_mark = m_sort_desc ? " ▼" : " ▲";
+            else if (c == m_header_hover)   sort_mark = " ▲";   // hover hint: click to sort
+        }
         std::string name = (hsel && m_editing)
             ? m_edit_buf.substr(0, m_edit_cursor) + "_" + m_edit_buf.substr(m_edit_cursor)
             : m_col_names[c];
-        if ((int)name.size() > name_w) name = name.substr(0, name_w);
+        const int name_budget = std::max(0, name_w - (sort_mark.empty() ? 0 : 2));
+        if ((int)name.size() > name_budget) name = name.substr(0, name_budget);
+        name += sort_mark;
         auto name_e = text(name) | center | size(WIDTH, EQUAL, name_w) | bold;
         name_e = hsel ? name_e | bgcolor(m_cfg.colors.cursor_bg) | color(m_cfg.colors.cursor_fg)
                       : name_e | color(m_cfg.colors.header);
@@ -1177,6 +1328,11 @@ bool Grid::handle_normal_nav(Event e) {
     if (m_cursor_row < 0) {  // column header: action box inserts / deletes columns
         if (m_cfg.key_is(e, m_cfg.keys.insert_col)) { insert_col(m_cursor_col);     return true; }
         if (m_cfg.key_is(e, m_cfg.keys.delete_col)) { try_delete_col(m_cursor_col); return true; }
+        if (m_cfg.key_is(e, m_cfg.keys.sort_col)) {   // toggle ascending ↔ descending
+            const bool desc = (m_sort_col == m_cursor_col) ? !m_sort_desc : false;
+            sort_by({{m_cursor_col, desc}});
+            return true;
+        }
     }
     if (m_cursor_col < 0) {  // row index: action box inserts / deletes rows
         if (m_cfg.key_is(e, m_cfg.keys.insert_row)) { insert_row(m_cursor_row); m_cursor_col = -1; return true; }
@@ -1290,6 +1446,7 @@ bool Grid::handle_mouse(Event e) {
     if (!e.is_mouse()) return false;
 
     const int mx = e.mouse().x, my = e.mouse().y;
+    m_header_hover = -1;   // cleared each event; re-set below for plain hovers
 
     // A resize drag in progress: with "any-event" tracking, each drag step
     // arrives as another Left+Pressed; the width tracks the cursor until release.
@@ -1333,6 +1490,9 @@ bool Grid::handle_mouse(Event e) {
     const int k_gutter = ActionBox::k_width + k_rownum_w;
     m_resize_hover = (ry == 0) ? border_hit(rx) : -1;
     m_resize_hrow  = (rx >= 0 && rx < k_gutter) ? row_border_hit(ry) : -1;
+    // Header sort affordance: a column under the mouse (but not over its resize
+    // border, which owns its own ⇔ handle) shows a clickable ▲ hint.
+    m_header_hover = (ry == 0 && rx >= k_gutter && m_resize_hover < 0) ? col_at_x(rx) : -1;
 
     if (e.mouse().button == Mouse::WheelUp)   { move(-3, 0); return true; }
     if (e.mouse().button == Mouse::WheelDown) { move( 3, 0); return true; }
@@ -1375,6 +1535,11 @@ bool Grid::handle_mouse(Event e) {
             m_sel_col = m_cursor_col;
             m_has_selection = false;
             m_mouse_selecting = true;
+        } else if (m_cursor_row < 0 && m_cursor_col >= 0) {
+            // Click on a column header (not a +/- box or resize border) sorts it,
+            // toggling ascending ↔ descending — same as the `s` key.
+            const bool desc = (m_sort_col == m_cursor_col) ? !m_sort_desc : false;
+            sort_by({{m_cursor_col, desc}});
         }
         return true;
     }

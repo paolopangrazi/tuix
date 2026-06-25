@@ -61,7 +61,8 @@ and macOS; Windows is not yet supported.
 - Insert or delete **rows and columns** with `+` / `-` (in the row gutter or column header).
 - **Resize** columns with `>` / `<` and rows with `}` / `{` — or drag a column's right border (in the header) or a row's bottom border (in the gutter) with the mouse.
 - Select a range with `Shift`+arrows, **yank** with `y`, and **paste** with `p`. Yanking also copies the selection to your **system clipboard** (as tab-separated text via OSC 52), so it pastes into other apps — even over SSH.
-- A single undo/redo stack covers both cell edits and column renames (`u` / `Ctrl+R`).
+- **Sort** rows by one or more columns — **click a column header** (or press `s` on it) to toggle ascending/descending; a `▲`/`▼` marks the sorted column and a hover hint shows headers are clickable. Use `:sort B desc, A` for multi-key sorts. Sorting is typed (numbers numerically, text case-insensitively, blanks last) and fully undoable.
+- A single undo/redo stack covers cell edits, column renames, and sorts (`u` / `Ctrl+R`).
 
 ### Sheets
 
@@ -352,6 +353,7 @@ tuix path/to/file.xlsx      # open an Excel file
 | `+` / `-` | Insert / delete row (gutter) or column (header) |
 | `>` / `<` | Widen / narrow the current column |
 | `}` / `{` | Grow / shrink the current row's height |
+| `s` (on header) | Sort by this column — toggles ascending / descending |
 
 ### Sheets (XLSX)
 
@@ -367,7 +369,7 @@ tuix path/to/file.xlsx      # open an Excel file
 |---|---|
 | Click cell | Move cursor to that cell |
 | Drag across cells | Select a range |
-| Click column header | Select that column header |
+| Click column header | Sort by that column (toggle ▲/▼; hover shows the hint) |
 | Drag column border (header) | Resize column width |
 | Drag row border (gutter) | Resize row height |
 | Wheel up / down | Scroll three rows |
@@ -381,7 +383,7 @@ tuix path/to/file.xlsx      # open an Excel file
 | `=` | Start a formula (opens autocomplete) |
 | `↑`/`↓`, `Tab`/`Enter` | Browse / complete a formula |
 | `u` / `Ctrl+R` | Undo / redo |
-| `:` | Command mode — `:w`, `:w file`, `:wq`, `:q`, `:q!`, `:e file`, `:s/old/new/` (find & replace), `:B12` (jump to cell) |
+| `:` | Command mode — `:w`, `:w file`, `:wq`, `:q`, `:q!`, `:e file`, `:s/old/new/` (find & replace), `:sort B desc` (sort), `:B12` (jump to cell) |
 | `F1` / `F12` | Help · live config editor |
 | `Ctrl+E` | Toggle exit confirmation |
 
@@ -431,6 +433,7 @@ col_widen   = [">"]
 col_narrow  = ["<"]
 row_taller  = ["}"]
 row_shorter = ["{"]
+sort_col    = ["s"]
 cmd_mode    = [":"]
 
 [grid]

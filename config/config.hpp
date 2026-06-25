@@ -39,6 +39,7 @@ struct Keys {
     std::vector<char> col_narrow  = {'<'};
     std::vector<char> row_taller  = {'}'};
     std::vector<char> row_shorter = {'{'};
+    std::vector<char> sort_col    = {'s'};
     std::vector<char> cmd_mode    = {':'};
 };
 

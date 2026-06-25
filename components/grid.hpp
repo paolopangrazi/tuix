@@ -21,7 +21,21 @@ struct Sheet;
 
 class Grid : public EvalContext {
 public:
-    struct HistoryEntry { int row, col; std::string before, after; };
+    // A history step is either a single-cell edit or a whole-row reorder (sort).
+    // For Reorder, `order` is the permutation that was applied: new[i] = old[order[i]];
+    // undo applies its inverse, and row/col/before/after are unused. The new
+    // fields are last (with defaults) so existing `{row,col,before,after}` init
+    // keeps working for cell edits.
+    enum class HistoryKind { Cell, Reorder };
+    struct HistoryEntry {
+        int row = 0, col = 0;
+        std::string before, after;
+        HistoryKind kind = HistoryKind::Cell;
+        std::vector<int> order;
+    };
+
+    // One sort criterion: column index + ascending/descending.
+    struct SortKey { int col; bool descending; };
 
     Grid(int rows, int cols, const Config& cfg = {});
     ~Grid();
@@ -51,6 +65,13 @@ public:
     // (raw values, case-sensitive). Returns the number of replacements made and
     // posts a transient status message. A no-op when `find` is empty.
     int replace_all(const std::string& find, const std::string& repl);
+
+    // Stable-sort the data rows by one or more columns (typed: numeric when both
+    // cells are numbers, else case-insensitive text; blanks last). Pushes one
+    // undoable reorder step. `sort_spec` parses a command string like
+    // "B desc, A" (empty / bare → the current cursor column, ascending).
+    void sort_by(const std::vector<SortKey>& keys);
+    void sort_spec(const std::string& spec);
 
     // True while the `/` search prompt is capturing keys.
     bool searching() const noexcept { return m_searching; }
@@ -142,10 +163,18 @@ private:
     // m_sel_row/m_sel_col and the moving end is the cursor.
     bool                           m_mouse_selecting = false;
 
+    // Last sort applied, for the ▲/▼ header indicator (-1 = none).
+    int                            m_sort_col  = -1;
+    bool                           m_sort_desc = false;
+    // Header column under the mouse (-1 = none); shows a clickable sort hint.
+    int                            m_header_hover = -1;
+
     std::vector<HistoryEntry> m_undo_stack;
     std::vector<HistoryEntry> m_redo_stack;
     void apply_history(std::vector<HistoryEntry>& from,
                        std::vector<HistoryEntry>& to, bool use_after);
+    // Reorder the data rows (cells + heights + action boxes): new[i] = old[order[i]].
+    void apply_row_permutation(const std::vector<int>& order);
 
     std::vector<std::vector<std::string>> m_yank_data;  // [rows][cols] raw values
     int m_yank_row = -1;

@@ -15,6 +15,7 @@ public:
         std::function<void(const std::string&)> edit;    // :e <path>
         std::function<void(const std::string&)> goto_cell; // :B12  (bare A1 ref)
         std::function<void(const std::string&, const std::string&)> replace; // :s/old/new/
+        std::function<void(const std::string&)> sort;    // :sort [col] [asc|desc], …
     };
 
     explicit CmdMode(Actions actions);

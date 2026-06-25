@@ -18,6 +18,7 @@ add_executable(tuix_tests
     unit/cross_sheet_test.cpp
     unit/clipboard_test.cpp
     integration/cross_sheet_grid_test.cpp
+    integration/sort_grid_test.cpp
 )
 
 target_link_libraries(tuix_tests PRIVATE tuix_core doctest::doctest)

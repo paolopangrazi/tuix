@@ -58,6 +58,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
             krow("+",                        "Insert column to the right"),
             krow("-  /  x  /  Backspace",    "Delete column"),
             krow(">  /  <",                  "Widen / narrow column width"),
+            krow("s",                        "Sort by this column (toggle ▲/▼)"),
             krow("↓  /  Enter",              "Exit header back to grid"),
         }); }),
         Renderer([krow] { return vbox({
@@ -84,7 +85,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
         Renderer([krow] { return vbox({
             krow("Click cell",               "Move cursor to that cell"),
             krow("Drag across cells",        "Select a range"),
-            krow("Click column header",      "Select that column header"),
+            krow("Click column header",      "Sort by that column (toggle ▲/▼)"),
             krow("Drag column border",       "Resize column width"),
             krow("Drag row border (gutter)", "Resize row height"),
             krow("Wheel up / down",          "Scroll three rows"),
@@ -102,6 +103,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
             krow(":e filename",              "Open a CSV file"),
             krow(":B12  (bare A1 ref)",      "Jump to that cell"),
             krow(":s/old/new/",              "Find & replace across all cells"),
+            krow(":sort  /  :sort B desc",   "Sort rows by current / given column(s)"),
             krow(":wq",                      "Save and quit"),
             krow(":q  /  :q!",               "Quit via command mode"),
             krow("Ctrl+E",                   "Toggle quit confirmation dialog"),

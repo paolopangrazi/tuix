@@ -12,6 +12,18 @@ inline std::string col_letter(int c) {
     return s;
 }
 
+// Parse a bare column label ("B", "AA") into a zero-based column index.
+// Returns nullopt unless the whole string is column letters (no digits).
+inline std::optional<int> parse_col_label(const std::string& s) {
+    if (s.empty()) return std::nullopt;
+    int col = 0;
+    for (char ch : s) {
+        if (!std::isalpha((unsigned char)ch)) return std::nullopt;
+        col = col * 26 + (std::toupper((unsigned char)ch) - 'A' + 1);
+    }
+    return col - 1;
+}
+
 // Parse an A1 cell address ("B12") into a zero-based (row, col).
 // Returns nullopt unless the whole string is column letters followed by a
 // non-zero row number — so "w", "wq", "1", "A" and "e file" all reject.

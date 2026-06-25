@@ -48,8 +48,10 @@ bool CmdMode::handle(Event e) {
         bool save_quit = (m_buf == ":wq");
         bool save_as   = (m_buf.size() > 3 && m_buf.compare(0, 3, ":w ") == 0);
         bool edit      = (m_buf.size() > 3 && m_buf.compare(0, 3, ":e ") == 0);
+        bool sort      = (m_buf == ":sort" || (m_buf.size() > 6 && m_buf.compare(0, 6, ":sort ") == 0));
         std::string sp = save_as ? m_buf.substr(3) : "";
         std::string ep = edit    ? m_buf.substr(3) : "";
+        std::string srt = sort && m_buf.size() > 6 ? m_buf.substr(6) : "";
         // A bare A1 address (":B12") jumps the cursor. parse_a1 rejects the
         // command words above (":w", ":wq", ":e file"), so there's no overlap.
         std::string ref = m_buf.substr(1);
@@ -66,6 +68,7 @@ bool CmdMode::handle(Event e) {
         if (save_as && !sp.empty() && m_actions.save_as) m_actions.save_as(sp);
         if (edit    && !ep.empty() && m_actions.edit)    m_actions.edit(ep);
         if (subst   && m_actions.replace)              m_actions.replace(subst->first, subst->second);
+        if (sort    && m_actions.sort)                 m_actions.sort(srt);
         if (is_goto && m_actions.goto_cell)            m_actions.goto_cell(ref);
         return true;
     }

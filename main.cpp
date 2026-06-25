@@ -147,6 +147,7 @@ int main(int argc, char* argv[]) {
         /* replace   */ [&](const std::string& f, const std::string& r) {
             body.grid().replace_all(f, r);
         },
+        /* sort      */ [&](const std::string& spec) { body.grid().sort_spec(spec); },
     });
 
     // ── Main view: grid + status (chrome is drawn at the root) ───────────────
