@@ -124,6 +124,7 @@ Config Config::load() {
         cfg.keys.row_taller  = keys("row_taller",   cfg.keys.row_taller);
         cfg.keys.row_shorter = keys("row_shorter",  cfg.keys.row_shorter);
         cfg.keys.sort_col    = keys("sort_col",     cfg.keys.sort_col);
+        cfg.keys.heatmap     = keys("heatmap",      cfg.keys.heatmap);
         cfg.keys.cmd_mode    = keys("cmd_mode",     cfg.keys.cmd_mode);
     }
 

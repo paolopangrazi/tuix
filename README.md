@@ -62,6 +62,7 @@ and macOS; Windows is not yet supported.
 - **Resize** columns with `>` / `<` and rows with `}` / `{` — or drag a column's right border (in the header) or a row's bottom border (in the gutter) with the mouse.
 - Select a range with `Shift`+arrows, **yank** with `y`, and **paste** with `p`. Yanking also copies the selection to your **system clipboard** (as tab-separated text via OSC 52), so it pastes into other apps — even over SSH.
 - **Sort** rows by one or more columns — **click a column header** (or press `s` on it) to toggle ascending/descending; a `▲`/`▼` marks the sorted column and a hover hint shows headers are clickable. Use `:sort B desc, A` for multi-key sorts. Sorting is typed (numbers numerically, text case-insensitively, blanks last) and fully undoable.
+- **Heatmap** — press `H` to shade numeric cells along a cold→hot gradient (blue → green → red), scaled to the min/max of the current selection (or the whole column if nothing is selected). Press `H` again to clear.
 - A single undo/redo stack covers cell edits, column renames, and sorts (`u` / `Ctrl+R`).
 
 ### Sheets
@@ -350,6 +351,7 @@ tuix path/to/file.xlsx      # open an Excel file
 |---|---|
 | `Shift`+arrows | Select a range |
 | `y` / `p` | Yank (→ system clipboard) / paste |
+| `H` | Heatmap-shade numeric cells (selection, or column) — toggle |
 | `+` / `-` | Insert / delete row (gutter) or column (header) |
 | `>` / `<` | Widen / narrow the current column |
 | `}` / `{` | Grow / shrink the current row's height |
@@ -434,6 +436,7 @@ col_narrow  = ["<"]
 row_taller  = ["}"]
 row_shorter = ["{"]
 sort_col    = ["s"]
+heatmap     = ["H"]
 cmd_mode    = [":"]
 
 [grid]

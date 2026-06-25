@@ -73,6 +73,11 @@ public:
     void sort_by(const std::vector<SortKey>& keys);
     void sort_spec(const std::string& spec);
 
+    // Toggle a cold→hot heatmap over the current selection (or, with no
+    // selection, the cursor's whole column). Off → captures the range's numeric
+    // min/max and shades it; on → clears.
+    void toggle_heatmap();
+
     // True while the `/` search prompt is capturing keys.
     bool searching() const noexcept { return m_searching; }
 
@@ -168,6 +173,12 @@ private:
     bool                           m_sort_desc = false;
     // Header column under the mouse (-1 = none); shows a clickable sort hint.
     int                            m_header_hover = -1;
+
+    // Heatmap: when active, numeric cells in the rectangle [r0..r1]×[c0..c1] are
+    // shaded along a cold→hot gradient scaled to the captured min/max.
+    bool                           m_heat_active = false;
+    int                            m_heat_r0 = 0, m_heat_c0 = 0, m_heat_r1 = 0, m_heat_c1 = 0;
+    double                         m_heat_min = 0.0, m_heat_max = 0.0;
 
     std::vector<HistoryEntry> m_undo_stack;
     std::vector<HistoryEntry> m_redo_stack;

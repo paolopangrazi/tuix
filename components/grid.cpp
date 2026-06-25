@@ -754,6 +754,63 @@ void Grid::sort_spec(const std::string& spec) {
     sort_by(keys);
 }
 
+// Map t∈[0,1] to a cold→hot gradient (blue → cyan → green → yellow → red),
+// writing the RGB components so the caller can also pick a readable foreground.
+static void heat_rgb(double t, int& R, int& G, int& B) {
+    if (t < 0) t = 0; else if (t > 1) t = 1;
+    struct Stop { double p; int r, g, b; };
+    static const Stop s[] = {
+        {0.00,  40,  70, 200},   // cold  — blue
+        {0.25,  40, 180, 210},   // cyan
+        {0.50,  70, 190,  90},   // green
+        {0.75, 235, 205,  60},   // yellow
+        {1.00, 220,  55,  45},   // hot   — red
+    };
+    for (int i = 1; i < 5; ++i) {
+        if (t <= s[i].p) {
+            const double f = (t - s[i - 1].p) / (s[i].p - s[i - 1].p);
+            R = int(s[i - 1].r + f * (s[i].r - s[i - 1].r) + 0.5);
+            G = int(s[i - 1].g + f * (s[i].g - s[i - 1].g) + 0.5);
+            B = int(s[i - 1].b + f * (s[i].b - s[i - 1].b) + 0.5);
+            return;
+        }
+    }
+    R = 220; G = 55; B = 45;
+}
+
+void Grid::toggle_heatmap() {
+    if (m_heat_active) { m_heat_active = false; set_status("Heatmap off"); return; }
+
+    int r0, r1, c0, c1;
+    if (m_has_selection && m_cursor_row >= 0 && m_cursor_col >= 0) {
+        r0 = std::min(m_cursor_row, m_sel_row); r1 = std::max(m_cursor_row, m_sel_row);
+        c0 = std::min(m_cursor_col, m_sel_col); c1 = std::max(m_cursor_col, m_sel_col);
+    } else if (m_cursor_col >= 0) {          // no selection → the whole current column
+        r0 = 0; r1 = m_rows - 1; c0 = c1 = m_cursor_col;
+    } else {
+        set_status("Heatmap: put the cursor on a column first");
+        return;
+    }
+
+    bool any = false;
+    double mn = 0, mx = 0;
+    for (int r = r0; r <= r1; ++r)
+        for (int c = c0; c <= c1; ++c) {
+            double v;
+            if (cell_value(r, c).to_number(v)) {
+                if (!any) { mn = mx = v; any = true; }
+                else      { mn = std::min(mn, v); mx = std::max(mx, v); }
+            }
+        }
+    if (!any) { set_status("Heatmap: no numeric values in range"); return; }
+
+    m_heat_r0 = r0; m_heat_r1 = r1; m_heat_c0 = c0; m_heat_c1 = c1;
+    m_heat_min = mn; m_heat_max = mx;
+    m_heat_active = true;
+    m_has_selection = false;                 // reveal the colors (selection would mask them)
+    set_status("Heatmap on");
+}
+
 // ── Search & jump ───────────────────────────────────────────────────────────
 
 bool Grid::goto_ref(const std::string& a1) {
@@ -1030,6 +1087,19 @@ Element Grid::render() const {
         return separator();
     };
 
+    // Heatmap background+foreground for a numeric cell inside the active region.
+    auto heat_at = [&](int r, int c) -> std::optional<std::pair<Color, Color>> {
+        if (!m_heat_active) return std::nullopt;
+        if (r < m_heat_r0 || r > m_heat_r1 || c < m_heat_c0 || c > m_heat_c1) return std::nullopt;
+        double v;
+        if (!cell_value(r, c).to_number(v)) return std::nullopt;
+        const double t = (m_heat_max > m_heat_min) ? (v - m_heat_min) / (m_heat_max - m_heat_min) : 0.5;
+        int R, G, B;
+        heat_rgb(t, R, G, B);
+        const Color fg = (0.299 * R + 0.587 * G + 0.114 * B) > 140 ? Color::Black : Color::White;
+        return std::make_pair(Color::RGB(R, G, B), fg);
+    };
+
     Elements header;
     header.push_back(text(std::string(ActionBox::k_width + k_rownum_w, ' ')) | bold | color(m_cfg.colors.header));
     for (int c = m_offset_col; c < c_end; ++c) {
@@ -1098,6 +1168,8 @@ Element Grid::render() const {
                      | size(WIDTH, EQUAL, m_col_widths[c]) | size(HEIGHT, EQUAL, rh);
             if (is_cursor)
                 e = e | bgcolor(m_cfg.colors.cursor_bg) | color(m_cfg.colors.cursor_fg);
+            else if (auto h = heat_at(r, c))
+                e = e | bgcolor(h->first) | color(h->second);
             else if (is_yanked)
                 e = e | color(Color::Yellow);
             else if (in_selection(r, c))
@@ -1332,6 +1404,7 @@ bool Grid::handle_normal_nav(Event e) {
         if (m_cfg.key_is(e, m_cfg.keys.row_taller))  { resize_row(m_cursor_row,  1); return true; }
         if (m_cfg.key_is(e, m_cfg.keys.row_shorter)) { resize_row(m_cursor_row, -1); return true; }
     }
+    if (m_cfg.key_is(e, m_cfg.keys.heatmap)) { toggle_heatmap(); return true; }
     if (m_cfg.key_is(e, m_cfg.keys.insert_mode) || e == Event::F2) { start_edit(false); return true; }  // i/a/F2: edit (cell or header name)
     if (m_cursor_row < 0) {  // column header: action box inserts / deletes columns
         if (m_cfg.key_is(e, m_cfg.keys.insert_col)) { insert_col(m_cursor_col);     return true; }
