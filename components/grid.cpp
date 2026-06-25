@@ -189,6 +189,14 @@ void Grid::load_from(const Sheet& s) {
     m_col_manual.resize(m_cols, false);   // legacy snapshots predate this field
     m_row_heights.resize(m_rows, 1);       // ditto; default every row to one line
 
+    // Sheets arrive from the workbook with a fixed default column width, so
+    // auto-fit every column the user hasn't manually pinned — otherwise freshly
+    // opened files clip all content to that default. Pinned widths (tracked by
+    // col_manual and preserved across sheet switches) are left untouched.
+    m_col_widths.resize(m_cols, k_cell_w);
+    for (int c = 0; c < m_cols; ++c)
+        if (!m_col_manual[c]) m_col_widths[c] = compute_col_width(c);
+
     m_action_boxes.assign(m_rows, ActionBox{});
     m_col_action_boxes.assign(m_cols, ActionBox{});
 
@@ -1041,7 +1049,7 @@ Element Grid::render() const {
         const int name_budget = std::max(0, name_w - (sort_mark.empty() ? 0 : 2));
         if ((int)name.size() > name_budget) name = name.substr(0, name_budget);
         name += sort_mark;
-        auto name_e = text(name) | center | size(WIDTH, EQUAL, name_w) | bold;
+        auto name_e = text(name) | size(WIDTH, EQUAL, name_w) | bold;
         name_e = hsel ? name_e | bgcolor(m_cfg.colors.cursor_bg) | color(m_cfg.colors.cursor_fg)
                       : name_e | color(m_cfg.colors.header);
         header.push_back(
@@ -1581,7 +1589,11 @@ void Grid::adjust_viewport() {
 }
 
 int Grid::compute_col_width(int c) const {
-    int w = static_cast<int>(m_col_names[c].size()) + ActionBox::k_width + 1;
+    // Always leave room for the full header name and never clip it: the header
+    // cell is laid out as  name + " " + [+/- box] + " "  and may also show a
+    // " ▲"/" ▼" sort marker, so reserve name + k_width + 2 spaces + 2 for the
+    // marker. Content can only make the column wider, never narrower.
+    int w = static_cast<int>(m_col_names[c].size()) + ActionBox::k_width + 4;
     for (int r = 0; r < m_rows; ++r)
         w = std::max(w, static_cast<int>(cell_display(r, c).size()));
     return std::max(w, ActionBox::k_width + 3);
