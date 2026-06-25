@@ -59,6 +59,7 @@ and macOS; Windows is not yet supported.
 - Press `i` or `a` to edit a cell or a column header. A **sticky INSERT mode** lets you type and move across cells without returning to NORMAL.
 - `Enter` commits and moves down; `Tab` commits and moves right; `Esc` returns to NORMAL.
 - Insert or delete **rows and columns** with `+` / `-` (in the row gutter or column header).
+- **Resize** columns with `>` / `<` and rows with `}` / `{` — or drag a column's right border (in the header) or a row's bottom border (in the gutter) with the mouse.
 - Select a range with `Shift`+arrows, **yank** with `y`, and **paste** with `p`. Yanking also copies the selection to your **system clipboard** (as tab-separated text via OSC 52), so it pastes into other apps — even over SSH.
 - A single undo/redo stack covers both cell edits and column renames (`u` / `Ctrl+R`).
 
@@ -137,7 +138,7 @@ detected and flagged rather than left to hang.
 
 ### Interface
 
-- **Mouse support**, if you want it: click to select, use the `+` / `-` action boxes to insert or delete rows and columns, and drag the scrollbar or use the wheel to scroll.
+- **Mouse support**, if you want it: click to select, use the `+` / `-` action boxes to insert or delete rows and columns, drag a column or row border to resize it, and drag the scrollbar or use the wheel to scroll.
 - **Command line**: `:w` saves, `:w file.csv` saves as, `:wq` saves and quits, `:e other.csv` opens another file. The output format follows the extension (`.xlsx` or `.csv`). An overwrite-confirmation prompt prevents accidental clobbering.
 - A **titlebar** provides Undo / Redo / Open / Save / Save As / Exit buttons.
 - `F1` opens a tabbed keybinding reference; `F12` opens a live configuration editor that writes changes to `config.toml`.
@@ -349,6 +350,8 @@ tuix path/to/file.xlsx      # open an Excel file
 | `Shift`+arrows | Select a range |
 | `y` / `p` | Yank (→ system clipboard) / paste |
 | `+` / `-` | Insert / delete row (gutter) or column (header) |
+| `>` / `<` | Widen / narrow the current column |
+| `}` / `{` | Grow / shrink the current row's height |
 
 ### Sheets (XLSX)
 
@@ -364,6 +367,8 @@ tuix path/to/file.xlsx      # open an Excel file
 |---|---|
 | Click cell | Move cursor to that cell |
 | Click column header | Select that column header |
+| Drag column border (header) | Resize column width |
+| Drag row border (gutter) | Resize row height |
 | Wheel up / down | Scroll three rows |
 | Click / drag scrollbar | Scroll to that position |
 | Click `+` / `-` | Insert / delete row or column |
@@ -421,6 +426,10 @@ delete_row  = ["-"]
 insert_col  = ["+"]
 delete_col  = ["-"]
 rename_col  = ["i", "a"]
+col_widen   = [">"]
+col_narrow  = ["<"]
+row_taller  = ["}"]
+row_shorter = ["{"]
 cmd_mode    = [":"]
 
 [grid]
