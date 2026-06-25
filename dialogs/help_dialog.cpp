@@ -83,6 +83,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
         }); }),
         Renderer([krow] { return vbox({
             krow("Click cell",               "Move cursor to that cell"),
+            krow("Drag across cells",        "Select a range"),
             krow("Click column header",      "Select that column header"),
             krow("Drag column border",       "Resize column width"),
             krow("Drag row border (gutter)", "Resize row height"),

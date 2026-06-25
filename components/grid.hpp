@@ -138,6 +138,9 @@ private:
     int                            m_resize_hrow    = -1;
     int                            m_resize_start_y = 0;
     int                            m_resize_start_h = 0;
+    // True while a left-drag is painting a multi-cell selection; the anchor is
+    // m_sel_row/m_sel_col and the moving end is the cursor.
+    bool                           m_mouse_selecting = false;
 
     std::vector<HistoryEntry> m_undo_stack;
     std::vector<HistoryEntry> m_redo_stack;
@@ -198,6 +201,13 @@ private:
     // the viewport, and kick off a background recalc.
     void after_structural_change();
     bool select_at_mouse(int mx, int my);
+    // Map a mouse position to a data column / row, or -1 if outside the cells.
+    // (content-relative rx = mx - x_min - 1, ry = my - y_min - 1.)
+    int  col_at_x(int rx) const;
+    int  row_at_y(int ry) const;
+    // Extend the active mouse drag-selection to the cell under the cursor,
+    // clamping a drag that wanders into the gutter/header/outside.
+    void drag_select_to(int mx, int my);
     void scroll_to_mouse_y(int my);
     void start_edit(bool clear);
     void commit_edit();

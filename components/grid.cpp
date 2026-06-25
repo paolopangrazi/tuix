@@ -730,6 +730,26 @@ void Grid::scroll_to_mouse_y(int my) {
                               std::min(m_rows - 1, m_offset_row + vis_rows() - 1));
 }
 
+int Grid::col_at_x(int rx) const {
+    int x = rx - (ActionBox::k_width + k_rownum_w);   // skip the row-number gutter
+    for (int c = m_offset_col; c < m_cols; ++c) {
+        x -= 1 + m_col_widths[c];                     // separator + cell
+        if (x < 0) return c;
+    }
+    return -1;
+}
+
+int Grid::row_at_y(int ry) const {
+    if (ry < 2) return -1;                            // 0 = header, 1 = heavy separator
+    int line = 2;
+    for (int r = m_offset_row; r < m_rows; ++r) {
+        if (ry >= line && ry < line + m_row_heights[r]) return r;
+        line += m_row_heights[r] + 1;                 // content lines + separator
+        if (line > ry) break;
+    }
+    return -1;
+}
+
 bool Grid::select_at_mouse(int mx, int my) {
     if (mx <= m_box.x_min || mx >= m_box.x_max) return false;
     if (my <= m_box.y_min || my >= m_box.y_max) return false;
@@ -737,19 +757,8 @@ bool Grid::select_at_mouse(int mx, int my) {
     const int rx = mx - m_box.x_min - 1;
     const int ry = my - m_box.y_min - 1;
 
-    const int k_gutter = ActionBox::k_width + k_rownum_w;
-
-    auto col_at = [&](int x) -> int {
-        x -= k_gutter;
-        for (int c = m_offset_col; c < m_cols; ++c) {
-            x -= 1 + m_col_widths[c]; // consume separator + cell
-            if (x < 0) return c;
-        }
-        return -1;
-    };
-
-    if (ry == 0 && rx >= k_gutter) {        // header band → header row (-1)
-        const int c = col_at(rx);
+    if (ry == 0 && rx >= ActionBox::k_width + k_rownum_w) {   // header band → header row (-1)
+        const int c = col_at_x(rx);
         if (c < 0) return false;
         commit_edit();
         m_cursor_row = -1;
@@ -757,17 +766,9 @@ bool Grid::select_at_mouse(int mx, int my) {
         adjust_viewport();
         return true;
     }
-    if (ry < 2) return false;
 
-    // Walk visible rows accumulating their heights to map ry → row.
-    int r = -1;
-    for (int rr = m_offset_row, line = 2; rr < m_rows; ++rr) {
-        if (ry >= line && ry < line + m_row_heights[rr]) { r = rr; break; }
-        line += m_row_heights[rr] + 1;   // content lines + separator
-        if (line > ry) break;
-    }
-    const int c = col_at(rx);
-
+    const int r = row_at_y(ry);
+    const int c = col_at_x(rx);
     if (r < 0 || r >= m_rows || c < 0 || c >= m_cols) return false;
 
     commit_edit();
@@ -775,6 +776,37 @@ bool Grid::select_at_mouse(int mx, int my) {
     m_cursor_col = c;
     adjust_viewport();
     return true;
+}
+
+void Grid::drag_select_to(int mx, int my) {
+    const int rx = mx - m_box.x_min - 1;
+    const int ry = my - m_box.y_min - 1;
+    const int last_row = std::min(m_rows - 1, m_offset_row + vis_rows() - 1);
+    const int last_col = std::min(m_cols - 1, m_offset_col + vis_cols() - 1);
+
+    // Column: col_at_x folds each separator into the adjacent cell, so it only
+    // returns -1 in the gutter or past the last column — clamp those.
+    int c = col_at_x(rx);
+    if (c < 0) c = (rx < ActionBox::k_width + k_rownum_w) ? m_offset_col : last_col;
+
+    // Row: snap to the nearest row, treating the separator line *below* a row as
+    // belonging to that row. (row_at_y returns -1 on separators, which made the
+    // drag jump to the bottom row and flicker as the cursor crossed them.)
+    int r;
+    if (ry < 2) {
+        r = m_offset_row;
+    } else {
+        r = last_row;
+        for (int rr = m_offset_row, line = 2; rr < m_rows; ++rr) {
+            if (ry <= line + m_row_heights[rr]) { r = rr; break; }  // content or its separator
+            line += m_row_heights[rr] + 1;
+        }
+    }
+
+    m_cursor_row = r;
+    m_cursor_col = c;
+    m_has_selection = (r != m_sel_row || c != m_sel_col);   // a single cell ⇒ no range
+    adjust_viewport();
 }
 
 Element Grid::formula_bar() const {
@@ -1279,6 +1311,14 @@ bool Grid::handle_mouse(Event e) {
         m_resize_row = m_resize_hrow = -1;
         return true;
     }
+    if (m_mouse_selecting) {                    // painting a multi-cell selection
+        if (e.mouse().button == Mouse::Left && e.mouse().motion == Mouse::Pressed) {
+            drag_select_to(mx, my);
+            return true;
+        }
+        m_mouse_selecting = false;             // button released → finish
+        return true;
+    }
 
     // Update ActionBox hover states
     for (int r = 0; r < m_rows; ++r)
@@ -1326,7 +1366,17 @@ bool Grid::handle_mouse(Event e) {
             m_resize_start_h = m_row_heights[m_resize_hrow];
             return true;
         }
-        return select_at_mouse(mx, my);
+        if (!select_at_mouse(mx, my)) return false;
+        // Landing on a data cell anchors a drag-selection; dragging to another
+        // cell turns it into a range. A plain click (press+release, no move)
+        // just leaves the cursor here with no selection.
+        if (m_cursor_row >= 0 && m_cursor_col >= 0) {
+            m_sel_row = m_cursor_row;
+            m_sel_col = m_cursor_col;
+            m_has_selection = false;
+            m_mouse_selecting = true;
+        }
+        return true;
     }
     return false;
 }

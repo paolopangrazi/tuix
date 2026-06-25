@@ -138,7 +138,7 @@ detected and flagged rather than left to hang.
 
 ### Interface
 
-- **Mouse support**, if you want it: click to select, use the `+` / `-` action boxes to insert or delete rows and columns, drag a column or row border to resize it, and drag the scrollbar or use the wheel to scroll.
+- **Mouse support**, if you want it: click to select, **drag across cells** to select a range, use the `+` / `-` action boxes to insert or delete rows and columns, drag a column or row border to resize it, and drag the scrollbar or use the wheel to scroll.
 - **Command line**: `:w` saves, `:w file.csv` saves as, `:wq` saves and quits, `:e other.csv` opens another file. The output format follows the extension (`.xlsx` or `.csv`). An overwrite-confirmation prompt prevents accidental clobbering.
 - A **titlebar** provides Undo / Redo / Open / Save / Save As / Exit buttons.
 - `F1` opens a tabbed keybinding reference; `F12` opens a live configuration editor that writes changes to `config.toml`.
@@ -366,6 +366,7 @@ tuix path/to/file.xlsx      # open an Excel file
 | Action | Result |
 |---|---|
 | Click cell | Move cursor to that cell |
+| Drag across cells | Select a range |
 | Click column header | Select that column header |
 | Drag column border (header) | Resize column width |
 | Drag row border (gutter) | Resize row height |
