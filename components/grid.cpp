@@ -139,6 +139,7 @@ void Grid::load(const SheetData& data) {
     m_pending_delete_row = -1;
     m_pending_delete_col = -1;
     m_col_widths.resize(m_cols);
+    m_col_manual.assign(m_cols, false);   // a fresh load auto-fits every column
     for (int c = 0; c < m_cols; ++c)
         m_col_widths[c] = compute_col_width(c);
 
@@ -149,6 +150,7 @@ void Grid::save_to(Sheet& s) const {
     s.cells       = m_cells;
     s.col_names   = m_col_names;
     s.col_widths  = m_col_widths;
+    s.col_manual  = m_col_manual;
     s.cursor_row  = m_cursor_row;
     s.cursor_col  = m_cursor_col;
     s.offset_row  = m_offset_row;
@@ -173,10 +175,12 @@ void Grid::load_from(const Sheet& s) {
     m_cells      = s.cells;
     m_col_names  = s.col_names;
     m_col_widths = s.col_widths;
+    m_col_manual = s.col_manual;
     m_rows       = static_cast<int>(m_cells.size());
     m_cols       = m_rows ? static_cast<int>(m_cells[0].size()) : static_cast<int>(m_col_names.size());
     if (m_rows == 0) { m_rows = 1; m_cells.assign(1, std::vector<Cell>(std::max(1, m_cols))); }
     if (m_cols == 0) { m_cols = 1; for (auto& r : m_cells) r.assign(1, Cell{}); m_col_names.assign(1, col_letter(0)); m_col_widths.assign(1, k_cell_w); }
+    m_col_manual.resize(m_cols, false);   // legacy snapshots predate this field
 
     m_action_boxes.assign(m_rows, ActionBox{});
     m_col_action_boxes.assign(m_cols, ActionBox{});
@@ -227,6 +231,7 @@ void Grid::add_col() {
         row.emplace_back();
     m_col_names.push_back(col_letter(m_cols));
     m_col_widths.push_back(k_cell_w);
+    m_col_manual.push_back(false);
     m_col_action_boxes.emplace_back();
     ++m_cols;
     m_cursor_col = m_cols - 1;
@@ -240,6 +245,7 @@ void Grid::insert_col(int c) {
         row.insert(row.begin() + c + 1, Cell{});
     m_col_names.insert(m_col_names.begin() + c + 1, new_name);
     m_col_widths.insert(m_col_widths.begin() + c + 1, k_cell_w);
+    m_col_manual.insert(m_col_manual.begin() + c + 1, false);
     m_col_action_boxes.insert(m_col_action_boxes.begin() + c + 1, ActionBox{});
     ++m_cols;
     m_cursor_col = c + 1;
@@ -253,6 +259,7 @@ void Grid::delete_col(int c) {
         row.erase(row.begin() + c);
     m_col_names.erase(m_col_names.begin() + c);
     m_col_widths.erase(m_col_widths.begin() + c);
+    m_col_manual.erase(m_col_manual.begin() + c);
     m_col_action_boxes.erase(m_col_action_boxes.begin() + c);
     --m_cols;
     m_cursor_col = std::min(m_cursor_col, m_cols - 1);
@@ -401,7 +408,7 @@ std::string Grid::context_hint() const {
     if (!m_status_msg.empty())
         return m_status_msg;
     if (m_cursor_row < 0)
-        return "hjkl/arrows: nav  |  +: insert col  |  -/x: delete col  |  i/a/F2: rename  |  ↓: into grid";
+        return "hjkl/arrows: nav  |  +: insert col  |  -/x: delete col  |  i/a/F2: rename  |  <>: resize  |  ↓: into grid";
     if (m_cursor_col < 0)
         return "hjkl/arrows: nav  |  +: insert row  |  -/x: delete row  |  u/Ctrl+R: undo/redo  |  →: enter row";
     return "hjkl: nav  |  i/a/F2: edit  |  o/O: new row  |  x: delete  |  y/p: yank/paste  |  Shift+arrows: select  |  gg/G: top/bottom  |  /n N: search  |  u/Ctrl+R: undo/redo  |  :: cmd";
@@ -531,7 +538,7 @@ void Grid::commit_edit() {
         m_undo_stack.push_back({m_cursor_row, m_cursor_col, m_edit_orig, after});
         m_redo_stack.clear();
         set_value_at(m_cursor_row, m_cursor_col, after);
-        m_col_widths[m_cursor_col] = compute_col_width(m_cursor_col);
+        refit_col(m_cursor_col);
         if (m_cursor_row >= 0)
             m_calc_cache.rebuild_cell(m_cursor_row, m_cursor_col, after);
     }
@@ -544,7 +551,7 @@ void Grid::clear_cell(int r, int c) {
     m_undo_stack.push_back({r, c, cell.value(), ""});
     m_redo_stack.clear();
     cell.set_value("");
-    m_col_widths[c] = compute_col_width(c);
+    refit_col(c);
 }
 
 void Grid::extend_selection(int dr, int dc) {
@@ -577,7 +584,7 @@ void Grid::apply_history(std::vector<HistoryEntry>& from,
     from.pop_back();
     const std::string& v = use_after ? e.after : e.before;
     set_value_at(e.row, e.col, v);
-    m_col_widths[e.col] = compute_col_width(e.col);
+    refit_col(e.col);
     if (e.row >= 0) m_calc_cache.rebuild_cell(e.row, e.col, v);
     m_cursor_row = e.row;
     m_cursor_col = e.col;
@@ -806,12 +813,24 @@ Element Grid::render() const {
     const int r_end = std::min(m_rows, m_offset_row + vr);
     const int c_end = std::min(m_cols, m_offset_col + vc);
 
+    // The separator drawn before column c is column (c-1)'s right edge. When the
+    // mouse hovers that boundary, mark it on the header row with a "⇔" grab
+    // handle so the user sees the column can be dragged to resize. Body rows keep
+    // a plain separator so the indicator stays a single, legible glyph.
+    auto col_sep = [&](int c, bool header) -> Element {
+        if (header && m_resize_hover >= 0 && c - 1 == m_resize_hover)
+            return text("⇔") | color(m_cfg.colors.cursor_bg) | bold | size(WIDTH, EQUAL, 1);
+        return separator();
+    };
+
     Elements header;
     header.push_back(text(std::string(ActionBox::k_width + k_rownum_w, ' ')) | bold | color(m_cfg.colors.header));
     for (int c = m_offset_col; c < c_end; ++c) {
-        header.push_back(separator());
+        header.push_back(col_sep(c, /*header=*/true));
         const bool hsel    = (m_cursor_row < 0 && c == m_cursor_col);
-        const int  name_w  = m_col_widths[c] - ActionBox::k_width - 1;
+        // width = name + " " + action box + trailing " " (gap before the column's
+        // right separator, so the +/- box never crowds the resize ⇔ handle).
+        const int  name_w  = m_col_widths[c] - ActionBox::k_width - 2;
         std::string name = (hsel && m_editing)
             ? m_edit_buf.substr(0, m_edit_cursor) + "_" + m_edit_buf.substr(m_edit_cursor)
             : m_col_names[c];
@@ -820,7 +839,7 @@ Element Grid::render() const {
         name_e = hsel ? name_e | bgcolor(m_cfg.colors.cursor_bg) | color(m_cfg.colors.cursor_fg)
                       : name_e | color(m_cfg.colors.header);
         header.push_back(
-            hbox({ std::move(name_e), text(" "), m_col_action_boxes[c].render(hsel) })
+            hbox({ std::move(name_e), text(" "), m_col_action_boxes[c].render(hsel), text(" ") })
             | reflect(m_col_action_boxes[c].cell_box())
         );
     }
@@ -847,7 +866,7 @@ Element Grid::render() const {
         }
 
         for (int c = m_offset_col; c < c_end; ++c) {
-            row.push_back(separator());
+            row.push_back(col_sep(c, /*header=*/false));
             const bool is_cursor  = (r == m_cursor_row && c == m_cursor_col);
             const bool is_yanked  = m_yank_row >= 0 && !m_yank_data.empty() &&
                 r >= m_yank_row && r < m_yank_row + (int)m_yank_data.size() &&
@@ -1082,6 +1101,13 @@ bool Grid::handle_normal_nav(Event e) {
     if (e == Event::Return)     { m_has_selection = false; move(1, 0); return true; }
     if (e == Event::Tab)        { m_has_selection = false; move(0, 1); return true; }
     if (e == Event::TabReverse) { move(0,-1); return true; }
+    // Manual column resize: works whenever a column is under the cursor (header
+    // or data cell). Checked before the insert/edit keys so `<`/`>` never leak
+    // into editing or the data-cell command block below.
+    if (m_cursor_col >= 0) {
+        if (m_cfg.key_is(e, m_cfg.keys.col_widen))  { resize_col(m_cursor_col,  1); return true; }
+        if (m_cfg.key_is(e, m_cfg.keys.col_narrow)) { resize_col(m_cursor_col, -1); return true; }
+    }
     if (m_cfg.key_is(e, m_cfg.keys.insert_mode) || e == Event::F2) { start_edit(false); return true; }  // i/a/F2: edit (cell or header name)
     if (m_cursor_row < 0) {  // column header: action box inserts / deletes columns
         if (m_cfg.key_is(e, m_cfg.keys.insert_col)) { insert_col(m_cursor_col);     return true; }
@@ -1178,6 +1204,7 @@ void Grid::paste_yanked() {
         for (auto& row : m_cells) row.emplace_back();
         m_col_names.push_back(col_letter(m_cols));
         m_col_widths.push_back(k_cell_w);
+        m_col_manual.push_back(false);
         m_col_action_boxes.emplace_back();
         ++m_cols;
     }
@@ -1198,11 +1225,28 @@ bool Grid::handle_mouse(Event e) {
 
     const int mx = e.mouse().x, my = e.mouse().y;
 
+    // A resize drag in progress: with "any-event" tracking, each drag step
+    // arrives as another Left+Pressed; the width tracks the cursor until release.
+    if (m_resize_col >= 0) {
+        if (e.mouse().button == Mouse::Left && e.mouse().motion == Mouse::Pressed) {
+            set_col_width(m_resize_col, m_resize_start_w + (mx - m_resize_start_x));
+            m_resize_hover = m_resize_col;
+            return true;
+        }
+        m_resize_col = m_resize_hover = -1;   // release (or anything else) ends the drag
+        return true;
+    }
+
     // Update ActionBox hover states
     for (int r = 0; r < m_rows; ++r)
         m_action_boxes[r].set_hovered(m_action_boxes[r].contains_cell(mx, my));
     for (int c = 0; c < m_cols; ++c)
         m_col_action_boxes[c].set_hovered(m_col_action_boxes[c].contains_cell(mx, my));
+
+    // Highlight the grabbable column boundary while hovering the header band.
+    const int rx = mx - m_box.x_min - 1;
+    const int ry = my - m_box.y_min - 1;
+    m_resize_hover = (ry == 0) ? border_hit(rx) : -1;
 
     if (e.mouse().button == Mouse::WheelUp)   { move(-3, 0); return true; }
     if (e.mouse().button == Mouse::WheelDown) { move( 3, 0); return true; }
@@ -1219,6 +1263,14 @@ bool Grid::handle_mouse(Event e) {
         for (int c = 0; c < m_cols; ++c) {
             if (m_col_action_boxes[c].contains_plus (mx, my)) { insert_col(c);     return true; }
             if (m_col_action_boxes[c].contains_minus(mx, my)) { try_delete_col(c); return true; }
+        }
+        // Grab a column boundary to start a resize drag (checked after the action
+        // boxes so their +/- keep priority over the surrounding separator).
+        if (m_resize_hover >= 0) {
+            m_resize_col     = m_resize_hover;
+            m_resize_start_x = mx;
+            m_resize_start_w = m_col_widths[m_resize_hover];
+            return true;
         }
         return select_at_mouse(mx, my);
     }
@@ -1263,6 +1315,38 @@ int Grid::compute_col_width(int c) const {
     for (int r = 0; r < m_rows; ++r)
         w = std::max(w, static_cast<int>(cell_display(r, c).size()));
     return std::max(w, ActionBox::k_width + 3);
+}
+
+void Grid::refit_col(int c) {
+    if (c < 0 || c >= m_cols) return;
+    if (m_col_manual[c]) return;   // user pinned this width — leave it alone
+    m_col_widths[c] = compute_col_width(c);
+}
+
+void Grid::set_col_width(int c, int w) {
+    if (c < 0 || c >= m_cols) return;
+    constexpr int k_min_w = ActionBox::k_width + 3;   // matches compute_col_width's floor
+    constexpr int k_max_w = 120;
+    w = std::clamp(w, k_min_w, k_max_w);
+    m_col_widths[c] = w;
+    m_col_manual[c] = true;        // pin it: edits no longer auto-refit this column
+    set_status(m_col_names[c] + " width " + std::to_string(w));
+}
+
+void Grid::resize_col(int c, int delta) {
+    if (c < 0 || c >= m_cols) return;
+    set_col_width(c, m_col_widths[c] + delta);
+}
+
+int Grid::border_hit(int rx) const {
+    if (rx < 0) return -1;
+    int b = ActionBox::k_width + k_rownum_w;   // gutter, then visible columns
+    for (int c = m_offset_col; c < m_cols; ++c) {
+        b += 1 + m_col_widths[c];              // rx of the separator just past column c
+        if (rx >= b - 1 && rx <= b + 1) return c;
+        if (b - 1 > rx) break;                 // boundaries only grow → none further can match
+    }
+    return -1;
 }
 
 std::string Grid::unique_col_name(const std::string& name, int skip_col) const {

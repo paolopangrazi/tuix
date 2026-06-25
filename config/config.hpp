@@ -35,6 +35,8 @@ struct Keys {
     std::vector<char> insert_col  = {'+'};
     std::vector<char> delete_col  = {'-'};
     std::vector<char> rename_col  = {'i', 'a'};
+    std::vector<char> col_widen   = {'>'};
+    std::vector<char> col_narrow  = {'<'};
     std::vector<char> cmd_mode    = {':'};
 };
 

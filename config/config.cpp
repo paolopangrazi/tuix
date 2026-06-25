@@ -119,6 +119,8 @@ Config Config::load() {
         cfg.keys.insert_col  = keys("insert_col",   cfg.keys.insert_col);
         cfg.keys.delete_col  = keys("delete_col",   cfg.keys.delete_col);
         cfg.keys.rename_col  = keys("rename_col",   cfg.keys.rename_col);
+        cfg.keys.col_widen   = keys("col_widen",    cfg.keys.col_widen);
+        cfg.keys.col_narrow  = keys("col_narrow",   cfg.keys.col_narrow);
         cfg.keys.cmd_mode    = keys("cmd_mode",     cfg.keys.cmd_mode);
     }
 

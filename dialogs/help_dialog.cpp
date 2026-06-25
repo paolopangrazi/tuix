@@ -57,6 +57,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
             krow("i  /  a",                  "Rename column"),
             krow("+",                        "Insert column to the right"),
             krow("-  /  x  /  Backspace",    "Delete column"),
+            krow(">  /  <",                  "Widen / narrow column width"),
             krow("↓  /  Enter",              "Exit header back to grid"),
         }); }),
         Renderer([krow] { return vbox({
@@ -82,6 +83,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
         Renderer([krow] { return vbox({
             krow("Click cell",               "Move cursor to that cell"),
             krow("Click column header",      "Select that column header"),
+            krow("Drag column border",       "Resize column width"),
             krow("Wheel up / down",          "Scroll three rows"),
             krow("Click / drag scrollbar",   "Scroll to that position"),
             krow("Click  +  /  -",           "Insert / delete row or column"),

@@ -113,11 +113,22 @@ private:
     std::vector<std::vector<Cell>> m_cells;
     std::vector<std::string>       m_col_names;
     std::vector<int>               m_col_widths;
+    // Columns the user has resized by hand: their width is pinned and no longer
+    // tracks content (auto-fit via compute_col_width is skipped — see refit_col).
+    std::vector<bool>              m_col_manual;
     mutable ftxui::Box             m_box              = {};
     std::vector<ActionBox>         m_action_boxes;
     std::vector<ActionBox>         m_col_action_boxes;
     int                            m_pending_delete_row = -1;
     int                            m_pending_delete_col = -1;
+
+    // Mouse column-resize drag. m_resize_col is the column being dragged (-1 when
+    // idle); m_resize_hover is the boundary under the cursor, used only to
+    // highlight the grabbable separator. m_resize_start_* anchor the press.
+    int                            m_resize_col     = -1;
+    int                            m_resize_hover   = -1;
+    int                            m_resize_start_x = 0;
+    int                            m_resize_start_w = 0;
 
     std::vector<HistoryEntry> m_undo_stack;
     std::vector<HistoryEntry> m_redo_stack;
@@ -208,6 +219,16 @@ private:
     int  vis_cols() const;
     void adjust_viewport();
     int         compute_col_width(int c) const;
+    // Re-auto-fit column c to its content, unless the user has pinned its width.
+    void        refit_col(int c);
+    // Widen (delta > 0) or narrow (delta < 0) column c by hand, pinning its width.
+    void        resize_col(int c, int delta);
+    // Set column c's width directly (clamped), pinning it. Shared by keyboard
+    // resize and mouse drag.
+    void        set_col_width(int c, int w);
+    // Column whose right-edge separator sits at/near content-x rx (else -1),
+    // for mouse resize hit-testing. rx is mouse-x relative to the grid content.
+    int         border_hit(int rx) const;
     std::string unique_col_name(const std::string& name, int skip_col) const;
 
     // formula autocomplete
