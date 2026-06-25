@@ -429,6 +429,8 @@ std::string Grid::context_hint() const {
         return "hjkl/arrows: nav  |  +: insert col  |  -/x: delete col  |  i/a/F2: rename  |  <>: resize  |  ↓: into grid";
     if (m_cursor_col < 0)
         return "hjkl/arrows: nav  |  +: insert row  |  -/x: delete row  |  }{: resize  |  u/Ctrl+R: undo/redo  |  →: enter row";
+    if (m_has_selection && m_cursor_row >= 0 && m_cursor_col >= 0)
+        return "selection  |  y: copy → clipboard  |  H: heatmap  |  Shift+arrows: extend  |  Esc: clear";
     return "hjkl: nav  |  i/a/F2: edit  |  o/O: new row  |  x: delete  |  y/p: yank/paste  |  Shift+arrows: select  |  gg/G: top/bottom  |  /n N: search  |  u/Ctrl+R: undo/redo  |  :: cmd";
 }
 
@@ -988,6 +990,7 @@ bool Grid::select_at_mouse(int mx, int my) {
 }
 
 void Grid::drag_select_to(int mx, int my) {
+    m_status_msg.clear();   // let the selection hint show (move() does this for keys)
     const int rx = mx - m_box.x_min - 1;
     const int ry = my - m_box.y_min - 1;
     const int last_row = std::min(m_rows - 1, m_offset_row + vis_rows() - 1);
