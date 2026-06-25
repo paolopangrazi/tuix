@@ -7,7 +7,8 @@
 
 // Self-contained snapshot of one sheet's editable state.
 // A Workbook owns many of these; Grid is a live "view" into one.
-struct Sheet {
+class Sheet {
+  public:
     std::string                            name;
     std::vector<std::vector<Cell>>         cells;        // [rows][cols]
     std::vector<std::string>               col_names;
