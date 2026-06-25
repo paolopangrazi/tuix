@@ -140,6 +140,7 @@ void Grid::load(const SheetData& data) {
     m_pending_delete_col = -1;
     m_col_widths.resize(m_cols);
     m_col_manual.assign(m_cols, false);   // a fresh load auto-fits every column
+    m_row_heights.assign(m_rows, 1);      // every row starts one line tall
     for (int c = 0; c < m_cols; ++c)
         m_col_widths[c] = compute_col_width(c);
 
@@ -151,6 +152,7 @@ void Grid::save_to(Sheet& s) const {
     s.col_names   = m_col_names;
     s.col_widths  = m_col_widths;
     s.col_manual  = m_col_manual;
+    s.row_heights = m_row_heights;
     s.cursor_row  = m_cursor_row;
     s.cursor_col  = m_cursor_col;
     s.offset_row  = m_offset_row;
@@ -176,11 +178,13 @@ void Grid::load_from(const Sheet& s) {
     m_col_names  = s.col_names;
     m_col_widths = s.col_widths;
     m_col_manual = s.col_manual;
+    m_row_heights = s.row_heights;
     m_rows       = static_cast<int>(m_cells.size());
     m_cols       = m_rows ? static_cast<int>(m_cells[0].size()) : static_cast<int>(m_col_names.size());
     if (m_rows == 0) { m_rows = 1; m_cells.assign(1, std::vector<Cell>(std::max(1, m_cols))); }
     if (m_cols == 0) { m_cols = 1; for (auto& r : m_cells) r.assign(1, Cell{}); m_col_names.assign(1, col_letter(0)); m_col_widths.assign(1, k_cell_w); }
     m_col_manual.resize(m_cols, false);   // legacy snapshots predate this field
+    m_row_heights.resize(m_rows, 1);       // ditto; default every row to one line
 
     m_action_boxes.assign(m_rows, ActionBox{});
     m_col_action_boxes.assign(m_cols, ActionBox{});
@@ -211,6 +215,7 @@ SheetData Grid::to_csv_data(char delimiter) const {
 void Grid::add_row() {
     m_cells.emplace_back(m_cols);
     m_action_boxes.emplace_back();
+    m_row_heights.push_back(1);
     ++m_rows;
     m_cursor_row = m_rows - 1;
     m_cursor_col = 0;
@@ -220,6 +225,7 @@ void Grid::add_row() {
 void Grid::insert_row(int r) {
     m_cells.insert(m_cells.begin() + r + 1, std::vector<Cell>(m_cols));
     m_action_boxes.insert(m_action_boxes.begin() + r + 1, ActionBox{});
+    m_row_heights.insert(m_row_heights.begin() + r + 1, 1);
     ++m_rows;
     m_cursor_row = r + 1;
     m_cursor_col = 0;
@@ -282,6 +288,7 @@ void Grid::delete_row(int r) {
     if (m_rows <= 1 || r < 0 || r >= m_rows) return;
     m_cells.erase(m_cells.begin() + r);
     m_action_boxes.erase(m_action_boxes.begin() + r);
+    m_row_heights.erase(m_row_heights.begin() + r);
     --m_rows;
     m_cursor_row = std::min(m_cursor_row, m_rows - 1);
     after_structural_change();
@@ -410,7 +417,7 @@ std::string Grid::context_hint() const {
     if (m_cursor_row < 0)
         return "hjkl/arrows: nav  |  +: insert col  |  -/x: delete col  |  i/a/F2: rename  |  <>: resize  |  ↓: into grid";
     if (m_cursor_col < 0)
-        return "hjkl/arrows: nav  |  +: insert row  |  -/x: delete row  |  u/Ctrl+R: undo/redo  |  →: enter row";
+        return "hjkl/arrows: nav  |  +: insert row  |  -/x: delete row  |  }{: resize  |  u/Ctrl+R: undo/redo  |  →: enter row";
     return "hjkl: nav  |  i/a/F2: edit  |  o/O: new row  |  x: delete  |  y/p: yank/paste  |  Shift+arrows: select  |  gg/G: top/bottom  |  /n N: search  |  u/Ctrl+R: undo/redo  |  :: cmd";
 }
 
@@ -752,10 +759,16 @@ bool Grid::select_at_mouse(int mx, int my) {
     }
     if (ry < 2) return false;
 
-    const int r = m_offset_row + (ry - 2) / 2;
+    // Walk visible rows accumulating their heights to map ry → row.
+    int r = -1;
+    for (int rr = m_offset_row, line = 2; rr < m_rows; ++rr) {
+        if (ry >= line && ry < line + m_row_heights[rr]) { r = rr; break; }
+        line += m_row_heights[rr] + 1;   // content lines + separator
+        if (line > ry) break;
+    }
     const int c = col_at(rx);
 
-    if (r >= m_rows || c < 0 || c >= m_cols) return false;
+    if (r < 0 || r >= m_rows || c < 0 || c >= m_cols) return false;
 
     commit_edit();
     m_cursor_row = r;
@@ -823,6 +836,16 @@ Element Grid::render() const {
         return separator();
     };
 
+    // Horizontal separator below row r. When the mouse hovers that row's bottom
+    // border, show a "⇕" grab handle in the gutter (a vbox keeps the trailing
+    // separator horizontal inside the surrounding hbox).
+    auto row_sep = [&](int r) -> Element {
+        if (m_resize_hrow == r)
+            return hbox({ text("⇕") | color(m_cfg.colors.cursor_bg) | bold | size(WIDTH, EQUAL, 1),
+                          vbox({ separator() }) | flex });
+        return separator();
+    };
+
     Elements header;
     header.push_back(text(std::string(ActionBox::k_width + k_rownum_w, ' ')) | bold | color(m_cfg.colors.header));
     for (int c = m_offset_col; c < c_end; ++c) {
@@ -853,16 +876,19 @@ Element Grid::render() const {
 
     for (int r = m_offset_row; r < r_end; ++r) {
         Elements row;
+        const int rh = m_row_heights[r];
 
-        // First cell: index + action box
+        // First cell: index + action box, stretched to the row's height.
         if (r == m_pending_delete_row)
-            row.push_back(text("del?") | bold | color(Color::Red) | size(WIDTH, EQUAL, k_rownum_w + ActionBox::k_width));
+            row.push_back(vbox({ text("del?") | bold | color(Color::Red), filler() })
+                          | size(WIDTH, EQUAL, k_rownum_w + ActionBox::k_width) | size(HEIGHT, EQUAL, rh));
         else {
             const bool idx_active = (m_cursor_col < 0 && r == m_cursor_row);
-            row.push_back(hbox({
+            Element gutter = hbox({
                 m_action_boxes[r].render(idx_active),
                 text(std::to_string(r + 1)) | align_right | size(WIDTH, EQUAL, k_rownum_w) | color(m_cfg.colors.row_number),
-            }) | reflect(m_action_boxes[r].cell_box()));
+            }) | reflect(m_action_boxes[r].cell_box());
+            row.push_back(vbox({ std::move(gutter), filler() }) | size(HEIGHT, EQUAL, rh));
         }
 
         for (int c = m_offset_col; c < c_end; ++c) {
@@ -875,7 +901,10 @@ Element Grid::render() const {
             const bool is_formula = !raw.empty() && raw[0] == '=';
             std::string val = (is_cursor && m_editing) ? m_edit_buf : cell_display(r, c);
             if ((int)val.size() > m_col_widths[c]) val = val.substr(0, m_col_widths[c]);
-            auto e = text(val) | size(WIDTH, EQUAL, m_col_widths[c]);
+            // Stretch the cell to the row's height; content sits on the top line
+            // and the highlight (if any) fills the whole box.
+            auto e = vbox({ text(val), filler() })
+                     | size(WIDTH, EQUAL, m_col_widths[c]) | size(HEIGHT, EQUAL, rh);
             if (is_cursor)
                 e = e | bgcolor(m_cfg.colors.cursor_bg) | color(m_cfg.colors.cursor_fg);
             else if (is_yanked)
@@ -891,7 +920,7 @@ Element Grid::render() const {
         }
         row.push_back(filler());
         elems.push_back(hbox(std::move(row)));
-        elems.push_back(separator());
+        elems.push_back(row_sep(r));
     }
 
     return vbox(std::move(elems)) | borderRounded | reflect(m_box);
@@ -1108,6 +1137,10 @@ bool Grid::handle_normal_nav(Event e) {
         if (m_cfg.key_is(e, m_cfg.keys.col_widen))  { resize_col(m_cursor_col,  1); return true; }
         if (m_cfg.key_is(e, m_cfg.keys.col_narrow)) { resize_col(m_cursor_col, -1); return true; }
     }
+    if (m_cursor_row >= 0) {   // grow/shrink the current row's height
+        if (m_cfg.key_is(e, m_cfg.keys.row_taller))  { resize_row(m_cursor_row,  1); return true; }
+        if (m_cfg.key_is(e, m_cfg.keys.row_shorter)) { resize_row(m_cursor_row, -1); return true; }
+    }
     if (m_cfg.key_is(e, m_cfg.keys.insert_mode) || e == Event::F2) { start_edit(false); return true; }  // i/a/F2: edit (cell or header name)
     if (m_cursor_row < 0) {  // column header: action box inserts / deletes columns
         if (m_cfg.key_is(e, m_cfg.keys.insert_col)) { insert_col(m_cursor_col);     return true; }
@@ -1198,6 +1231,7 @@ void Grid::paste_yanked() {
     while (m_rows < need_rows) {
         m_cells.emplace_back(m_cols);
         m_action_boxes.emplace_back();
+        m_row_heights.push_back(1);
         ++m_rows;
     }
     while (m_cols < need_cols) {
@@ -1236,6 +1270,15 @@ bool Grid::handle_mouse(Event e) {
         m_resize_col = m_resize_hover = -1;   // release (or anything else) ends the drag
         return true;
     }
+    if (m_resize_row >= 0) {                   // same, for a row-height drag
+        if (e.mouse().button == Mouse::Left && e.mouse().motion == Mouse::Pressed) {
+            set_row_height(m_resize_row, m_resize_start_h + (my - m_resize_start_y));
+            m_resize_hrow = m_resize_row;
+            return true;
+        }
+        m_resize_row = m_resize_hrow = -1;
+        return true;
+    }
 
     // Update ActionBox hover states
     for (int r = 0; r < m_rows; ++r)
@@ -1243,10 +1286,13 @@ bool Grid::handle_mouse(Event e) {
     for (int c = 0; c < m_cols; ++c)
         m_col_action_boxes[c].set_hovered(m_col_action_boxes[c].contains_cell(mx, my));
 
-    // Highlight the grabbable column boundary while hovering the header band.
+    // Highlight the grabbable column boundary while hovering the header band, and
+    // the grabbable row boundary while hovering the left row-number gutter.
     const int rx = mx - m_box.x_min - 1;
     const int ry = my - m_box.y_min - 1;
+    const int k_gutter = ActionBox::k_width + k_rownum_w;
     m_resize_hover = (ry == 0) ? border_hit(rx) : -1;
+    m_resize_hrow  = (rx >= 0 && rx < k_gutter) ? row_border_hit(ry) : -1;
 
     if (e.mouse().button == Mouse::WheelUp)   { move(-3, 0); return true; }
     if (e.mouse().button == Mouse::WheelDown) { move( 3, 0); return true; }
@@ -1272,15 +1318,21 @@ bool Grid::handle_mouse(Event e) {
             m_resize_start_w = m_col_widths[m_resize_hover];
             return true;
         }
+        // Grab a row boundary in the gutter to start a height drag (after the
+        // row +/- action boxes above, so those keep priority).
+        if (m_resize_hrow >= 0) {
+            m_resize_row     = m_resize_hrow;
+            m_resize_start_y = my;
+            m_resize_start_h = m_row_heights[m_resize_hrow];
+            return true;
+        }
         return select_at_mouse(mx, my);
     }
     return false;
 }
 
 int Grid::vis_rows() const {
-    const int h = m_box.y_max - m_box.y_min + 1;
-    if (h > 4) return std::max(1, (h - 4) / 2);
-    return std::max(1, Terminal::Size().dimy / 3);
+    return rows_fitting_from(m_offset_row);
 }
 
 int Grid::vis_cols() const {
@@ -1299,10 +1351,13 @@ int Grid::vis_cols() const {
 }
 
 void Grid::adjust_viewport() {
-    const int vr = vis_rows(), vc = vis_cols();
+    const int vc = vis_cols();
     if (m_cursor_row >= 0) {   // header row (-1) is always pinned above the grid
-        if (m_cursor_row < m_offset_row)         m_offset_row = m_cursor_row;
-        if (m_cursor_row >= m_offset_row + vr)   m_offset_row = m_cursor_row - vr + 1;
+        if (m_cursor_row < m_offset_row) m_offset_row = m_cursor_row;
+        // Rows have variable height, so the count that fits depends on the
+        // offset; scroll down one row at a time until the cursor is in view.
+        while (m_cursor_row >= m_offset_row + rows_fitting_from(m_offset_row))
+            ++m_offset_row;
     }
     if (m_cursor_col >= 0) {
         if (m_cursor_col < m_offset_col)         m_offset_col = m_cursor_col;
@@ -1347,6 +1402,48 @@ int Grid::border_hit(int rx) const {
         if (b - 1 > rx) break;                 // boundaries only grow → none further can match
     }
     return -1;
+}
+
+void Grid::set_row_height(int r, int h) {
+    if (r < 0 || r >= m_rows) return;
+    constexpr int k_min_h = 1;
+    constexpr int k_max_h = 20;
+    h = std::clamp(h, k_min_h, k_max_h);
+    m_row_heights[r] = h;
+    set_status("row " + std::to_string(r + 1) + " height " + std::to_string(h));
+}
+
+void Grid::resize_row(int r, int delta) {
+    if (r < 0 || r >= m_rows) return;
+    set_row_height(r, m_row_heights[r] + delta);
+}
+
+// The grid's content lines run: line 0 = header, line 1 = heavy separator, then
+// each row occupies (height) content lines followed by 1 separator line. ry is
+// the mouse y relative to the grid content (my - y_min - 1). Returns the row
+// whose bottom separator sits on ry (its draggable border), else -1.
+int Grid::row_border_hit(int ry) const {
+    int line = 2;                              // first row's first content line
+    for (int r = m_offset_row; r < m_rows; ++r) {
+        const int sep = line + m_row_heights[r];   // separator line below row r
+        if (ry == sep) return r;
+        if (sep > ry) break;                       // separators only grow downward
+        line = sep + 1;
+    }
+    return -1;
+}
+
+int Grid::rows_fitting_from(int off) const {
+    const int avail = (m_box.y_max - m_box.y_min + 1) - 4;  // minus borders+header+heavy sep
+    if (avail <= 0) return std::max(1, Terminal::Size().dimy / 3);
+    int used = 0, count = 0;
+    for (int r = off; r < m_rows; ++r) {
+        const int need = m_row_heights[r] + 1;  // content lines + separator
+        if (used + need > avail && count > 0) break;
+        used += need;
+        ++count;
+    }
+    return std::max(1, count);
 }
 
 std::string Grid::unique_col_name(const std::string& name, int skip_col) const {

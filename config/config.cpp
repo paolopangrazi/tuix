@@ -121,6 +121,8 @@ Config Config::load() {
         cfg.keys.rename_col  = keys("rename_col",   cfg.keys.rename_col);
         cfg.keys.col_widen   = keys("col_widen",    cfg.keys.col_widen);
         cfg.keys.col_narrow  = keys("col_narrow",   cfg.keys.col_narrow);
+        cfg.keys.row_taller  = keys("row_taller",   cfg.keys.row_taller);
+        cfg.keys.row_shorter = keys("row_shorter",  cfg.keys.row_shorter);
         cfg.keys.cmd_mode    = keys("cmd_mode",     cfg.keys.cmd_mode);
     }
 

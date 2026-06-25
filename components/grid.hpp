@@ -116,6 +116,9 @@ private:
     // Columns the user has resized by hand: their width is pinned and no longer
     // tracks content (auto-fit via compute_col_width is skipped — see refit_col).
     std::vector<bool>              m_col_manual;
+    // Per-row height in terminal lines (default 1). Only changed by the user;
+    // there is no auto-fit for height, so no "manual" flag is needed.
+    std::vector<int>               m_row_heights;
     mutable ftxui::Box             m_box              = {};
     std::vector<ActionBox>         m_action_boxes;
     std::vector<ActionBox>         m_col_action_boxes;
@@ -129,6 +132,12 @@ private:
     int                            m_resize_hover   = -1;
     int                            m_resize_start_x = 0;
     int                            m_resize_start_w = 0;
+    // Mouse row-resize drag, mirroring the column fields above: m_resize_row is
+    // the row being dragged, m_resize_hrow the bottom border under the cursor.
+    int                            m_resize_row     = -1;
+    int                            m_resize_hrow    = -1;
+    int                            m_resize_start_y = 0;
+    int                            m_resize_start_h = 0;
 
     std::vector<HistoryEntry> m_undo_stack;
     std::vector<HistoryEntry> m_redo_stack;
@@ -229,6 +238,13 @@ private:
     // Column whose right-edge separator sits at/near content-x rx (else -1),
     // for mouse resize hit-testing. rx is mouse-x relative to the grid content.
     int         border_hit(int rx) const;
+    // Row-height analogs of the column helpers above.
+    void        resize_row(int r, int delta);
+    void        set_row_height(int r, int h);
+    // Row whose bottom-edge separator sits on content-line ry (else -1).
+    int         row_border_hit(int ry) const;
+    // How many rows, starting at offset `off`, fit in the current viewport.
+    int         rows_fitting_from(int off) const;
     std::string unique_col_name(const std::string& name, int skip_col) const;
 
     // formula autocomplete

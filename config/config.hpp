@@ -37,6 +37,8 @@ struct Keys {
     std::vector<char> rename_col  = {'i', 'a'};
     std::vector<char> col_widen   = {'>'};
     std::vector<char> col_narrow  = {'<'};
+    std::vector<char> row_taller  = {'}'};
+    std::vector<char> row_shorter = {'{'};
     std::vector<char> cmd_mode    = {':'};
 };
 
