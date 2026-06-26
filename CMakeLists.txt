@@ -47,6 +47,11 @@ add_subdirectory(deps/tomlplusplus)
 # miniz (fetched by OpenXLSX) requires this policy flag on CMake >= 3.30
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 set(OPENXLSX_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+set(OPENXLSX_CREATE_DOCS   OFF CACHE BOOL "" FORCE)  # don't require Doxygen/Graphviz
+# v0.5.1's manage_dependency does a find_package() before fetching; a system
+# pugixml then collides with the fetched one ("imported target already exists").
+# Fetch all deps to match tuix's vendored-deps model and dodge that collision.
+set(FORCE_FETCH_ALL        ON  CACHE BOOL "" FORCE)
 add_subdirectory(deps/openxlsx)
 
 # ---------------------------------------------------------------------------
