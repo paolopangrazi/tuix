@@ -23,6 +23,7 @@ const FormulaInfo k_formulas[] = {
     { "MIN",         "MIN(range)",                 "Smallest numeric value in range"        },
     { "MOD",         "MOD(number, divisor)",        "Remainder after division"               },
     { "ROUND",       "ROUND(number, digits)",       "Round to given decimal places"          },
+    { "SPARKLINE",   "SPARKLINE(range)",           "Mini in-cell bar chart of a numeric range" },
     { "SQRT",        "SQRT(number)",               "Square root"                            },
     { "SUM",         "SUM(range)",                 "Sum all numeric values in range"        },
     { "SUMIF",       "SUMIF(range, crit, [sum])",  "Sum cells meeting a criterion"          },

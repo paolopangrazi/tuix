@@ -14,6 +14,7 @@ include(${doctest_SOURCE_DIR}/scripts/cmake/doctest.cmake)
 add_executable(tuix_tests
     doctest_main.cpp
     unit/evaluator_test.cpp
+    unit/sparkline_test.cpp
     unit/lookup_functions_test.cpp
     unit/cross_sheet_test.cpp
     unit/clipboard_test.cpp

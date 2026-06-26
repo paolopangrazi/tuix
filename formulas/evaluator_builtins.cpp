@@ -207,6 +207,35 @@ static Value fn_concatenate(const FuncCallExpr& f, const EvalContext& ctx, const
     return Value::string(result);
 }
 
+// In-cell bar chart: one block glyph (▁▂▃▄▅▆▇█) per numeric value in the
+// argument range(s), scaled to the data's min/max. Empty/text cells are
+// skipped; the first error propagates; a flat series renders all mid-height.
+static Value fn_sparkline(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
+    static const char* k_blocks[8] = {
+        "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"
+    };
+    std::vector<double> nums;
+    Value err;
+    for_each_value(f, ctx, ev, [&](const Value& v) {
+        if (v.is_error()) { err = v; return false; }
+        double n;
+        if (!v.is_empty() && v.to_number(n)) nums.push_back(n);
+        return true;
+    });
+    if (err.is_error()) return err;
+    if (nums.empty()) return Value::error(FormulaError::NA);
+
+    const double lo = *std::min_element(nums.begin(), nums.end());
+    const double hi = *std::max_element(nums.begin(), nums.end());
+    std::string out;
+    for (double n : nums) {
+        int level = (hi > lo) ? static_cast<int>((n - lo) / (hi - lo) * 7.0 + 0.5)
+                              : 4;                      // flat series → mid glyph
+        out += k_blocks[std::clamp(level, 0, 7)];
+    }
+    return Value::string(out);
+}
+
 // ── Lookup & conditional helpers ─────────────────────────────────────────────
 
 // Resolve an argument that should denote a rectangular range. A bare cell ref
@@ -475,6 +504,7 @@ static const std::pair<const char*, BuiltinFn> k_functions[] = {
     { "LOWER",       fn_lower       },
     { "TRIM",        fn_trim        },
     { "CONCATENATE", fn_concatenate },
+    { "SPARKLINE",   fn_sparkline   },
     { "COUNTIF",     fn_countif     },
     { "SUMIF",       fn_sumif       },
     { "AVERAGEIF",   fn_averageif   },

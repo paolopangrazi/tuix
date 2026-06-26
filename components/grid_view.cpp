@@ -8,6 +8,7 @@
 #include <ftxui/screen/terminal.hpp>
 
 #include "col_label.hpp"
+#include "util/text_width.hpp"
 
 using namespace ftxui;
 
@@ -122,9 +123,9 @@ int Grid::compute_col_width(int c) const {
     // cell is laid out as  name + " " + [+/- box] + " "  and may also show a
     // " ▲"/" ▼" sort marker, so reserve name + k_width + 2 spaces + 2 for the
     // marker. Content can only make the column wider, never narrower.
-    int w = static_cast<int>(m_col_names[c].size()) + ActionBox::k_width + 4;
+    int w = tuix::display_width(m_col_names[c]) + ActionBox::k_width + 4;
     for (int r = 0; r < m_rows; ++r)
-        w = std::max(w, static_cast<int>(cell_display(r, c).size()));
+        w = std::max(w, tuix::display_width(cell_display(r, c)));
     return std::max(w, ActionBox::k_width + 3);
 }
 

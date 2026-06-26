@@ -13,6 +13,7 @@
 
 #include "formula_catalog.hpp"
 #include "heatmap.hpp"
+#include "util/text_width.hpp"
 
 using namespace ftxui;
 
@@ -182,7 +183,7 @@ Element Grid::render() const {
             const std::string& raw = m_cells[r][c].value();
             const bool is_formula = !raw.empty() && raw[0] == '=';
             std::string val = (is_cursor && m_editing) ? m_edit_buf : cell_display(r, c);
-            if ((int)val.size() > m_col_widths[c]) val = val.substr(0, m_col_widths[c]);
+            val = tuix::truncate_to_width(val, m_col_widths[c]);
             // Stretch the cell to the row's height; content sits on the top line
             // and the highlight (if any) fills the whole box.
             auto e = vbox({ text(val), filler() })

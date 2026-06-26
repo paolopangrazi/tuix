@@ -87,6 +87,7 @@ add_library(tuix_core STATIC
     dialogs/config_dialog.cpp
     dialogs/sheet_actions_dialog.cpp
     util/clipboard.cpp
+    util/text_width.cpp
     loader/csv_loader.cpp
     loader/xlsx_loader.cpp
     writer/csv_writer.cpp
