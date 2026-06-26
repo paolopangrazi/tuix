@@ -37,6 +37,7 @@ public:
     // One sort criterion: column index + ascending/descending.
     struct SortKey { int col; bool descending; };
 
+    // ── Lifecycle, data & persistence (grid.cpp) ─────────────────────────────
     Grid(int rows, int cols, const Config& cfg = {});
     ~Grid();
 
@@ -53,11 +54,13 @@ public:
     void save_to  (Sheet& s) const;
     void load_from(const Sheet& s);
 
+    // ── Undo / redo (grid_edit.cpp) ──────────────────────────────────────────
     void undo();
     void redo();
     bool can_undo() const noexcept;
     bool can_redo() const noexcept;
 
+    // ── Search, replace & sort (grid_search.cpp, grid_analytics.cpp) ─────────
     // Move the cursor to an A1 cell address (e.g. "B12"); false if out of range.
     bool goto_ref(const std::string& a1);
 
@@ -81,6 +84,7 @@ public:
     // True while the `/` search prompt is capturing keys.
     bool searching() const noexcept { return m_searching; }
 
+    // ── Mode & status (grid.cpp, grid_render.cpp) ────────────────────────────
     enum class Mode { NORMAL, INSERT };
     Mode        mode()         const noexcept;
     std::string context_hint() const;
@@ -88,6 +92,7 @@ public:
     // Post a transient one-shot message (e.g. an I/O error). Cleared on next move.
     void set_status(std::string msg) { m_status_msg = std::move(msg); }
 
+    // ── Column stats & suggestions (grid_analytics.cpp) ──────────────────────
     // Live summary of the column under the cursor (for the column-stats strip).
     // `valid` is false when the cursor is not on a data column (header/gutter).
     struct ColumnStats {
@@ -110,6 +115,7 @@ public:
     std::vector<Suggestion> cell_suggestions()  const;
     std::vector<Suggestion> range_suggestions() const;  // live, for multi-cell selections
 
+    // ── EvalContext: formula evaluation (grid.cpp) ───────────────────────────
     Value cell_value(int row, int col) const override;
     Value cell_value_in(const std::string& sheet, int row, int col) const override;
 
@@ -120,9 +126,11 @@ public:
 
     void set_calc_ready_cb(std::function<void()> cb);
 
+    // ── FTXUI component & event dispatch (grid_input.cpp) ────────────────────
     ftxui::Component make_component();
 
 private:
+    // ── Internal state ───────────────────────────────────────────────────────
     int k_cell_w;
     static constexpr int k_rownum_w = 5;
 
@@ -217,6 +225,7 @@ private:
     int         m_search_origin_col = 0;
     std::vector<std::pair<int, int>> m_search_hits;
 
+    // ── Internal operations (defined across the grid_*.cpp files) ────────────
     void start_search();
     void update_search();        // recompute hits from m_search_buf, preview-jump
     void commit_search();
