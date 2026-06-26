@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
     // ── Dialogs (tabs 1..6) ──────────────────────────────────────────────────
     ConfirmDialog exit_dialog(cfg, 44,
         [] { return text("  Are you sure you want to exit?  ") | bold | center; },
-        [&] { screen.ExitLoopClosure()(); },
+        [&] { screen.Exit(); },
         [&] { go_main(); });
 
     ConfirmDialog save_confirm(cfg, 60,
@@ -139,7 +139,7 @@ int main(int argc, char* argv[]) {
         /* save      */ [&] { if (session.has_path()) tab = SaveConfirm; },
         /* save_quit */ [&] {
             if (session.has_path()) session.write(session.current_path());
-            screen.ExitLoopClosure()();
+            screen.Exit();
         },
         /* save_as   */ [&](const std::string& p) { session.write(session.resolve(p)); },
         /* edit      */ [&](const std::string& p) { session.load (session.resolve(p)); },

@@ -331,10 +331,14 @@ bool Grid::handle_mouse(Event e) {
     const int mx = e.mouse().x, my = e.mouse().y;
     m_header_hover = -1;   // cleared each event; re-set below for plain hovers
 
-    // A resize drag in progress: with "any-event" tracking, each drag step
-    // arrives as another Left+Pressed; the width tracks the cursor until release.
-    if (m_resize_col >= 0) {
-        if (e.mouse().button == Mouse::Left && e.mouse().motion == Mouse::Pressed) {
+    // A held-Left drag step. With "any-event" tracking the initial press is a
+    // Left+Pressed; each subsequent move while the button is down is a Left+Moved
+    // (FTXUI ≥ v6). Either continues a drag; a Released (or anything else) ends it.
+    const bool drag_held =
+        e.mouse().button == Mouse::Left && e.mouse().motion != Mouse::Released;
+
+    if (m_resize_col >= 0) {                    // a column-width drag in progress
+        if (drag_held) {
             set_col_width(m_resize_col, m_resize_start_w + (mx - m_resize_start_x));
             m_resize_hover = m_resize_col;
             return true;
@@ -343,7 +347,7 @@ bool Grid::handle_mouse(Event e) {
         return true;
     }
     if (m_resize_row >= 0) {                   // same, for a row-height drag
-        if (e.mouse().button == Mouse::Left && e.mouse().motion == Mouse::Pressed) {
+        if (drag_held) {
             set_row_height(m_resize_row, m_resize_start_h + (my - m_resize_start_y));
             m_resize_hrow = m_resize_row;
             return true;
@@ -352,7 +356,7 @@ bool Grid::handle_mouse(Event e) {
         return true;
     }
     if (m_mouse_selecting) {                    // painting a multi-cell selection
-        if (e.mouse().button == Mouse::Left && e.mouse().motion == Mouse::Pressed) {
+        if (drag_held) {
             drag_select_to(mx, my);
             return true;
         }
