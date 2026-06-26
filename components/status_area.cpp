@@ -26,7 +26,8 @@ Element render_status_area(const Config& cfg,
     }
 
     bool insert = (mode == Grid::Mode::INSERT);
-    auto mode_color = insert ? cfg.colors.insert_badge_bg : cfg.colors.normal_badge_bg;
+    auto badge_bg = insert ? cfg.colors.insert_badge_bg : cfg.colors.normal_badge_bg;
+    auto badge_fg = insert ? cfg.colors.insert_badge_fg : cfg.colors.normal_badge_fg;
 
     auto flex_left = FlexboxConfig()
         .Set(FlexboxConfig::Wrap::Wrap)
@@ -52,7 +53,9 @@ Element render_status_area(const Config& cfg,
                  text("  →  INSERT") | color(cfg.colors.dimmed) });
 
     lines.push_back(flexbox({
-        hbox({ text(" "), text(insert ? "INSERT" : "NORMAL") | bold | color(mode_color) }),
+        hbox({ text(" "),
+               text(insert ? " INSERT " : " NORMAL ")
+                   | bold | color(badge_fg) | bgcolor(badge_bg) }),
         std::move(switch_key),
         hbox({ text("    F1") | bold | color(cfg.colors.header),
                text(": Help    ") | color(cfg.colors.dimmed) }),

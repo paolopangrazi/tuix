@@ -1,5 +1,10 @@
 #include "titlebar.hpp"
 
+#include <chrono>
+#include <cmath>
+
+#include <ftxui/component/animation.hpp>
+
 using namespace ftxui;
 
 TitleBar::TitleBar(
@@ -45,11 +50,27 @@ TitleBar::TitleBar(
 }
 
 Element TitleBar::render_logo() const {
+    // Left-to-right accent→accent2 gradient wordmark (TrueColor; on the default
+    // theme the accents are palette green/cyan, keeping the brand on-theme).
+    LinearGradient logo;
+    if (m_cfg.theme.animations) {
+        // Opt-in: a slow "breathing" sweep — a bright accent2 stop drifts across
+        // the wordmark. RequestAnimationFrame keeps frames coming only while this
+        // is enabled, so the app stays idle-quiet by default.
+        const float t = std::chrono::duration<float>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+        const float phase = 0.10f + 0.80f * (0.5f + 0.5f * std::sin(t * 1.1f));
+        logo = LinearGradient().Angle(90)
+                   .Stop(m_cfg.colors.accent,  0.0f)
+                   .Stop(m_cfg.colors.accent2, phase)
+                   .Stop(m_cfg.colors.accent,  1.0f);
+        animation::RequestAnimationFrame();
+    } else {
+        logo = LinearGradient(90, m_cfg.colors.accent, m_cfg.colors.accent2);
+    }
     return hbox({
         text(" "),
-        text("▌") | color(m_cfg.colors.titlebar_bg),
-        text("tuiX") | bold | color(m_cfg.colors.titlebar_bg),
-        text("▐") | color(m_cfg.colors.titlebar_bg),
+        text("▌tuiX▐") | bold | color(logo),
         text(" = tui eXcel-lent spreadsheet editor ") | color(m_cfg.colors.dimmed),
     });
 }

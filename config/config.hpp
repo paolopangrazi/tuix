@@ -5,6 +5,13 @@
 #include <ftxui/screen/color.hpp>
 #include <ftxui/component/event.hpp>
 
+// Semantic color slots. Defaults are ANSI palette names so the *default* theme
+// inherits the user's terminal palette (full compatibility with the underlying
+// terminal/OS theme). Named TrueColor presets (config/themes.hpp) override these
+// with explicit RGB; a config.toml [colors] block overrides whatever the theme
+// set. New "effect" slots use translucent RGBA overlays that blend over whatever
+// background is underneath (FTXUI alpha-composites them), so they degrade
+// gracefully on the transparent terminal background of the default theme.
 struct Colors {
     ftxui::Color cursor_bg       = ftxui::Color::Green;
     ftxui::Color cursor_fg       = ftxui::Color::Black;
@@ -20,6 +27,21 @@ struct Colors {
     ftxui::Color titlebar_bg     = ftxui::Color::Green;
     ftxui::Color titlebar_fg     = ftxui::Color::Black;
     ftxui::Color formula_fg      = ftxui::Color::Cyan;
+
+    // ── TrueColor effect slots (new) ─────────────────────────────────────────
+    ftxui::Color accent          = ftxui::Color::Green;          // gradient/glow A
+    ftxui::Color accent2         = ftxui::Color::Cyan;           // gradient/glow B
+    ftxui::Color border          = ftxui::Color::GrayDark;       // idle panel border
+    ftxui::Color border_focus    = ftxui::Color::Green;          // focused panel border
+    ftxui::Color grid_bg         = ftxui::Color::Default;        // canvas (transparent → terminal bg)
+    ftxui::Color zebra_bg        = ftxui::Color::RGBA(255, 255, 255, 10);  // alt-row tint
+    ftxui::Color header_bg       = ftxui::Color::RGBA(255, 255, 255, 18);  // header band
+    ftxui::Color crosshair       = ftxui::Color::Yellow;         // active row/col label accent
+    ftxui::Color search_bg       = ftxui::Color::Cyan;
+    ftxui::Color search_fg       = ftxui::Color::Black;
+    ftxui::Color yank_fg         = ftxui::Color::Yellow;
+    ftxui::Color scrollbar_thumb = ftxui::Color::Green;
+    ftxui::Color scrollbar_track = ftxui::Color::GrayDark;
 };
 
 struct Keys {
@@ -49,10 +71,18 @@ struct GridCfg {
     bool start_insert = false;
 };
 
+struct ThemeCfg {
+    std::string name       = "default";  // "default" → inherit terminal palette
+    bool        zebra      = true;        // alternate-row tinting
+    bool        crosshair  = true;        // highlight active row/col labels
+    bool        animations = false;       // gated motion (calc shimmer, logo sweep)
+};
+
 struct Config {
-    Colors  colors;
-    Keys    keys;
-    GridCfg grid;
+    Colors   colors;
+    Keys     keys;
+    GridCfg  grid;
+    ThemeCfg theme;
 
     static Config load();
     static std::filesystem::path config_file_path();

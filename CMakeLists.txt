@@ -62,6 +62,7 @@ find_package(Threads REQUIRED)
 
 add_library(tuix_core STATIC
     config/config.cpp
+    config/themes.cpp
     components/actionbox.cpp
     components/calc_cache.cpp
     components/cell.cpp

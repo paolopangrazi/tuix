@@ -1,0 +1,57 @@
+# tuix configuration — copy to ~/.config/tuix/config.toml (or
+# $XDG_CONFIG_HOME/tuix/config.toml) and uncomment what you want to change.
+# Everything here is optional; omitted keys keep their defaults.
+
+[theme]
+# Base palette. "default" inherits your terminal's own colors (full compatibility
+# with your OS/terminal theme). Named TrueColor presets:
+#   default · tokyo-night · catppuccin · nord · gruvbox · dracula
+name = "default"
+
+# Readability effects (shine on the TrueColor presets; on the "default" theme the
+# background tints are no-ops over the terminal background, while the crosshair
+# still works since it only recolors text).
+zebra      = true     # subtle alternate-row tint
+crosshair  = true     # highlight the active row number + column header
+animations = false    # opt-in: a gentle "breathing" sweep on the tuiX logo
+
+[colors]
+# Any color may be: an ANSI name (red, green, blue, cyan, gray_light, …),
+# a palette index 0–15, a hex string "#rrggbb" / "#rgb", or "rgb(r,g,b)".
+# A [colors] entry overrides whatever the [theme] preset set, so you can theme
+# the base and then tweak individual slots.
+#
+# cursor_bg       = "#7aa2f7"
+# cursor_fg       = "#1a1b26"
+# selection_bg    = "rgb(40, 52, 87)"
+# selection_fg    = "white"
+# header          = "#7dcfff"
+# row_number      = "gray_dark"
+# dimmed          = "#565f89"
+# formula_fg      = "#bb9af7"
+# titlebar_bg     = "green"
+#
+# ── New TrueColor effect slots ───────────────────────────────────────────────
+# accent          = "#7aa2f7"   # gradient/logo endpoint A
+# accent2         = "#7dcfff"   # gradient/logo endpoint B
+# border          = "#3b4261"   # grid frame
+# grid_bg         = "#1a1b26"   # canvas background (presets set this)
+# zebra_bg        = "#1f2335"   # alternate-row color (opaque on presets)
+# header_bg       = "#24283b"   # header band background
+# crosshair       = "#e0af68"   # active row/col label accent
+# search_bg       = "#7dcfff"
+# search_fg       = "#1a1b26"
+# yank_fg         = "#e0af68"
+# scrollbar_thumb = "#7aa2f7"
+# scrollbar_track = "#292e42"
+
+[grid]
+# cell_width = 12          # default column width
+# start_mode = "normal"    # or "insert"
+
+[keys]
+# Each binding is a list of single characters.
+# nav_up   = ["k"]
+# nav_down = ["j"]
+# heatmap  = ["H"]
+# sort_col = ["s"]

@@ -142,8 +142,10 @@ Element Grid::render() const {
         if ((int)name.size() > name_budget) name = name.substr(0, name_budget);
         name += sort_mark;
         auto name_e = text(name) | size(WIDTH, EQUAL, name_w) | bold;
-        name_e = hsel ? name_e | bgcolor(m_cfg.colors.cursor_bg) | color(m_cfg.colors.cursor_fg)
-                      : name_e | color(m_cfg.colors.header);
+        const bool xcol = m_cfg.theme.crosshair && m_cursor_row >= 0 && c == m_cursor_col;
+        if (hsel)       name_e = name_e | bgcolor(m_cfg.colors.cursor_bg) | color(m_cfg.colors.cursor_fg);
+        else if (xcol)  name_e = name_e | color(m_cfg.colors.crosshair);   // active column
+        else            name_e = name_e | color(m_cfg.colors.header);
         header.push_back(
             hbox({ std::move(name_e), text(" "), m_col_action_boxes[c].render(hsel), text(" ") })
             | reflect(m_col_action_boxes[c].cell_box())
@@ -154,8 +156,8 @@ Element Grid::render() const {
     header.push_back(filler());
 
     Elements elems;
-    elems.push_back(hbox(std::move(header)));
-    elems.push_back(separatorHeavy());
+    elems.push_back(hbox(std::move(header)) | bgcolor(m_cfg.colors.header_bg));  // header band
+    elems.push_back(separatorHeavy() | color(m_cfg.colors.border));
 
     for (int r = m_offset_row; r < r_end; ++r) {
         Elements row;
@@ -167,11 +169,15 @@ Element Grid::render() const {
                           | size(WIDTH, EQUAL, k_rownum_w + ActionBox::k_width) | size(HEIGHT, EQUAL, rh));
         else {
             const bool idx_active = (m_cursor_col < 0 && r == m_cursor_row);
-            Element gutter = hbox({
-                m_action_boxes[r].render(idx_active),
-                text(std::to_string(r + 1)) | align_right | size(WIDTH, EQUAL, k_rownum_w) | color(m_cfg.colors.row_number),
-            }) | reflect(m_action_boxes[r].cell_box());
-            row.push_back(vbox({ std::move(gutter), filler() }) | size(HEIGHT, EQUAL, rh));
+            const bool xrow = m_cfg.theme.crosshair && m_cursor_col >= 0 && r == m_cursor_row;
+            auto num_e = text(std::to_string(r + 1)) | align_right | size(WIDTH, EQUAL, k_rownum_w);
+            num_e = xrow ? num_e | color(m_cfg.colors.crosshair) | bold     // active row
+                         : num_e | color(m_cfg.colors.row_number);
+            Element gutter = hbox({ m_action_boxes[r].render(idx_active), std::move(num_e) })
+                             | reflect(m_action_boxes[r].cell_box());
+            auto gcell = vbox({ std::move(gutter), filler() }) | size(HEIGHT, EQUAL, rh);
+            if (m_cfg.theme.zebra && (r % 2 == 1)) gcell = gcell | bgcolor(m_cfg.colors.zebra_bg);
+            row.push_back(std::move(gcell));
         }
 
         for (int c = m_offset_col; c < c_end; ++c) {
@@ -188,19 +194,27 @@ Element Grid::render() const {
             // and the highlight (if any) fills the whole box.
             auto e = vbox({ text(val), filler() })
                      | size(WIDTH, EQUAL, m_col_widths[c]) | size(HEIGHT, EQUAL, rh);
+            const bool zebra  = m_cfg.theme.zebra && (r % 2 == 1);
+            const bool search = !m_search_hits.empty() &&
+                std::binary_search(m_search_hits.begin(), m_search_hits.end(), std::make_pair(r, c));
+            // Precedence: cursor ▸ heatmap ▸ yank ▸ selection ▸ search ▸ plain.
+            // Zebra is a base tint that shows through the fg-only states (yank/formula).
             if (is_cursor)
                 e = e | bgcolor(m_cfg.colors.cursor_bg) | color(m_cfg.colors.cursor_fg);
             else if (auto h = heat_at(r, c))
                 e = e | bgcolor(h->first) | color(h->second);
-            else if (is_yanked)
-                e = e | color(Color::Yellow);
+            else if (is_yanked) {
+                if (zebra) e = e | bgcolor(m_cfg.colors.zebra_bg);
+                e = e | color(m_cfg.colors.yank_fg);
+            }
             else if (in_selection(r, c))
                 e = e | bgcolor(m_cfg.colors.selection_bg) | color(m_cfg.colors.selection_fg);
-            else if (!m_search_hits.empty() &&
-                     std::binary_search(m_search_hits.begin(), m_search_hits.end(), std::make_pair(r, c)))
-                e = e | bgcolor(Color::Cyan) | color(Color::Black);
-            else if (is_formula)
-                e = e | color(m_cfg.colors.formula_fg);
+            else if (search)
+                e = e | bgcolor(m_cfg.colors.search_bg) | color(m_cfg.colors.search_fg);
+            else {
+                if (zebra)           e = e | bgcolor(m_cfg.colors.zebra_bg);
+                if (is_formula)      e = e | color(m_cfg.colors.formula_fg);
+            }
             row.push_back(e);
         }
         row.push_back(filler());
@@ -208,7 +222,10 @@ Element Grid::render() const {
         elems.push_back(row_sep(r));
     }
 
-    return vbox(std::move(elems)) | borderRounded | reflect(m_box);
+    return vbox(std::move(elems))
+        | bgcolor(m_cfg.colors.grid_bg)                   // canvas (transparent on default theme)
+        | borderStyled(ROUNDED, m_cfg.colors.border)      // subtle framing across all themes
+        | reflect(m_box);
 }
 
 Element Grid::vscrollbar() const {
@@ -221,7 +238,7 @@ Element Grid::vscrollbar() const {
 
     if (m_rows <= visible) {
         for (int i = 0; i < bar_h; ++i)
-            bar.push_back(text("░") | color(m_cfg.colors.dimmed));
+            bar.push_back(text("░") | color(m_cfg.colors.scrollbar_track));
     } else {
         const int thumb_h   = std::max(1, bar_h * visible / m_rows);
         const int max_top   = bar_h - thumb_h;
@@ -231,7 +248,7 @@ Element Grid::vscrollbar() const {
             const bool in_thumb = (i >= thumb_top && i < thumb_top + thumb_h);
             bar.push_back(
                 text(in_thumb ? "▓" : "░") |
-                color(in_thumb ? m_cfg.colors.row_number : m_cfg.colors.dimmed)
+                color(in_thumb ? m_cfg.colors.scrollbar_thumb : m_cfg.colors.scrollbar_track)
             );
         }
     }

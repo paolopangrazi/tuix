@@ -1,8 +1,11 @@
 #include "config.hpp"
+#include "themes.hpp"
 
 #include <toml++/toml.hpp>
 #include <ftxui/screen/color.hpp>
 
+#include <cctype>
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -32,9 +35,49 @@ static const std::unordered_map<std::string, Color> k_named = {
     {"white",         Color::White},
 };
 
+// Parse "#rgb", "#rrggbb", or "rgb(r,g,b)" → TrueColor; returns false if `s` is
+// not a recognized color literal (so the caller can try named/palette forms).
+static bool parse_truecolor(const std::string& s, Color& out) {
+    auto hex1 = [](char c) -> int {
+        if (c >= '0' && c <= '9') return c - '0';
+        c = (char)std::tolower((unsigned char)c);
+        if (c >= 'a' && c <= 'f') return 10 + (c - 'a');
+        return -1;
+    };
+    if (!s.empty() && s[0] == '#') {
+        const std::string h = s.substr(1);
+        auto pair = [&](int i) { return hex1(h[i]) * 16 + hex1(h[i + 1]); };
+        if (h.size() == 6) {
+            for (char c : h) if (hex1(c) < 0) return false;
+            out = Color::RGB(pair(0), pair(2), pair(4));
+            return true;
+        }
+        if (h.size() == 3) {                       // #abc → #aabbcc
+            for (char c : h) if (hex1(c) < 0) return false;
+            auto dup = [&](int i) { int v = hex1(h[i]); return v * 16 + v; };
+            out = Color::RGB(dup(0), dup(1), dup(2));
+            return true;
+        }
+        return false;
+    }
+    if (s.rfind("rgb(", 0) == 0 && s.back() == ')') {
+        int r = 0, g = 0, b = 0;
+        if (std::sscanf(s.c_str(), "rgb(%d,%d,%d)", &r, &g, &b) == 3 ||
+            std::sscanf(s.c_str(), "rgb( %d , %d , %d )", &r, &g, &b) == 3) {
+            auto clamp8 = [](int v) { return (uint8_t)(v < 0 ? 0 : v > 255 ? 255 : v); };
+            out = Color::RGB(clamp8(r), clamp8(g), clamp8(b));
+            return true;
+        }
+    }
+    return false;
+}
+
 static Color parse_color(const toml::node& node, Color fallback) {
     if (auto* s = node.as_string()) {
-        auto it = k_named.find(s->get());
+        const std::string& str = s->get();
+        Color rgb;
+        if (parse_truecolor(str, rgb)) return rgb;   // #rrggbb / rgb(...)
+        auto it = k_named.find(str);                 // ANSI name
         if (it != k_named.end()) return it->second;
         return fallback;
     }
@@ -81,6 +124,18 @@ Config Config::load() {
     try { tbl = toml::parse_file(path.string()); }
     catch (...) { return cfg; }
 
+    // [theme] is applied first so a named preset becomes the base palette; the
+    // [colors] block below then overrides individual slots on top of it.
+    if (auto* t = tbl["theme"].as_table()) {
+        if (auto n = (*t)["name"].value<std::string>()) {
+            cfg.theme.name = *n;
+            apply_theme(*n, cfg.colors);
+        }
+        if (auto z = (*t)["zebra"].value<bool>())      cfg.theme.zebra      = *z;
+        if (auto x = (*t)["crosshair"].value<bool>())  cfg.theme.crosshair  = *x;
+        if (auto a = (*t)["animations"].value<bool>()) cfg.theme.animations = *a;
+    }
+
     if (auto* c = tbl["colors"].as_table()) {
         auto col = [&](std::string_view key, Color def) -> Color {
             if (auto* n = c->get(key)) return parse_color(*n, def);
@@ -100,6 +155,19 @@ Config Config::load() {
         cfg.colors.titlebar_bg     = col("titlebar_bg",     cfg.colors.titlebar_bg);
         cfg.colors.titlebar_fg     = col("titlebar_fg",     cfg.colors.titlebar_fg);
         cfg.colors.formula_fg      = col("formula_fg",      cfg.colors.formula_fg);
+        cfg.colors.accent          = col("accent",          cfg.colors.accent);
+        cfg.colors.accent2         = col("accent2",         cfg.colors.accent2);
+        cfg.colors.border          = col("border",          cfg.colors.border);
+        cfg.colors.border_focus    = col("border_focus",    cfg.colors.border_focus);
+        cfg.colors.grid_bg         = col("grid_bg",         cfg.colors.grid_bg);
+        cfg.colors.zebra_bg        = col("zebra_bg",        cfg.colors.zebra_bg);
+        cfg.colors.header_bg       = col("header_bg",       cfg.colors.header_bg);
+        cfg.colors.crosshair       = col("crosshair",       cfg.colors.crosshair);
+        cfg.colors.search_bg       = col("search_bg",       cfg.colors.search_bg);
+        cfg.colors.search_fg       = col("search_fg",       cfg.colors.search_fg);
+        cfg.colors.yank_fg         = col("yank_fg",         cfg.colors.yank_fg);
+        cfg.colors.scrollbar_thumb = col("scrollbar_thumb", cfg.colors.scrollbar_thumb);
+        cfg.colors.scrollbar_track = col("scrollbar_track", cfg.colors.scrollbar_track);
     }
 
     if (auto* k = tbl["keys"].as_table()) {
