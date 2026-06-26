@@ -95,6 +95,7 @@ add_library(tuix_core STATIC
     formulas/lexer.cpp
     formulas/parser.cpp
     formulas/evaluator.cpp
+    formulas/evaluator_builtins.cpp
 )
 
 # PUBLIC so consumers (the executable and the tests) inherit them.
