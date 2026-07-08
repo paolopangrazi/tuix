@@ -6,10 +6,10 @@
 #include "loader/xlsx_loader.hpp"
 #include "writer/csv_writer.hpp"
 #include "writer/xlsx_writer.hpp"
+#include "util/strings.hpp"
 
-#include <cctype>
-#include <filesystem>
 #include <algorithm>
+#include <filesystem>
 
 namespace {
 std::string format_size(uintmax_t bytes) {
@@ -29,16 +29,7 @@ std::string delimiter_name(char d) {
 }
 
 bool is_xlsx(const std::string& path) {
-    std::string ext = std::filesystem::path(path).extension().string();
-    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-    return ext == ".xlsx";
-}
-
-bool iequals(const std::string& a, const std::string& b) {
-    if (a.size() != b.size()) return false;
-    for (size_t i = 0; i < a.size(); ++i)
-        if (std::tolower((unsigned char)a[i]) != std::tolower((unsigned char)b[i])) return false;
-    return true;
+    return tuix::to_lower(std::filesystem::path(path).extension().string()) == ".xlsx";
 }
 
 // Build a Sheet by loading SheetData through a temporary Grid-style fill.
@@ -82,7 +73,7 @@ Session::Session(Body& body) : m_body(body) {
     // sheets. The active sheet is handled by the live grid itself.
     m_body.grid().set_sheet_lookup([this](const std::string& name) -> const Sheet* {
         for (int i = 0; i < m_workbook.size(); ++i)
-            if (iequals(m_workbook.at(i).name, name)) return &m_workbook.at(i);
+            if (tuix::iequals(m_workbook.at(i).name, name)) return &m_workbook.at(i);
         return nullptr;
     });
 }

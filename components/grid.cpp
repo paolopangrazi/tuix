@@ -6,13 +6,13 @@
 #include "grid.hpp"
 
 #include <algorithm>
-#include <cctype>
 #include <set>
 #include <tuple>
 
 #include "formulas/evaluator.hpp"
 #include "col_label.hpp"
 #include "sheet.hpp"
+#include "util/strings.hpp"
 
 // ── Construction & calc thread ───────────────────────────────────────────────
 
@@ -207,13 +207,6 @@ Value eval_raw(const std::string& raw, const std::string& sheet,
     return Value::string(raw);
 }
 
-bool iequals(const std::string& a, const std::string& b) {
-    if (a.size() != b.size()) return false;
-    for (size_t i = 0; i < a.size(); ++i)
-        if (std::tolower((unsigned char)a[i]) != std::tolower((unsigned char)b[i])) return false;
-    return true;
-}
-
 // Read-only EvalContext over an inactive sheet's snapshot. Same-sheet refs
 // resolve against the snapshot; qualified refs funnel back through the Grid so
 // the active sheet stays authoritative and one cycle guard covers everything.
@@ -245,7 +238,7 @@ Value Grid::cell_value(int row, int col) const {
 
 Value Grid::cell_value_in(const std::string& sheet, int row, int col) const {
     // The live grid holds the authoritative copy of the active sheet.
-    if (iequals(sheet, m_sheet_name))
+    if (tuix::iequals(sheet, m_sheet_name))
         return cell_value(row, col);
     const Sheet* s = m_sheet_lookup ? m_sheet_lookup(sheet) : nullptr;
     if (!s) return Value::error(FormulaError::REF);
@@ -257,8 +250,7 @@ void Grid::set_sheet_lookup(std::function<const Sheet*(const std::string&)> fn) 
 }
 
 std::string Grid::cell_display(int r, int c) const {
-    const std::string& raw = m_cells[r][c].value();
-    if (!raw.empty() && raw[0] == '=')
+    if (m_cells[r][c].is_formula())
         return cell_value(r, c).to_display();
-    return raw;
+    return m_cells[r][c].value();
 }

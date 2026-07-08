@@ -3,10 +3,10 @@
 #include "grid.hpp"
 
 #include <algorithm>
-#include <cctype>
 #include <string>
 
 #include "col_label.hpp"
+#include "util/strings.hpp"
 
 bool Grid::goto_ref(const std::string& a1) {
     auto rc = parse_a1(a1);
@@ -55,13 +55,10 @@ int Grid::replace_all(const std::string& find, const std::string& repl) {
 void Grid::recompute_hits(const std::string& q) {
     m_search_hits.clear();
     if (q.empty()) return;
-    std::string needle = q;
-    for (char& ch : needle) ch = (char)std::tolower((unsigned char)ch);
+    const std::string needle = tuix::to_lower(q);
     for (int r = 0; r < m_rows; ++r)
         for (int c = 0; c < m_cols; ++c) {
-            std::string hay = cell_display(r, c);
-            for (char& ch : hay) ch = (char)std::tolower((unsigned char)ch);
-            if (hay.find(needle) != std::string::npos)
+            if (tuix::to_lower(cell_display(r, c)).find(needle) != std::string::npos)
                 m_search_hits.emplace_back(r, c);   // row-major → already sorted
         }
 }

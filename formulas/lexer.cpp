@@ -1,5 +1,6 @@
 #include "lexer.hpp"
 #include <cctype>
+#include "util/strings.hpp"
 
 Lexer::Lexer(std::string input) : m_input(std::move(input)) {}
 
@@ -134,8 +135,7 @@ Token Lexer::read_ident_or_ref() {
     // A sheet qualifier must be followed by a cell reference.
     if (have_sheet) { Token t; t.type = TokenType::ERROR; t.text = sheet + "!"; return t; }
 
-    std::string upper = letters;
-    for (char& c : upper) c = (char)std::toupper((unsigned char)c);
+    const std::string upper = tuix::to_upper(letters);
 
     Token t;
     if (upper == "TRUE")  { t.text = letters; t.type = TokenType::BOOLEAN; t.boolean = true;  return t; }

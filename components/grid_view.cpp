@@ -35,11 +35,17 @@ void Grid::page_down()  { move( vis_rows(), 0); }
 
 // ── Selection ────────────────────────────────────────────────────────────────
 
+Grid::CellRect Grid::selection_bounds() const noexcept {
+    if (!m_has_selection)
+        return { m_cursor_row, m_cursor_col, m_cursor_row, m_cursor_col };
+    return { std::min(m_cursor_row, m_sel_row), std::min(m_cursor_col, m_sel_col),
+             std::max(m_cursor_row, m_sel_row), std::max(m_cursor_col, m_sel_col) };
+}
+
 bool Grid::in_selection(int r, int c) const noexcept {
     if (!m_has_selection || m_cursor_row < 0 || m_cursor_col < 0) return false;
-    const int r0 = std::min(m_cursor_row, m_sel_row), r1 = std::max(m_cursor_row, m_sel_row);
-    const int c0 = std::min(m_cursor_col, m_sel_col), c1 = std::max(m_cursor_col, m_sel_col);
-    return r >= r0 && r <= r1 && c >= c0 && c <= c1;
+    const CellRect s = selection_bounds();
+    return r >= s.r0 && r <= s.r1 && c >= s.c0 && c <= s.c1;
 }
 
 std::string Grid::cursor_label() const {

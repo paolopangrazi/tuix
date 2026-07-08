@@ -10,11 +10,25 @@
 
 // ── Row / column structure ───────────────────────────────────────────────────
 
-void Grid::add_row() {
+void Grid::append_row() {
     m_cells.emplace_back(m_cols);
     m_action_boxes.emplace_back();
     m_row_heights.push_back(1);
     ++m_rows;
+}
+
+void Grid::append_col() {
+    for (auto& row : m_cells)
+        row.emplace_back();
+    m_col_names.push_back(col_letter(m_cols));
+    m_col_widths.push_back(k_cell_w);
+    m_col_manual.push_back(false);
+    m_col_action_boxes.emplace_back();
+    ++m_cols;
+}
+
+void Grid::add_row() {
+    append_row();
     m_cursor_row = m_rows - 1;
     m_cursor_col = 0;
     after_structural_change();
@@ -31,13 +45,7 @@ void Grid::insert_row(int r) {
 }
 
 void Grid::add_col() {
-    for (auto& row : m_cells)
-        row.emplace_back();
-    m_col_names.push_back(col_letter(m_cols));
-    m_col_widths.push_back(k_cell_w);
-    m_col_manual.push_back(false);
-    m_col_action_boxes.emplace_back();
-    ++m_cols;
+    append_col();
     m_cursor_col = m_cols - 1;
     m_cursor_row = -1;   // land on the new column's header
     after_structural_change();
@@ -214,12 +222,7 @@ void Grid::redo() { apply_history(m_redo_stack, m_undo_stack, /*use_after=*/true
 // ── Yank / paste ─────────────────────────────────────────────────────────────
 
 void Grid::yank_selection() {
-    int r0 = m_cursor_row, r1 = m_cursor_row;
-    int c0 = m_cursor_col, c1 = m_cursor_col;
-    if (m_has_selection) {
-        r0 = std::min(m_cursor_row, m_sel_row); r1 = std::max(m_cursor_row, m_sel_row);
-        c0 = std::min(m_cursor_col, m_sel_col); c1 = std::max(m_cursor_col, m_sel_col);
-    }
+    const auto [r0, c0, r1, c1] = selection_bounds();
     m_yank_data.clear();
     for (int r = r0; r <= r1; ++r) {
         m_yank_data.emplace_back();
@@ -252,20 +255,8 @@ void Grid::yank_selection() {
 void Grid::paste_yanked() {
     const int need_rows = m_cursor_row + (int)m_yank_data.size();
     const int need_cols = m_cursor_col + (int)m_yank_data[0].size();
-    while (m_rows < need_rows) {
-        m_cells.emplace_back(m_cols);
-        m_action_boxes.emplace_back();
-        m_row_heights.push_back(1);
-        ++m_rows;
-    }
-    while (m_cols < need_cols) {
-        for (auto& row : m_cells) row.emplace_back();
-        m_col_names.push_back(col_letter(m_cols));
-        m_col_widths.push_back(k_cell_w);
-        m_col_manual.push_back(false);
-        m_col_action_boxes.emplace_back();
-        ++m_cols;
-    }
+    while (m_rows < need_rows) append_row();
+    while (m_cols < need_cols) append_col();
     m_redo_stack.clear();
     for (int dr = 0; dr < (int)m_yank_data.size(); ++dr) {
         for (int dc = 0; dc < (int)m_yank_data[dr].size(); ++dc) {

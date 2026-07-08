@@ -209,6 +209,11 @@ int main(int argc, char* argv[]) {
         );
     });
 
+    auto cycle_sheet = [&](int dir) {
+        const int n = session.workbook().size();
+        if (n > 1) session.switch_to((session.workbook().active_index() + dir + n) % n);
+    };
+
     auto root = CatchEvent(root_chrome, [&](Event e) {
         if (e == Event::F1) {
             if (tab == Help) go_main();
@@ -228,16 +233,8 @@ int main(int argc, char* argv[]) {
                         && body.grid().mode() == Grid::Mode::NORMAL
                         && !body.grid().searching()) {
             // Ctrl+PageDown / Ctrl+PageUp cycle sheets; Ctrl+T adds a new sheet.
-            if (e == Event::Special("\x1B[6;5~")) {
-                int n = session.workbook().size();
-                if (n > 1) session.switch_to((session.workbook().active_index() + 1) % n);
-                return true;
-            }
-            if (e == Event::Special("\x1B[5;5~")) {
-                int n = session.workbook().size();
-                if (n > 1) session.switch_to((session.workbook().active_index() - 1 + n) % n);
-                return true;
-            }
+            if (e == Event::Special("\x1B[6;5~")) { cycle_sheet(+1); return true; }
+            if (e == Event::Special("\x1B[5;5~")) { cycle_sheet(-1); return true; }
             if (e == Event::Special("\x14")) {        // Ctrl+T
                 session.add_sheet();
                 return true;

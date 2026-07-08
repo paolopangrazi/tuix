@@ -4,7 +4,6 @@
 #include "grid.hpp"
 
 #include <algorithm>
-#include <cctype>
 #include <optional>
 #include <string>
 #include <utility>
@@ -13,6 +12,7 @@
 
 #include "formula_catalog.hpp"
 #include "heatmap.hpp"
+#include "util/strings.hpp"
 #include "util/text_width.hpp"
 
 using namespace ftxui;
@@ -186,8 +186,7 @@ Element Grid::render() const {
             const bool is_yanked  = m_yank_row >= 0 && !m_yank_data.empty() &&
                 r >= m_yank_row && r < m_yank_row + (int)m_yank_data.size() &&
                 c >= m_yank_col && c < m_yank_col + (int)m_yank_data[0].size();
-            const std::string& raw = m_cells[r][c].value();
-            const bool is_formula = !raw.empty() && raw[0] == '=';
+            const bool is_formula = m_cells[r][c].is_formula();
             std::string val = (is_cursor && m_editing) ? m_edit_buf : cell_display(r, c);
             val = tuix::truncate_to_width(val, m_col_widths[c]);
             // Stretch the cell to the row's height; content sits on the top line
@@ -257,9 +256,7 @@ Element Grid::vscrollbar() const {
 }
 
 std::vector<int> Grid::ac_matches() const {
-    const std::string pfx = ac_prefix(m_edit_buf);
-    std::string upper = pfx;
-    for (auto& c : upper) c = std::toupper((unsigned char)c);
+    const std::string upper = tuix::to_upper(ac_prefix(m_edit_buf));
     std::vector<int> out;
     for (int i = 0; i < k_formulas_count; ++i)
         if (std::string(k_formulas[i].name).substr(0, upper.size()) == upper)

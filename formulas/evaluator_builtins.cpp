@@ -5,13 +5,13 @@
 #include "evaluator_builtins.hpp"
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
-#include <limits>
+#include <vector>
 
 #include "evaluator.hpp"
+#include "util/strings.hpp"
 
-// ── Aggregation helper ───────────────────────────────────────────────────────
+// ── Shared helpers ───────────────────────────────────────────────────────────
 
 // Visit every value across all of f's args (ranges expanded). The visitor
 // returns false to stop early — used to bail out on the first error.
@@ -26,30 +26,52 @@ static void for_each_value(const FuncCallExpr& f, const EvalContext& ctx,
     }
 }
 
-// ── Numeric aggregates ───────────────────────────────────────────────────────
-
-static Value fn_sum(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    double total = 0.0;
-    Value err;
-    for_each_value(f, ctx, ev, [&](const Value& v) {
-        if (v.is_error()) { err = v; return false; }
-        double n; if (v.to_number(n)) total += n;
-        return true;
-    });
-    return err.is_error() ? err : Value::number(total);
-}
-
-static Value fn_average(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    double total = 0.0; int count = 0;
+// Gather the numeric values across all of f's args, skipping empty and
+// non-numeric cells. Returns the first error encountered (empty Value if none).
+static Value collect_numbers(const FuncCallExpr& f, const EvalContext& ctx,
+                             const Evaluator& ev, std::vector<double>& out) {
     Value err;
     for_each_value(f, ctx, ev, [&](const Value& v) {
         if (v.is_error()) { err = v; return false; }
         double n;
-        if (!v.is_empty() && v.to_number(n)) { total += n; ++count; }
+        if (!v.is_empty() && v.to_number(n)) out.push_back(n);
         return true;
     });
+    return err;
+}
+
+// Evaluate argument i and coerce it to a number; false on failure.
+static bool eval_num_arg(const FuncCallExpr& f, size_t i, const EvalContext& ctx,
+                         const Evaluator& ev, double& out) {
+    return ev.eval(*f.args[i], ctx).to_number(out);
+}
+
+// Spreadsheet truthiness: booleans as-is, anything else numeric and non-zero.
+static bool is_truthy(const Value& v) {
+    if (v.is_boolean()) return v.as_boolean();
+    double n;
+    return v.to_number(n) && n != 0.0;
+}
+
+// ── Numeric aggregates ───────────────────────────────────────────────────────
+
+static Value fn_sum(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
+    std::vector<double> nums;
+    Value err = collect_numbers(f, ctx, ev, nums);
     if (err.is_error()) return err;
-    return count == 0 ? Value::error(FormulaError::DIV0) : Value::number(total / count);
+    double total = 0.0;
+    for (double n : nums) total += n;
+    return Value::number(total);
+}
+
+static Value fn_average(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
+    std::vector<double> nums;
+    Value err = collect_numbers(f, ctx, ev, nums);
+    if (err.is_error()) return err;
+    if (nums.empty()) return Value::error(FormulaError::DIV0);
+    double total = 0.0;
+    for (double n : nums) total += n;
+    return Value::number(total / (double)nums.size());
 }
 
 static Value fn_count(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
@@ -71,92 +93,93 @@ static Value fn_counta(const FuncCallExpr& f, const EvalContext& ctx, const Eval
 }
 
 static Value fn_min(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    double result = std::numeric_limits<double>::infinity(); bool found = false;
-    Value err;
-    for_each_value(f, ctx, ev, [&](const Value& v) {
-        if (v.is_error()) { err = v; return false; }
-        double n;
-        if (!v.is_empty() && v.to_number(n)) { result = std::min(result, n); found = true; }
-        return true;
-    });
+    std::vector<double> nums;
+    Value err = collect_numbers(f, ctx, ev, nums);
     if (err.is_error()) return err;
-    return found ? Value::number(result) : Value::error(FormulaError::NUM);
+    if (nums.empty()) return Value::error(FormulaError::NUM);
+    return Value::number(*std::min_element(nums.begin(), nums.end()));
 }
 
 static Value fn_max(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    double result = -std::numeric_limits<double>::infinity(); bool found = false;
-    Value err;
-    for_each_value(f, ctx, ev, [&](const Value& v) {
-        if (v.is_error()) { err = v; return false; }
-        double n;
-        if (!v.is_empty() && v.to_number(n)) { result = std::max(result, n); found = true; }
-        return true;
-    });
+    std::vector<double> nums;
+    Value err = collect_numbers(f, ctx, ev, nums);
     if (err.is_error()) return err;
-    return found ? Value::number(result) : Value::error(FormulaError::NUM);
+    if (nums.empty()) return Value::error(FormulaError::NUM);
+    return Value::number(*std::max_element(nums.begin(), nums.end()));
 }
 
-// ── Conditionals (IF / IFERROR) ──────────────────────────────────────────────
+// ── Conditionals (IF / IFERROR / IFS / IFNA) ─────────────────────────────────
 
 static Value fn_if(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     if (f.args.size() < 2) return Value::error(FormulaError::VALUE);
     Value cond = ev.eval(*f.args[0], ctx);
     if (cond.is_error()) return cond;
-    double n = 0;
-    bool truthy = cond.is_boolean() ? cond.as_boolean() : (cond.to_number(n) && n != 0.0);
-    if (truthy)             return ev.eval(*f.args[1], ctx);
+    if (is_truthy(cond))    return ev.eval(*f.args[1], ctx);
     if (f.args.size() >= 3) return ev.eval(*f.args[2], ctx);
     return Value::boolean(false);
 }
 
 static Value fn_iferror(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    if (f.args.size() < 2) return Value::error(FormulaError::VALUE);
+    if (f.args.size() != 2) return Value::error(FormulaError::VALUE);
     Value v = ev.eval(*f.args[0], ctx);
     return v.is_error() ? ev.eval(*f.args[1], ctx) : v;
 }
 
-// ── Math (one-argument and MOD) ──────────────────────────────────────────────
+static Value fn_ifs(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
+    if (f.args.empty() || f.args.size() % 2 != 0) return Value::error(FormulaError::VALUE);
+    for (size_t i = 0; i + 1 < f.args.size(); i += 2) {
+        Value cond = ev.eval(*f.args[i], ctx);
+        if (cond.is_error()) return cond;
+        if (is_truthy(cond)) return ev.eval(*f.args[i + 1], ctx);
+    }
+    return Value::error(FormulaError::NA);
+}
+
+static Value fn_ifna(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
+    if (f.args.size() != 2) return Value::error(FormulaError::VALUE);
+    Value v = ev.eval(*f.args[0], ctx);
+    if (v.is_error() && v.as_error() == FormulaError::NA) return ev.eval(*f.args[1], ctx);
+    return v;
+}
+
+// ── Math (one-argument and MOD / ROUND) ──────────────────────────────────────
 
 static Value fn_abs(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    if (f.args.size() != 1) return Value::error(FormulaError::VALUE);
-    Value v = ev.eval(*f.args[0], ctx);
-    double n; if (!v.to_number(n)) return Value::error(FormulaError::VALUE);
+    double n;
+    if (f.args.size() != 1 || !eval_num_arg(f, 0, ctx, ev, n))
+        return Value::error(FormulaError::VALUE);
     return Value::number(std::abs(n));
 }
 
 static Value fn_round(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     if (f.args.size() < 1) return Value::error(FormulaError::VALUE);
-    Value vn = ev.eval(*f.args[0], ctx);
     double n = 0, digits = 0;
-    if (!vn.to_number(n)) return Value::error(FormulaError::VALUE);
-    if (f.args.size() >= 2) {
-        Value vd = ev.eval(*f.args[1], ctx);
-        if (!vd.to_number(digits)) return Value::error(FormulaError::VALUE);
-    }
+    if (!eval_num_arg(f, 0, ctx, ev, n)) return Value::error(FormulaError::VALUE);
+    if (f.args.size() >= 2 && !eval_num_arg(f, 1, ctx, ev, digits))
+        return Value::error(FormulaError::VALUE);
     double factor = std::pow(10.0, std::floor(digits));
     return Value::number(std::round(n * factor) / factor);
 }
 
 static Value fn_sqrt(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    if (f.args.size() != 1) return Value::error(FormulaError::VALUE);
-    Value v = ev.eval(*f.args[0], ctx);
-    double n; if (!v.to_number(n)) return Value::error(FormulaError::VALUE);
+    double n;
+    if (f.args.size() != 1 || !eval_num_arg(f, 0, ctx, ev, n))
+        return Value::error(FormulaError::VALUE);
     if (n < 0) return Value::error(FormulaError::NUM);
     return Value::number(std::sqrt(n));
 }
 
 static Value fn_int(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    if (f.args.size() != 1) return Value::error(FormulaError::VALUE);
-    Value v = ev.eval(*f.args[0], ctx);
-    double n; if (!v.to_number(n)) return Value::error(FormulaError::VALUE);
+    double n;
+    if (f.args.size() != 1 || !eval_num_arg(f, 0, ctx, ev, n))
+        return Value::error(FormulaError::VALUE);
     return Value::number(std::floor(n));
 }
 
 static Value fn_mod(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    if (f.args.size() != 2) return Value::error(FormulaError::VALUE);
     double n, d;
-    if (!ev.eval(*f.args[0], ctx).to_number(n)) return Value::error(FormulaError::VALUE);
-    if (!ev.eval(*f.args[1], ctx).to_number(d)) return Value::error(FormulaError::VALUE);
+    if (f.args.size() != 2 || !eval_num_arg(f, 0, ctx, ev, n) || !eval_num_arg(f, 1, ctx, ev, d))
+        return Value::error(FormulaError::VALUE);
     if (d == 0) return Value::error(FormulaError::DIV0);
     return Value::number(n - std::floor(n / d) * d);
 }
@@ -171,16 +194,12 @@ static Value fn_len(const FuncCallExpr& f, const EvalContext& ctx, const Evaluat
 
 static Value fn_upper(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     if (f.args.size() != 1) return Value::error(FormulaError::VALUE);
-    std::string s = ev.eval(*f.args[0], ctx).to_display();
-    for (char& c : s) c = (char)std::toupper((unsigned char)c);
-    return Value::string(s);
+    return Value::string(tuix::to_upper(ev.eval(*f.args[0], ctx).to_display()));
 }
 
 static Value fn_lower(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     if (f.args.size() != 1) return Value::error(FormulaError::VALUE);
-    std::string s = ev.eval(*f.args[0], ctx).to_display();
-    for (char& c : s) c = (char)std::tolower((unsigned char)c);
-    return Value::string(s);
+    return Value::string(tuix::to_lower(ev.eval(*f.args[0], ctx).to_display()));
 }
 
 static Value fn_trim(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
@@ -215,13 +234,7 @@ static Value fn_sparkline(const FuncCallExpr& f, const EvalContext& ctx, const E
         "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"
     };
     std::vector<double> nums;
-    Value err;
-    for_each_value(f, ctx, ev, [&](const Value& v) {
-        if (v.is_error()) { err = v; return false; }
-        double n;
-        if (!v.is_empty() && v.to_number(n)) nums.push_back(n);
-        return true;
-    });
+    Value err = collect_numbers(f, ctx, ev, nums);
     if (err.is_error()) return err;
     if (nums.empty()) return Value::error(FormulaError::NA);
 
@@ -279,12 +292,7 @@ static bool to_strict_number(const Value& v, double& out) {
 static bool values_equal(const Value& a, const Value& b) {
     double an, bn;
     if (to_strict_number(a, an) && to_strict_number(b, bn)) return an == bn;
-    std::string sa = a.to_display(), sb = b.to_display();
-    if (sa.size() != sb.size()) return false;
-    for (size_t i = 0; i < sa.size(); ++i)
-        if (std::tolower((unsigned char)sa[i]) != std::tolower((unsigned char)sb[i]))
-            return false;
-    return true;
+    return tuix::iequals(a.to_display(), b.to_display());
 }
 
 // Ordered comparison returning -1/0/1: numeric when both are numbers, else
@@ -389,16 +397,13 @@ static Value fn_vlookup(const FuncCallExpr& f, const EvalContext& ctx, const Eva
     int r0, c0, r1, c1;
     if (!arg_bounds(*f.args[1], r0, c0, r1, c1)) return Value::error(FormulaError::VALUE);
     double cidx;
-    if (!ev.eval(*f.args[2], ctx).to_number(cidx)) return Value::error(FormulaError::VALUE);
+    if (!eval_num_arg(f, 2, ctx, ev, cidx)) return Value::error(FormulaError::VALUE);
     int col = static_cast<int>(cidx);
     if (col < 1 || c0 + col - 1 > c1) return Value::error(FormulaError::REF);
 
     bool approx = true;
-    if (f.args.size() == 4) {
-        Value rl = ev.eval(*f.args[3], ctx);
-        double n = 0;
-        approx = rl.is_boolean() ? rl.as_boolean() : (rl.to_number(n) && n != 0.0);
-    }
+    if (f.args.size() == 4) approx = is_truthy(ev.eval(*f.args[3], ctx));
+
     int target_col = c0 + col - 1;
     if (!approx) {
         for (int r = r0; r <= r1; ++r)
@@ -425,7 +430,7 @@ static Value fn_match(const FuncCallExpr& f, const EvalContext& ctx, const Evalu
     int match_type = 1;
     if (f.args.size() == 3) {
         double m;
-        if (!ev.eval(*f.args[2], ctx).to_number(m)) return Value::error(FormulaError::VALUE);
+        if (!eval_num_arg(f, 2, ctx, ev, m)) return Value::error(FormulaError::VALUE);
         match_type = static_cast<int>(m);
     }
     int len = (r0 == r1) ? (c1 - c0 + 1) : (r1 - r0 + 1);
@@ -450,9 +455,9 @@ static Value fn_index(const FuncCallExpr& f, const EvalContext& ctx, const Evalu
     int r0, c0, r1, c1;
     if (!arg_bounds(*f.args[0], r0, c0, r1, c1)) return Value::error(FormulaError::VALUE);
     double rn = 0, cn = 0;
-    if (!ev.eval(*f.args[1], ctx).to_number(rn)) return Value::error(FormulaError::VALUE);
+    if (!eval_num_arg(f, 1, ctx, ev, rn)) return Value::error(FormulaError::VALUE);
     bool have_col = f.args.size() == 3;
-    if (have_col && !ev.eval(*f.args[2], ctx).to_number(cn)) return Value::error(FormulaError::VALUE);
+    if (have_col && !eval_num_arg(f, 2, ctx, ev, cn)) return Value::error(FormulaError::VALUE);
 
     int nrows = r1 - r0 + 1, ncols = c1 - c0 + 1;
     int ri = static_cast<int>(rn), ci = static_cast<int>(cn);
@@ -460,27 +465,6 @@ static Value fn_index(const FuncCallExpr& f, const EvalContext& ctx, const Evalu
     if (ci == 0) ci = 1;
     if (ri < 1 || ri > nrows || ci < 1 || ci > ncols) return Value::error(FormulaError::REF);
     return ctx.cell_value(r0 + ri - 1, c0 + ci - 1);
-}
-
-// ── Multi-branch conditionals (IFS / IFNA) ────────────────────────────────────
-
-static Value fn_ifs(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    if (f.args.empty() || f.args.size() % 2 != 0) return Value::error(FormulaError::VALUE);
-    for (size_t i = 0; i + 1 < f.args.size(); i += 2) {
-        Value cond = ev.eval(*f.args[i], ctx);
-        if (cond.is_error()) return cond;
-        double n = 0;
-        bool truthy = cond.is_boolean() ? cond.as_boolean() : (cond.to_number(n) && n != 0.0);
-        if (truthy) return ev.eval(*f.args[i + 1], ctx);
-    }
-    return Value::error(FormulaError::NA);
-}
-
-static Value fn_ifna(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    if (f.args.size() != 2) return Value::error(FormulaError::VALUE);
-    Value v = ev.eval(*f.args[0], ctx);
-    if (v.is_error() && v.as_error() == FormulaError::NA) return ev.eval(*f.args[1], ctx);
-    return v;
 }
 
 // ── Dispatch table ────────────────────────────────────────────────────────────

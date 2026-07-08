@@ -10,6 +10,8 @@ public:
     void               set_value(std::string v);
     const std::string& display() const;
     bool               empty()   const;
+    // True when the raw value is a formula (starts with '=').
+    bool               is_formula() const;
 
 private:
     std::string m_value;

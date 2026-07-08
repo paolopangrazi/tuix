@@ -4,13 +4,13 @@
 #include "grid.hpp"
 
 #include <algorithm>
-#include <cctype>
 #include <numeric>
 #include <sstream>
 #include <string>
 
 #include "col_label.hpp"
 #include "formulas/evaluator.hpp"
+#include "util/strings.hpp"
 
 // ── Sorting ──────────────────────────────────────────────────────────────────
 
@@ -21,11 +21,7 @@ static int cmp_values(const Value& a, const Value& b) {
     const bool an = a.to_number(da), bn = b.to_number(db);
     if (an && bn) return (da < db) ? -1 : (da > db ? 1 : 0);
     if (an != bn) return an ? -1 : 1;
-    auto lower = [](std::string s) {
-        for (char& c : s) c = (char)std::tolower((unsigned char)c);
-        return s;
-    };
-    const std::string sa = lower(a.to_display()), sb = lower(b.to_display());
+    const std::string sa = tuix::to_lower(a.to_display()), sb = tuix::to_lower(b.to_display());
     return (sa < sb) ? -1 : (sa > sb ? 1 : 0);
 }
 
@@ -78,18 +74,16 @@ void Grid::sort_by(const std::vector<SortKey>& keys) {
     const std::string label = col_letter(keys[0].col) + (keys[0].descending ? " ▼" : " ▲");
     bool has_formula = false;
     for (int r = 0; r < m_rows && !has_formula; ++r)
-        for (int c = 0; c < m_cols; ++c) {
-            const std::string& raw = m_cells[r][c].value();
-            if (!raw.empty() && raw[0] == '=') { has_formula = true; break; }
-        }
+        for (int c = 0; c < m_cols; ++c)
+            if (m_cells[r][c].is_formula()) { has_formula = true; break; }
     set_status(has_formula ? "Sorted by " + label + "  (formula refs not adjusted)"
                            : "Sorted by " + label);
 }
 
 void Grid::sort_spec(const std::string& spec) {
-    auto dir_is_desc = [](std::string w) {
-        for (char& c : w) c = (char)std::tolower((unsigned char)c);
-        return w == "desc" || w == "descending" || w == "d";
+    auto dir_is_desc = [](const std::string& w) {
+        const std::string l = tuix::to_lower(w);
+        return l == "desc" || l == "descending" || l == "d";
     };
 
     std::vector<SortKey> keys;
@@ -132,8 +126,8 @@ void Grid::toggle_heatmap() {
 
     int r0, r1, c0, c1;
     if (m_has_selection && m_cursor_row >= 0 && m_cursor_col >= 0) {
-        r0 = std::min(m_cursor_row, m_sel_row); r1 = std::max(m_cursor_row, m_sel_row);
-        c0 = std::min(m_cursor_col, m_sel_col); c1 = std::max(m_cursor_col, m_sel_col);
+        const CellRect s = selection_bounds();
+        r0 = s.r0; r1 = s.r1; c0 = s.c0; c1 = s.c1;
     } else if (m_cursor_col >= 0) {          // no selection → the whole current column
         r0 = 0; r1 = m_rows - 1; c0 = c1 = m_cursor_col;
     } else {
@@ -212,11 +206,7 @@ std::vector<Grid::Suggestion> Grid::cell_suggestions() const {
 std::vector<Grid::Suggestion> Grid::range_suggestions() const {
     if (!m_has_selection || m_cursor_row < 0 || m_cursor_col < 0) return {};
 
-    const int r0 = std::min(m_cursor_row, m_sel_row);
-    const int r1 = std::max(m_cursor_row, m_sel_row);
-    const int c0 = std::min(m_cursor_col, m_sel_col);
-    const int c1 = std::max(m_cursor_col, m_sel_col);
-
+    const auto [r0, c0, r1, c1] = selection_bounds();
     if (r0 == r1 && c0 == c1) return {};  // single cell — cell_suggestions handles it
 
     const std::string range = col_letter(c0) + std::to_string(r0 + 1)

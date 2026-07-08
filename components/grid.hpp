@@ -238,6 +238,10 @@ private:
     void move_end();
     void page_up();
     void page_down();
+    // Append one blank row/column at the end (data + per-row/col bookkeeping
+    // only; callers place the cursor and trigger the recalc).
+    void append_row();
+    void append_col();
     void add_row();
     void insert_row(int r);
     void add_col();
@@ -276,6 +280,10 @@ private:
     bool handle_normal_nav     (ftxui::Event e);
     bool handle_mouse          (ftxui::Event e);
 
+    // Normalized rectangle spanned by the cursor and the selection anchor;
+    // collapses to the cursor cell when no selection is active.
+    struct CellRect { int r0, c0, r1, c1; };
+    CellRect       selection_bounds() const noexcept;
     bool           in_selection(int r, int c) const noexcept;
     std::string    cursor_label()  const;
     std::string    cell_display(int r, int c) const;
