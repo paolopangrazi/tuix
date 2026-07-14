@@ -12,6 +12,7 @@
 #include "tab_bar.hpp"
 #include "cmd_mode.hpp"
 #include "config/config.hpp"
+#include "cli/headless.hpp"
 
 #include "confirm_dialog.hpp"
 #include "path_input_dialog.hpp"
@@ -27,6 +28,12 @@ enum Tab { Main, ExitConfirm, Help, SaveConfirm, SaveAs, ConfigEditor, Open, Ren
 
 int main(int argc, char* argv[]) {
     using namespace ftxui;
+
+    // Headless "unix filter" mode: transform CSV and exit before FTXUI grabs
+    // the terminal. Triggered by any headless flag or piped stdin.
+    headless::Options hopts;
+    if (headless::parse_args(argc, argv, hopts))
+        return headless::run(hopts);
 
     auto screen = ScreenInteractive::Fullscreen();
     int  tab    = Main;

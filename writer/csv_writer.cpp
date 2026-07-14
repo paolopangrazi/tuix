@@ -3,7 +3,9 @@
 
 namespace CsvWriter {
 
-void save(const std::string& path, const SheetData& data) {
+namespace {
+
+rapidcsv::Document build(const SheetData& data) {
     rapidcsv::Document doc(
         std::string(),
         rapidcsv::LabelParams(),  // row 0 = column names
@@ -17,7 +19,17 @@ void save(const std::string& path, const SheetData& data) {
         for (size_t c = 0; c < data.rows[r].size(); ++c)
             doc.SetCell<std::string>(c, r, data.rows[r][c]);
 
-    doc.Save(path);
+    return doc;
+}
+
+} // anonymous namespace
+
+void save(const std::string& path, const SheetData& data) {
+    build(data).Save(path);
+}
+
+void save_stream(std::ostream& out, const SheetData& data) {
+    build(data).Save(out);
 }
 
 } // namespace CsvWriter

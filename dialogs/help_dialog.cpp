@@ -110,6 +110,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
             krow("Ctrl+E",                   "Toggle quit confirmation dialog"),
             krow("F1",                       "This help screen"),
             krow("F12",                      "Configuration editor"),
+            krow("tuix --help  (shell)",     "Headless CSV filter: --filter / --sort / --select"),
         }); }),
     }, &m_tab);
 

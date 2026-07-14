@@ -16,7 +16,7 @@ without leaving your terminal. tuiX is a single native C++ binary built on
 
 <video src="https://github.com/user-attachments/assets/651a9673-4791-4660-a642-3d17b1e80670" autoplay loop muted playsinline width="800"></video>
 
-**[Overview](#overview) · [Features](#features) · [Theming](#theming) · [Gallery](#theme-gallery) · [Installation](#installation) · [Usage](#usage) · [Key bindings](#key-bindings) · [Configuration](#configuration) · [License](#license)**
+**[Overview](#overview) · [Features](#features) · [Theming](#theming) · [Gallery](#theme-gallery) · [Installation](#installation) · [Usage](#usage) · [Headless mode](#headless-mode) · [Key bindings](#key-bindings) · [Configuration](#configuration) · [License](#license)**
 
 </div>
 
@@ -41,6 +41,7 @@ and macOS; Windows is not yet supported.
 - **Multi-sheet** — XLSX workbooks open with a tab per worksheet; cycle, add, rename, and delete them, and reference across them with `Sheet2!A1`.
 - **Live feedback** — per-cell formula suggestions and range statistics update as you work.
 - **Theme-aware** — colors map to your terminal's ANSI palette, so tuiX adopts your theme automatically.
+- **Scriptable** — a headless mode turns tuiX into a unix filter: `cat data.csv | tuix --filter 'salary > 50000' --sort dept`.
 
 ---
 
@@ -317,6 +318,65 @@ tuix                        # start with a blank sheet
 tuix path/to/file.csv       # open a CSV
 tuix path/to/file.xlsx      # open an Excel file
 ```
+
+---
+
+## Headless mode
+
+Beyond the interactive editor, tuiX doubles as a **unix filter**: give it any
+transform flag (or pipe CSV into it) and it reads CSV, applies a pipeline, and
+writes CSV to stdout — never touching the terminal UI. This makes tuiX
+scriptable and composable with the rest of your shell.
+
+```bash
+# Filter, sort, and pick columns from a file → stdout
+tuix --filter 'salary > 50000' --sort 'department,salary desc' \
+     --select first_name,department,salary samples/csv/employees.csv
+
+# Read from a pipe, keep names starting with A, write the top 20 to a file
+cat samples/csv/employees.csv | tuix --filter 'first_name =~ ^A' --head 20 -o top.csv
+```
+
+The pipeline always runs in a fixed order: **filter → sort → head/tail →
+select**, so each stage sees the previous stage's output.
+
+### Options
+
+| Flag | Argument | Effect |
+|---|---|---|
+| `-f`, `--filter` | `PRED` | Keep rows matching `PRED`. Repeatable — multiple filters are **AND**-ed. |
+| `-s`, `--sort` | `SPEC` | Sort by one or more columns, e.g. `'dept,salary desc'`. |
+| `--select` | `COLS` | Keep and reorder columns, e.g. `name,dept`. |
+| `--head` | `N` | Keep the first `N` data rows. |
+| `--tail` | `N` | Keep the last `N` data rows. |
+| `-o`, `--output` | `FILE` | Write to `FILE` instead of stdout. |
+| `-h`, `--help` | | Print usage and exit. |
+
+Input comes from a file argument, or from **stdin** when data is piped in (or
+you pass `-`). The delimiter (comma, semicolon, tab, pipe) is auto-detected and
+preserved on output.
+
+### Filter predicates
+
+A predicate is `COLUMN OP VALUE`. **`COLUMN`** is a header name (case-insensitive)
+or a spreadsheet column letter (`A`, `B`, `AA`…). **`OP`** is one of:
+
+| Operator | Match |
+|---|---|
+| `==` &nbsp; `!=` | Equal / not equal (numeric when both sides are numbers, else case-insensitive text) |
+| `<` &nbsp; `<=` &nbsp; `>` &nbsp; `>=` | Ordered comparison (numeric or lexicographic) |
+| `=~` | Value matches the given **regular expression** (ECMAScript) |
+| `contains` | Value contains the given substring (case-insensitive) |
+
+```bash
+tuix --filter 'department == Engineering' data.csv   # exact match
+tuix --filter 'salary >= 80000'          data.csv   # numeric compare
+tuix --filter 'role contains Engineer'   data.csv   # substring
+tuix --filter 'last_name =~ ^M'          data.csv   # regex
+```
+
+Bad columns, malformed predicates, and invalid regexes report an error and exit
+non-zero, so headless runs fail loudly in scripts.
 
 ---
 
