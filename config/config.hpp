@@ -63,6 +63,7 @@ struct Keys {
     std::vector<char> row_shorter = {'{'};
     std::vector<char> sort_col    = {'s'};
     std::vector<char> heatmap     = {'H'};
+    std::vector<char> chart       = {'c'};
     std::vector<char> cmd_mode    = {':'};
 };
 

@@ -180,6 +180,7 @@ bool Grid::handle_normal_nav(Event e) {
         if (m_cfg.key_is(e, m_cfg.keys.row_shorter)) { resize_row(m_cursor_row, -1); return true; }
     }
     if (m_cfg.key_is(e, m_cfg.keys.heatmap)) { toggle_heatmap(); return true; }
+    if (m_cfg.key_is(e, m_cfg.keys.chart))   { cycle_chart();    return true; }
     if (m_cfg.key_is(e, m_cfg.keys.insert_mode) || e == Event::F2) { start_edit(false); return true; }  // i/a/F2: edit (cell or header name)
     if (m_cursor_row < 0) {  // column header: action box inserts / deletes columns
         if (m_cfg.key_is(e, m_cfg.keys.insert_col)) { insert_col(m_cursor_col);     return true; }

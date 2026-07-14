@@ -81,6 +81,12 @@ public:
     // min/max and shades it; on → clears.
     void toggle_heatmap();
 
+    // Chart panel: cycle the current source (selection, or the cursor's whole
+    // column) through Bar → Line → Histogram → off. The panel reads live data
+    // via chart_data() on each render, so it tracks the selection as it moves.
+    enum class ChartType { Bar, Line, Histogram };
+    void cycle_chart();
+
     // True while the `/` search prompt is capturing keys.
     bool searching() const noexcept { return m_searching; }
 
@@ -109,6 +115,18 @@ public:
         double      max     = 0.0;
     };
     ColumnStats column_stats() const;
+
+    // Live numeric series feeding the chart panel. `active` is false unless a
+    // chart is toggled on; `values` holds the numeric cells (row-major) of the
+    // selection, or the cursor's whole column when there is no selection.
+    struct ChartData {
+        bool                active = false;
+        ChartType           type   = ChartType::Bar;
+        std::string         label;              // column name, or "selection"
+        std::vector<double> values;
+        int                 skipped = 0;        // non-numeric cells left out
+    };
+    ChartData chart_data() const;
 
     // Pre-computed formula values applicable to the current cell (empty = hide).
     struct Suggestion { std::string name, value; };
@@ -187,6 +205,10 @@ private:
     bool                           m_heat_active = false;
     int                            m_heat_r0 = 0, m_heat_c0 = 0, m_heat_r1 = 0, m_heat_c1 = 0;
     double                         m_heat_min = 0.0, m_heat_max = 0.0;
+
+    // Chart panel: which type is showing (Bar/Line/Histogram), or none.
+    bool                           m_chart_active = false;
+    ChartType                      m_chart_type   = ChartType::Bar;
 
     std::vector<HistoryEntry> m_undo_stack;
     std::vector<HistoryEntry> m_redo_stack;

@@ -8,6 +8,7 @@
 #include "status_area.hpp"
 #include "suggestion_bar.hpp"
 #include "column_stats.hpp"
+#include "chart_panel.hpp"
 #include "file_bar.hpp"
 #include "tab_bar.hpp"
 #include "cmd_mode.hpp"
@@ -20,6 +21,7 @@
 #include "config_dialog.hpp"
 #include "sheet_actions_dialog.hpp"
 
+#include <algorithm>
 #include <filesystem>
 
 // Tab indices into the root Container::Tab below — order must match it.
@@ -179,6 +181,12 @@ int main(int argc, char* argv[]) {
             if (col_stats.valid) {
                 rows.push_back(separatorLight());
                 rows.push_back(render_column_stats(cfg, col_stats));
+            }
+            auto chart = body.grid().chart_data();
+            if (chart.active) {
+                rows.push_back(separatorLight());
+                const int w = std::clamp(screen.dimx() - 6, 20, 100);
+                rows.push_back(render_chart_panel(cfg, chart, w, 8));
             }
             if (!session.file_info().empty()) {
                 rows.push_back(separatorLight());

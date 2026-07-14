@@ -47,6 +47,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
             krow("y",                        "Yank cell / selection (→ system clipboard)"),
             krow("p",                        "Paste yanked cell(s)"),
             krow("H",                        "Heatmap: shade numeric cells (selection / column)"),
+            krow("c",                        "Chart: cycle bar / line / histogram (selection / column)"),
         }); }),
         Renderer([krow] { return vbox({
             krow("/",                        "Start incremental search"),

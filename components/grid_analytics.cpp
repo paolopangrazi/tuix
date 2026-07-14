@@ -154,6 +154,49 @@ void Grid::toggle_heatmap() {
     set_status("Heatmap on");
 }
 
+// ── Chart panel ────────────────────────────────────────────────────────────
+
+void Grid::cycle_chart() {
+    const char* name = "bar";
+    if (!m_chart_active) {
+        m_chart_active = true;
+        m_chart_type   = ChartType::Bar;
+    } else switch (m_chart_type) {
+        case ChartType::Bar:       m_chart_type = ChartType::Line;      name = "line";      break;
+        case ChartType::Line:      m_chart_type = ChartType::Histogram; name = "histogram"; break;
+        case ChartType::Histogram: m_chart_active = false;             name = nullptr;     break;
+    }
+    set_status(name ? std::string("Chart: ") + name : "Chart off");
+}
+
+Grid::ChartData Grid::chart_data() const {
+    ChartData cd;
+    if (!m_chart_active) return cd;
+    cd.active = true;
+    cd.type   = m_chart_type;
+
+    int r0, r1, c0, c1;
+    if (m_has_selection && m_cursor_row >= 0 && m_cursor_col >= 0) {
+        const CellRect s = selection_bounds();
+        r0 = s.r0; r1 = s.r1; c0 = s.c0; c1 = s.c1;
+    } else if (m_cursor_col >= 0) {          // no selection → the whole current column
+        r0 = 0; r1 = m_rows - 1; c0 = c1 = m_cursor_col;
+    } else {
+        return cd;                           // gutter — nothing to chart
+    }
+
+    cd.label = (c0 == c1 && c0 < static_cast<int>(m_col_names.size()))
+                   ? m_col_names[c0] : "selection";
+
+    for (int r = r0; r <= r1; ++r)
+        for (int c = c0; c <= c1; ++c) {
+            double v;
+            if (cell_value(r, c).to_number(v)) cd.values.push_back(v);
+            else                               ++cd.skipped;
+        }
+    return cd;
+}
+
 // ── Column stats & formula suggestions ───────────────────────────────────────
 
 Grid::ColumnStats Grid::column_stats() const {

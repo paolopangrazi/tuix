@@ -19,8 +19,10 @@ add_executable(tuix_tests
     unit/cross_sheet_test.cpp
     unit/clipboard_test.cpp
     unit/headless_test.cpp
+    unit/chart_test.cpp
     integration/cross_sheet_grid_test.cpp
     integration/sort_grid_test.cpp
+    integration/chart_grid_test.cpp
     integration/config_theme_test.cpp
 )
 

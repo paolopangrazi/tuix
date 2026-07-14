@@ -64,6 +64,7 @@ and macOS; Windows is not yet supported.
 - Select a range with `Shift`+arrows, **yank** with `y`, and **paste** with `p`. Yanking also copies the selection to your **system clipboard** (as tab-separated text via OSC 52), so it pastes into other apps — even over SSH.
 - **Sort** rows by one or more columns — **click a column header** (or press `s` on it) to toggle ascending/descending; a `▲`/`▼` marks the sorted column and a hover hint shows headers are clickable. Use `:sort B desc, A` for multi-key sorts. Sorting is typed (numbers numerically, text case-insensitively, blanks last) and fully undoable.
 - **Heatmap** — press `H` to shade numeric cells along a cold→hot gradient (blue → green → red), scaled to the min/max of the current selection (or the whole column if nothing is selected). Press `H` again to clear.
+- **Charts** — press `c` to open a Unicode chart panel for the current selection (or column) and again to cycle **bar → line → histogram → off**. Drawn with braille glyphs at sub-cell resolution, it updates live as you move the selection, showing `n`, min, and max alongside.
 - A single undo/redo stack covers cell edits, column renames, and sorts (`u` / `Ctrl+R`).
 
 ### Sheets
@@ -412,6 +413,7 @@ non-zero, so headless runs fail loudly in scripts.
 | `Shift`+arrows | Select a range |
 | `y` / `p` | Yank (→ system clipboard) / paste |
 | `H` | Heatmap-shade numeric cells (selection, or column) — toggle |
+| `c` | Chart panel (selection, or column) — cycle bar → line → histogram → off |
 | `+` / `-` | Insert / delete row (gutter) or column (header) |
 | `>` / `<` | Widen / narrow the current column |
 | `}` / `{` | Grow / shrink the current row's height |
@@ -497,6 +499,7 @@ row_taller  = ["}"]
 row_shorter = ["{"]
 sort_col    = ["s"]
 heatmap     = ["H"]
+chart       = ["c"]
 cmd_mode    = [":"]
 
 [grid]

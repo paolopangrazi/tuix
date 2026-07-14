@@ -69,6 +69,7 @@ add_library(tuix_core STATIC
     components/file_bar.cpp
     components/formula_catalog.cpp
     components/heatmap.cpp
+    components/chart_panel.cpp
     components/grid.cpp
     components/grid_edit.cpp
     components/grid_view.cpp
