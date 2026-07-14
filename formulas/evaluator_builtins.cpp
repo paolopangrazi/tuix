@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "evaluator.hpp"
+#include "util/numbers.hpp"
 #include "util/strings.hpp"
 
 // ── Shared helpers ───────────────────────────────────────────────────────────
@@ -253,29 +254,39 @@ static Value fn_sparkline(const FuncCallExpr& f, const EvalContext& ctx, const E
 
 // Resolve an argument that should denote a rectangular range. A bare cell ref
 // is treated as a 1×1 range. Returns false if the expression is neither.
-static bool arg_bounds(const Expr& e, int& r0, int& c0, int& r1, int& c1) {
+// `sheet` receives the range's qualifier ("" = current sheet); same-sheet
+// bounds are clamped to the grid so oversized ranges neither error nor spin.
+static bool arg_bounds(const Expr& e, const EvalContext& ctx,
+                       int& r0, int& c0, int& r1, int& c1, std::string& sheet) {
     if (e.kind == Expr::Kind::RANGE) {
         const auto& r = static_cast<const RangeExpr&>(e);
         r0 = std::min(r.from.row, r.to.row); r1 = std::max(r.from.row, r.to.row);
         c0 = std::min(r.from.col, r.to.col); c1 = std::max(r.from.col, r.to.col);
-        return true;
-    }
-    if (e.kind == Expr::Kind::CELL_REF) {
+        sheet = r.from.sheet;
+    } else if (e.kind == Expr::Kind::CELL_REF) {
         const auto& c = static_cast<const CellRefExpr&>(e);
         r0 = r1 = c.row; c0 = c1 = c.col;
-        return true;
+        sheet = c.sheet;
+    } else {
+        return false;
     }
-    return false;
+    if (sheet.empty()) {
+        r0 = std::max(r0, 0);
+        c0 = std::max(c0, 0);
+        r1 = std::min(r1, ctx.rows() - 1);
+        c1 = std::min(c1, ctx.cols() - 1);
+    }
+    return true;
+}
+
+// Read one cell of a range resolved by arg_bounds, honoring its qualifier.
+static Value range_cell(const EvalContext& ctx, const std::string& sheet, int r, int c) {
+    return sheet.empty() ? ctx.cell_value(r, c) : ctx.cell_value_in(sheet, r, c);
 }
 
 // Strict full-string parse of a numeric operand (rejects "12abc").
 static bool parse_full_number(const std::string& s, double& out) {
-    if (s.empty()) return false;
-    try {
-        size_t pos = 0;
-        out = std::stod(s, &pos);
-        return pos == s.size();
-    } catch (...) { return false; }
+    return tuix::parse_number(s, out);
 }
 
 // A value usable for ordered/equality matching: numbers, booleans, and numeric
@@ -338,13 +349,14 @@ static bool match_criterion(const Value& cell, const Value& crit) {
 static Value fn_countif(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     if (f.args.size() != 2) return Value::error(FormulaError::VALUE);
     int r0, c0, r1, c1;
-    if (!arg_bounds(*f.args[0], r0, c0, r1, c1)) return Value::error(FormulaError::VALUE);
+    std::string sheet;
+    if (!arg_bounds(*f.args[0], ctx, r0, c0, r1, c1, sheet)) return Value::error(FormulaError::VALUE);
     Value crit = ev.eval(*f.args[1], ctx);
     if (crit.is_error()) return crit;
     int count = 0;
     for (int r = r0; r <= r1; ++r)
         for (int c = c0; c <= c1; ++c) {
-            Value cell = ctx.cell_value(r, c);
+            Value cell = range_cell(ctx, sheet, r, c);
             if (!cell.is_empty() && match_criterion(cell, crit)) ++count;
         }
     return Value::number(static_cast<double>(count));
@@ -356,22 +368,26 @@ static Value sumif_core(const FuncCallExpr& f, const EvalContext& ctx,
                         const Evaluator& ev, bool average) {
     if (f.args.size() < 2 || f.args.size() > 3) return Value::error(FormulaError::VALUE);
     int r0, c0, r1, c1;
-    if (!arg_bounds(*f.args[0], r0, c0, r1, c1)) return Value::error(FormulaError::VALUE);
+    std::string sheet;
+    if (!arg_bounds(*f.args[0], ctx, r0, c0, r1, c1, sheet)) return Value::error(FormulaError::VALUE);
     Value crit = ev.eval(*f.args[1], ctx);
     if (crit.is_error()) return crit;
 
     bool have_sum = f.args.size() == 3;
     int sr0 = r0, sc0 = c0, sr1 = r1, sc1 = c1;
-    if (have_sum && !arg_bounds(*f.args[2], sr0, sc0, sr1, sc1))
+    std::string ssheet = sheet;
+    if (have_sum && !arg_bounds(*f.args[2], ctx, sr0, sc0, sr1, sc1, ssheet))
         return Value::error(FormulaError::VALUE);
 
     double total = 0.0;
     int count = 0;
     for (int r = r0; r <= r1; ++r)
         for (int c = c0; c <= c1; ++c) {
-            Value cell = ctx.cell_value(r, c);
+            Value cell = range_cell(ctx, sheet, r, c);
             if (cell.is_empty() || !match_criterion(cell, crit)) continue;
-            Value target = have_sum ? ctx.cell_value(sr0 + (r - r0), sc0 + (c - c0)) : cell;
+            Value target = have_sum
+                ? range_cell(ctx, ssheet, sr0 + (r - r0), sc0 + (c - c0))
+                : cell;
             double n;
             if (!target.is_empty() && target.to_number(n)) { total += n; ++count; }
         }
@@ -395,7 +411,8 @@ static Value fn_vlookup(const FuncCallExpr& f, const EvalContext& ctx, const Eva
     Value key = ev.eval(*f.args[0], ctx);
     if (key.is_error()) return key;
     int r0, c0, r1, c1;
-    if (!arg_bounds(*f.args[1], r0, c0, r1, c1)) return Value::error(FormulaError::VALUE);
+    std::string sheet;
+    if (!arg_bounds(*f.args[1], ctx, r0, c0, r1, c1, sheet)) return Value::error(FormulaError::VALUE);
     double cidx;
     if (!eval_num_arg(f, 2, ctx, ev, cidx)) return Value::error(FormulaError::VALUE);
     int col = static_cast<int>(cidx);
@@ -407,16 +424,17 @@ static Value fn_vlookup(const FuncCallExpr& f, const EvalContext& ctx, const Eva
     int target_col = c0 + col - 1;
     if (!approx) {
         for (int r = r0; r <= r1; ++r)
-            if (values_equal(ctx.cell_value(r, c0), key))
-                return ctx.cell_value(r, target_col);
+            if (values_equal(range_cell(ctx, sheet, r, c0), key))
+                return range_cell(ctx, sheet, r, target_col);
         return Value::error(FormulaError::NA);
     }
     // Approximate match: largest first-column value <= key, assuming ascending order.
     int best = -1;
     for (int r = r0; r <= r1; ++r) {
-        if (value_cmp(ctx.cell_value(r, c0), key) <= 0) best = r; else break;
+        if (value_cmp(range_cell(ctx, sheet, r, c0), key) <= 0) best = r; else break;
     }
-    return best < 0 ? Value::error(FormulaError::NA) : ctx.cell_value(best, target_col);
+    return best < 0 ? Value::error(FormulaError::NA)
+                    : range_cell(ctx, sheet, best, target_col);
 }
 
 static Value fn_match(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
@@ -424,7 +442,8 @@ static Value fn_match(const FuncCallExpr& f, const EvalContext& ctx, const Evalu
     Value key = ev.eval(*f.args[0], ctx);
     if (key.is_error()) return key;
     int r0, c0, r1, c1;
-    if (!arg_bounds(*f.args[1], r0, c0, r1, c1)) return Value::error(FormulaError::VALUE);
+    std::string sheet;
+    if (!arg_bounds(*f.args[1], ctx, r0, c0, r1, c1, sheet)) return Value::error(FormulaError::VALUE);
     if (r0 != r1 && c0 != c1) return Value::error(FormulaError::NA);  // needs a 1-D vector
 
     int match_type = 1;
@@ -435,7 +454,8 @@ static Value fn_match(const FuncCallExpr& f, const EvalContext& ctx, const Evalu
     }
     int len = (r0 == r1) ? (c1 - c0 + 1) : (r1 - r0 + 1);
     auto at = [&](int i) {
-        return (r0 == r1) ? ctx.cell_value(r0, c0 + i) : ctx.cell_value(r0 + i, c0);
+        return (r0 == r1) ? range_cell(ctx, sheet, r0, c0 + i)
+                          : range_cell(ctx, sheet, r0 + i, c0);
     };
     if (match_type == 0) {
         for (int i = 0; i < len; ++i)
@@ -453,7 +473,8 @@ static Value fn_match(const FuncCallExpr& f, const EvalContext& ctx, const Evalu
 static Value fn_index(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     if (f.args.size() < 2 || f.args.size() > 3) return Value::error(FormulaError::VALUE);
     int r0, c0, r1, c1;
-    if (!arg_bounds(*f.args[0], r0, c0, r1, c1)) return Value::error(FormulaError::VALUE);
+    std::string sheet;
+    if (!arg_bounds(*f.args[0], ctx, r0, c0, r1, c1, sheet)) return Value::error(FormulaError::VALUE);
     double rn = 0, cn = 0;
     if (!eval_num_arg(f, 1, ctx, ev, rn)) return Value::error(FormulaError::VALUE);
     bool have_col = f.args.size() == 3;
@@ -464,7 +485,7 @@ static Value fn_index(const FuncCallExpr& f, const EvalContext& ctx, const Evalu
     if (!have_col && nrows == 1 && ncols > 1) { ci = ri; ri = 1; }  // single row: index picks column
     if (ci == 0) ci = 1;
     if (ri < 1 || ri > nrows || ci < 1 || ci > ncols) return Value::error(FormulaError::REF);
-    return ctx.cell_value(r0 + ri - 1, c0 + ci - 1);
+    return range_cell(ctx, sheet, r0 + ri - 1, c0 + ci - 1);
 }
 
 // ── Dispatch table ────────────────────────────────────────────────────────────

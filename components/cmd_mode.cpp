@@ -43,33 +43,43 @@ bool CmdMode::handle(Event e) {
         return true;
     }
     if (e == Event::Return) {
-        bool quit      = (m_buf == ":q" || m_buf == ":q!");
-        bool save      = (m_buf == ":w");
-        bool save_quit = (m_buf == ":wq");
-        bool save_as   = (m_buf.size() > 3 && m_buf.compare(0, 3, ":w ") == 0);
-        bool edit      = (m_buf.size() > 3 && m_buf.compare(0, 3, ":e ") == 0);
-        bool sort      = (m_buf == ":sort" || (m_buf.size() > 6 && m_buf.compare(0, 6, ":sort ") == 0));
+        bool quit       = (m_buf == ":q");
+        bool force_quit = (m_buf == ":q!");
+        bool save       = (m_buf == ":w");
+        bool save_quit  = (m_buf == ":wq");
+        bool save_as    = (m_buf.size() > 3 && m_buf.compare(0, 3, ":w ") == 0);
+        bool edit       = (m_buf.size() > 3 && m_buf.compare(0, 3, ":e ") == 0);
+        bool sort       = (m_buf == ":sort" || (m_buf.size() > 6 && m_buf.compare(0, 6, ":sort ") == 0));
         std::string sp = save_as ? m_buf.substr(3) : "";
         std::string ep = edit    ? m_buf.substr(3) : "";
         std::string srt = sort && m_buf.size() > 6 ? m_buf.substr(6) : "";
-        // A bare A1 address (":B12") jumps the cursor. parse_a1 rejects the
-        // command words above (":w", ":wq", ":e file"), so there's no overlap.
+        // A bare A1 address (":B12") jumps the cursor; `:s/old/new/` replaces.
+        // parse_a1 and parse_subst both reject the command words above, so the
+        // forms can't collide.
         std::string ref = m_buf.substr(1);
         auto subst      = parse_subst(ref);
-        // parse_a1 and parse_subst reject the command words above, so no overlap.
         bool is_goto    = !subst && parse_a1(ref).has_value();
+        const std::string entered = m_buf;
 
         m_active = false;
         m_buf.clear();
 
-        if (quit      && m_actions.quit)               m_actions.quit();
-        if (save      && m_actions.save)               m_actions.save();
-        if (save_quit && m_actions.save_quit)          m_actions.save_quit();
-        if (save_as && !sp.empty() && m_actions.save_as) m_actions.save_as(sp);
-        if (edit    && !ep.empty() && m_actions.edit)    m_actions.edit(ep);
-        if (subst   && m_actions.replace)              m_actions.replace(subst->first, subst->second);
-        if (sort    && m_actions.sort)                 m_actions.sort(srt);
-        if (is_goto && m_actions.goto_cell)            m_actions.goto_cell(ref);
+        bool handled = false;
+        auto run = [&](bool match, auto& fn, auto&&... args) {
+            if (match) { handled = true; if (fn) fn(std::forward<decltype(args)>(args)...); }
+        };
+        run(quit,                   m_actions.quit);
+        run(force_quit,             m_actions.force_quit);
+        run(save,                   m_actions.save);
+        run(save_quit,              m_actions.save_quit);
+        run(save_as && !sp.empty(), m_actions.save_as, sp);
+        run(edit && !ep.empty(),    m_actions.edit, ep);
+        run(subst.has_value(),      m_actions.replace,
+            subst ? subst->first : "", subst ? subst->second : "");
+        run(sort,                   m_actions.sort, srt);
+        run(is_goto,                m_actions.goto_cell, ref);
+        if (!handled && entered.size() > 1 && m_actions.unknown)
+            m_actions.unknown(entered);
         return true;
     }
     if (e == Event::Backspace) {

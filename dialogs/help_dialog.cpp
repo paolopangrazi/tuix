@@ -107,7 +107,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
             krow(":s/old/new/",              "Find & replace across all cells"),
             krow(":sort  /  :sort B desc",   "Sort rows by current / given column(s)"),
             krow(":wq",                      "Save and quit"),
-            krow(":q  /  :q!",               "Quit via command mode"),
+            krow(":q  /  :q!",               "Quit (confirm) / force quit immediately"),
             krow("Ctrl+E",                   "Toggle quit confirmation dialog"),
             krow("F1",                       "This help screen"),
             krow("F12",                      "Configuration editor"),

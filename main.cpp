@@ -145,10 +145,18 @@ int main(int argc, char* argv[]) {
 
     // ── `:` command line ─────────────────────────────────────────────────────
     CmdMode cmd_mode({
-        /* quit      */ [&] { tab = ExitConfirm; },
-        /* save      */ [&] { if (session.has_path()) tab = SaveConfirm; },
-        /* save_quit */ [&] {
-            if (session.has_path()) session.write(session.current_path());
+        /* quit       */ [&] { tab = ExitConfirm; },
+        /* force_quit */ [&] { screen.Exit(); },
+        /* save       */ [&] {
+            if (session.has_path()) tab = SaveConfirm;
+            else body.grid().set_status("No file name — use :w <path>");
+        },
+        /* save_quit  */ [&] {
+            if (!session.has_path()) {           // don't exit without saving
+                body.grid().set_status("No file name — use :w <path>");
+                return;
+            }
+            session.write(session.current_path());
             screen.Exit();
         },
         /* save_as   */ [&](const std::string& p) { session.write(session.resolve(p)); },
@@ -158,6 +166,9 @@ int main(int argc, char* argv[]) {
             body.grid().replace_all(f, r);
         },
         /* sort      */ [&](const std::string& spec) { body.grid().sort_spec(spec); },
+        /* unknown   */ [&](const std::string& cmd) {
+            body.grid().set_status("Not a command: " + cmd);
+        },
     });
 
     // ── Main view: grid + status (chrome is drawn at the root) ───────────────

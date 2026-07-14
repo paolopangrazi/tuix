@@ -59,14 +59,6 @@ SheetData read_sheet(OpenXLSX::XLWorksheet wks) {
 
 } // namespace
 
-SheetData XlsxLoader::load(const std::string& path) {
-    OpenXLSX::XLDocument doc;
-    doc.open(path);
-    SheetData data = read_sheet(doc.workbook().worksheet(1));
-    doc.close();
-    return data;
-}
-
 WorkbookData XlsxLoader::load_workbook(const std::string& path) {
     OpenXLSX::XLDocument doc;
     doc.open(path);

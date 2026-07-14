@@ -8,14 +8,16 @@
 class CmdMode {
 public:
     struct Actions {
-        std::function<void()> quit;       // :q  :q!
-        std::function<void()> save;       // :w
-        std::function<void()> save_quit;  // :wq
+        std::function<void()> quit;        // :q   (may confirm)
+        std::function<void()> force_quit;  // :q!  (no confirmation)
+        std::function<void()> save;        // :w
+        std::function<void()> save_quit;   // :wq
         std::function<void(const std::string&)> save_as; // :w <path>
         std::function<void(const std::string&)> edit;    // :e <path>
         std::function<void(const std::string&)> goto_cell; // :B12  (bare A1 ref)
         std::function<void(const std::string&, const std::string&)> replace; // :s/old/new/
         std::function<void(const std::string&)> sort;    // :sort [col] [asc|desc], …
+        std::function<void(const std::string&)> unknown; // anything unrecognized
     };
 
     explicit CmdMode(Actions actions);

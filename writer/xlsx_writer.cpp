@@ -17,14 +17,6 @@ void write_sheet(OpenXLSX::XLWorksheet wks, const SheetData& data) {
 
 } // namespace
 
-void save(const std::string& path, const SheetData& data) {
-    OpenXLSX::XLDocument doc;
-    doc.create(path, OpenXLSX::XLForceOverwrite);
-    write_sheet(doc.workbook().worksheet(1), data);
-    doc.save();
-    doc.close();
-}
-
 void save_workbook(const std::string& path,
                    const std::vector<std::pair<std::string, SheetData>>& sheets) {
     OpenXLSX::XLDocument doc;

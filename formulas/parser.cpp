@@ -21,7 +21,15 @@ Token Parser::expect(TokenType type) {
     return consume();
 }
 
-std::unique_ptr<Expr> Parser::parse()            { return parse_expr(); }
+std::unique_ptr<Expr> Parser::parse() {
+    auto expr = parse_expr();
+    // The whole input must be one expression: without this check "=A1 B2"
+    // would silently evaluate as "=A1".
+    if (peek().type != TokenType::END)
+        throw std::runtime_error("Unexpected trailing token: " + peek().text);
+    return expr;
+}
+
 std::unique_ptr<Expr> Parser::parse_expr()       { return parse_comparison(); }
 
 std::unique_ptr<Expr> Parser::parse_comparison() {
@@ -123,8 +131,10 @@ std::unique_ptr<Expr> Parser::parse_primary() {
             range->to.col     = t2.coord.col;
             range->to.abs_row = t2.coord.abs_row;
             range->to.abs_col = t2.coord.abs_col;
-            // A qualifier on the start (Sheet2!A1:B3) covers the whole range.
+            // A qualifier on either end (Sheet2!A1:B3 or A1:Sheet2!B3) covers
+            // the whole range; consumers read from.sheet.
             range->to.sheet   = t2.coord.sheet.empty() ? ref->sheet : t2.coord.sheet;
+            if (range->from.sheet.empty()) range->from.sheet = range->to.sheet;
             return range;
         }
         return ref;

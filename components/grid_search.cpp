@@ -27,6 +27,7 @@ int Grid::replace_all(const std::string& find, const std::string& repl) {
 
     int total = 0;   // occurrences replaced
     int cells = 0;   // distinct cells touched
+    std::vector<bool> col_touched(m_cols, false);
     for (int r = 0; r < m_rows; ++r)
         for (int c = 0; c < m_cols; ++c) {
             const std::string before = m_cells[r][c].value();
@@ -39,12 +40,18 @@ int Grid::replace_all(const std::string& find, const std::string& repl) {
             }
             if (hits == 0) continue;
             m_undo_stack.push_back({r, c, before, after});
-            m_cells[r][c].set_value(after);
+            set_value_at(r, c, after);       // bumps m_data_gen for the caches
+            col_touched[c] = true;
             total += hits;
             ++cells;
         }
 
-    if (total > 0) m_redo_stack.clear();
+    if (total > 0) {
+        m_redo_stack.clear();
+        for (int c = 0; c < m_cols; ++c)
+            if (col_touched[c]) refit_col(c);
+        launch_build();                       // suggestion cache saw none of this
+    }
     m_status_msg = total == 0
         ? "no matches for \"" + find + "\""
         : std::to_string(total) + (total == 1 ? " replacement" : " replacements")

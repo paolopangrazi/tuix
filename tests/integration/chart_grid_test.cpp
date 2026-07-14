@@ -76,6 +76,19 @@ TEST_CASE("render_chart_panel draws braille for a non-empty series") {
     CHECK(out.size() > 60);   // more than one blank line → something was drawn
 }
 
+TEST_CASE("replace_all invalidates the chart/stats caches") {
+    Config cfg;
+    Grid g(3, 1, cfg);
+    fill(g, {{"1"}, {"2"}, {"3"}});
+    g.cycle_chart();
+    CHECK(g.chart_data().values == std::vector<double>{1, 2, 3});
+
+    // replace_all mutates cells outside commit_edit; the cached series must
+    // notice (it didn't when replace_all bypassed set_value_at).
+    g.replace_all("2", "50");
+    CHECK(g.chart_data().values == std::vector<double>{1, 50, 3});
+}
+
 TEST_CASE("render_chart_panel degrades gracefully with no numeric data") {
     Config cfg;
     Grid g(2, 1, cfg);

@@ -10,6 +10,8 @@
 #include <cmath>
 #include <exception>
 
+#include "util/strings.hpp"
+
 // ── Range expansion ───────────────────────────────────────────────────────────
 
 void Evaluator::collect(const Expr& expr, const EvalContext& ctx, std::vector<Value>& out) const {
@@ -18,6 +20,15 @@ void Evaluator::collect(const Expr& expr, const EvalContext& ctx, std::vector<Va
         int r0 = std::min(r.from.row, r.to.row), r1 = std::max(r.from.row, r.to.row);
         int c0 = std::min(r.from.col, r.to.col), c1 = std::max(r.from.col, r.to.col);
         const std::string& sheet = r.from.sheet;
+        if (sheet.empty()) {
+            // Clamp to the sheet: cells past the edge contribute nothing, so
+            // "=SUM(A1:A100)" works on a 50-row sheet instead of erroring —
+            // and a fat-fingered "A1:ZZ9999999" can't spin for minutes.
+            r0 = std::max(r0, 0);
+            c0 = std::max(c0, 0);
+            r1 = std::min(r1, ctx.rows() - 1);
+            c1 = std::min(c1, ctx.cols() - 1);
+        }
         for (int row = r0; row <= r1; ++row)
             for (int col = c0; col <= c1; ++col)
                 out.push_back(sheet.empty() ? ctx.cell_value(row, col)
@@ -94,7 +105,9 @@ Value Evaluator::eval(const Expr& expr, const EvalContext& ctx) const {
             if (lv.is_number() && rv.is_number())
                 cmp = (lv.as_number() < rv.as_number()) ? -1 : (lv.as_number() > rv.as_number() ? 1 : 0);
             else if (lv.is_string() && rv.is_string())
-                cmp = lv.as_string().compare(rv.as_string());
+                // Case-insensitive, matching Excel and this app's own
+                // COUNTIF/MATCH/VLOOKUP equality (values_equal).
+                cmp = tuix::to_lower(lv.as_string()).compare(tuix::to_lower(rv.as_string()));
             else if (lv.is_boolean() && rv.is_boolean())
                 cmp = static_cast<int>(lv.as_boolean()) - static_cast<int>(rv.as_boolean());
             else
