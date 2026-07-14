@@ -3,6 +3,7 @@
 #include "formulas/eval_context.hpp"
 #include "formulas/evaluator.hpp"
 #include "formulas/value.hpp"
+#include "util/numbers.hpp"
 
 namespace {
 
@@ -18,12 +19,8 @@ CalcCache::SuggList CalcCache::compute_for(const std::string& raw) {
     SuggList out;
     if (raw.empty() || raw[0] == '=') return out;
 
-    bool numeric = false;
-    try {
-        std::size_t pos = 0;
-        std::stod(raw, &pos);
-        numeric = (pos == raw.size());
-    } catch (...) {}
+    double ignored;
+    const bool numeric = tuix::parse_number(raw, ignored);
 
     auto quote = [](const std::string& s) {
         std::string q = "\"";

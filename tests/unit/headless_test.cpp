@@ -136,3 +136,28 @@ TEST_CASE("parse_args rejects a predicate with no operator") {
     headless::parse_args(3, const_cast<char**>(argv), o);
     CHECK_FALSE(o.parse_error.empty());
 }
+
+TEST_CASE("parse_args rejects non-numeric and negative --head/--tail counts") {
+    const char* bad_text[] = {"tuix", "--head", "xyz"};
+    Options o1;
+    headless::parse_args(3, const_cast<char**>(bad_text), o1);
+    CHECK_FALSE(o1.parse_error.empty());
+
+    const char* bad_neg[] = {"tuix", "--tail", "-2"};
+    Options o2;
+    headless::parse_args(3, const_cast<char**>(bad_neg), o2);
+    CHECK_FALSE(o2.parse_error.empty());
+
+    const char* good[] = {"tuix", "--head", "10"};
+    Options o3;
+    headless::parse_args(3, const_cast<char**>(good), o3);
+    CHECK(o3.parse_error.empty());
+    CHECK(o3.head == 10);
+}
+
+TEST_CASE("parse_args rejects multiple input files") {
+    const char* argv[] = {"tuix", "--head", "5", "a.csv", "b.csv"};
+    Options o;
+    headless::parse_args(5, const_cast<char**>(argv), o);
+    CHECK(o.parse_error.find("multiple input") != std::string::npos);
+}

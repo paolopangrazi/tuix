@@ -143,6 +143,7 @@ std::string Grid::value_at(int r, int c) const {
 void Grid::set_value_at(int r, int c, const std::string& v) {
     if (r < 0) m_col_names[c] = v;
     else       m_cells[r][c].set_value(v);
+    ++m_data_gen;
 }
 
 void Grid::start_edit(bool clear) {
@@ -177,6 +178,7 @@ void Grid::clear_cell(int r, int c) {
     m_undo_stack.push_back({r, c, cell.value(), ""});
     m_redo_stack.clear();
     cell.set_value("");
+    ++m_data_gen;
     refit_col(c);
 }
 
@@ -267,4 +269,8 @@ void Grid::paste_yanked() {
     }
     m_yank_row = -1;
     m_yank_col = -1;
+    // Paste may have appended rows/cols and rewrote a block of cells, so the
+    // suggestion cache's dimensions and contents are both stale — full rebuild
+    // (which also bumps m_data_gen).
+    launch_build();
 }

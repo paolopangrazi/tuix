@@ -47,8 +47,11 @@ public:
     Cell&       at(int r, int c);
     const Cell& at(int r, int c) const;
 
-    void    load(const SheetData& data);
     SheetData to_csv_data(char delimiter = ',') const;
+
+    // True if any data cell holds a formula (used to warn when a format that
+    // can't store formulas — CSV — is about to flatten them to values).
+    bool has_formulas() const;
 
     // Swap the grid's full editable state in/out of a Sheet snapshot.
     void save_to  (Sheet& s) const;
@@ -209,6 +212,18 @@ private:
     // Chart panel: which type is showing (Bar/Line/Histogram), or none.
     bool                           m_chart_active = false;
     ChartType                      m_chart_type   = ChartType::Bar;
+
+    // Data generation, bumped on every cell/structural mutation. Render-path
+    // summaries (column stats, chart series) are cached against it so they are
+    // recomputed only when the data — not just the frame — changes.
+    int                            m_data_gen = 0;
+    mutable int                    m_stats_gen = -1, m_stats_col = -1;
+    mutable ColumnStats            m_stats_cache;
+    mutable int                    m_chart_gen = -1;
+    mutable int                    m_chart_r0 = -1, m_chart_c0 = -1,
+                                   m_chart_r1 = -1, m_chart_c1 = -1;
+    mutable std::vector<double>    m_chart_vals;
+    mutable int                    m_chart_skipped = 0;
 
     std::vector<HistoryEntry> m_undo_stack;
     std::vector<HistoryEntry> m_redo_stack;

@@ -85,6 +85,10 @@ struct Config {
     GridCfg  grid;
     ThemeCfg theme;
 
+    // Set when config.toml exists but failed to parse (defaults are used).
+    // Shown once in the status bar so a typo doesn't silently revert the theme.
+    std::string load_warning;
+
     static Config load();
     static std::filesystem::path config_file_path();
     static std::string color_to_name(ftxui::Color c);

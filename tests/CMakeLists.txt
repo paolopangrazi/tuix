@@ -20,6 +20,7 @@ add_executable(tuix_tests
     unit/clipboard_test.cpp
     unit/headless_test.cpp
     unit/chart_test.cpp
+    unit/numbers_test.cpp
     integration/cross_sheet_grid_test.cpp
     integration/sort_grid_test.cpp
     integration/chart_grid_test.cpp

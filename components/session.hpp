@@ -11,7 +11,7 @@ class Session {
 public:
     explicit Session(Body& body);
 
-    // Silent no-ops on failure (parsing/IO errors).
+    // Parsing/IO failures are reported via the grid's status bar.
     void load (const std::string& path);
     void write(const std::string& path);
 

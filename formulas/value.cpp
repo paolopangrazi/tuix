@@ -1,6 +1,9 @@
 #include "value.hpp"
 #include <cmath>
+#include <iomanip>
 #include <sstream>
+
+#include "util/numbers.hpp"
 
 Value Value::number(double v)      { Value r; r.m_type = Type::NUMBER;  r.m_number  = v;            return r; }
 Value Value::string(std::string v) { Value r; r.m_type = Type::STRING;  r.m_string  = std::move(v); return r; }
@@ -14,8 +17,7 @@ bool Value::to_number(double& out) const {
         case Type::BOOLEAN: out = m_boolean ? 1.0 : 0.0;      return true;
         case Type::EMPTY:   out = 0.0;                         return true;
         case Type::STRING:
-            try { out = std::stod(m_string); return true; }
-            catch (...) { return false; }
+            return tuix::parse_number(m_string, out);   // whole string, no "12abc"
         case Type::ERROR:   return false;
     }
     return false;
@@ -28,8 +30,11 @@ std::string Value::to_display() const {
             if (std::isnan(n) || std::isinf(n)) return "#NUM!";
             if (n == std::floor(n) && std::abs(n) < 1e15)
                 return std::to_string(static_cast<long long>(n));
+            // 15 significant digits: enough to round-trip typical inputs
+            // without the default precision's 6-digit truncation (which turned
+            // 1234567.89 into "1.23457e+06").
             std::ostringstream ss;
-            ss << n;
+            ss << std::setprecision(15) << n;
             return ss.str();
         }
         case Type::STRING:  return m_string;

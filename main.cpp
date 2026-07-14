@@ -48,6 +48,7 @@ int main(int argc, char* argv[]) {
 
     if (argc > 1) session.load(argv[1]);
     session.init_empty_if_needed();
+    if (!cfg.load_warning.empty()) body.grid().set_status(cfg.load_warning);
 
     auto body_comp = body.make_component();
     auto go_main   = [&] { tab = 0; body_comp->TakeFocus(); };

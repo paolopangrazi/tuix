@@ -156,6 +156,11 @@ void Session::write(const std::string& path) {
             auto data = m_body.grid().to_csv_data(delim);
             CsvWriter::save(path, data);
             m_delim = delim;
+            // CSV can't store formulas — to_csv_data wrote their computed
+            // values. Say so, since reopening the file won't bring them back.
+            if (m_body.grid().has_formulas())
+                m_body.grid().set_status(
+                    "Saved (CSV stores formula results, not formulas — use .xlsx to keep them)");
         }
         m_path = path;
         refresh_info();

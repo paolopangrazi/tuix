@@ -10,6 +10,7 @@
 
 #include "col_label.hpp"
 #include "formulas/evaluator.hpp"
+#include "util/numbers.hpp"
 #include "util/strings.hpp"
 
 // ── Sorting ──────────────────────────────────────────────────────────────────
@@ -19,10 +20,7 @@
 static int cmp_values(const Value& a, const Value& b) {
     double da, db;
     const bool an = a.to_number(da), bn = b.to_number(db);
-    if (an && bn) return (da < db) ? -1 : (da > db ? 1 : 0);
-    if (an != bn) return an ? -1 : 1;
-    const std::string sa = tuix::to_lower(a.to_display()), sb = tuix::to_lower(b.to_display());
-    return (sa < sb) ? -1 : (sa > sb ? 1 : 0);
+    return tuix::cmp_mixed(an, da, a.to_display(), bn, db, b.to_display());
 }
 
 void Grid::sort_by(const std::vector<SortKey>& keys) {
@@ -72,12 +70,8 @@ void Grid::sort_by(const std::vector<SortKey>& keys) {
     }
 
     const std::string label = col_letter(keys[0].col) + (keys[0].descending ? " ▼" : " ▲");
-    bool has_formula = false;
-    for (int r = 0; r < m_rows && !has_formula; ++r)
-        for (int c = 0; c < m_cols; ++c)
-            if (m_cells[r][c].is_formula()) { has_formula = true; break; }
-    set_status(has_formula ? "Sorted by " + label + "  (formula refs not adjusted)"
-                           : "Sorted by " + label);
+    set_status(has_formulas() ? "Sorted by " + label + "  (formula refs not adjusted)"
+                              : "Sorted by " + label);
 }
 
 void Grid::sort_spec(const std::string& spec) {
@@ -188,12 +182,23 @@ Grid::ChartData Grid::chart_data() const {
     cd.label = (c0 == c1 && c0 < static_cast<int>(m_col_names.size()))
                    ? m_col_names[c0] : "selection";
 
-    for (int r = r0; r <= r1; ++r)
-        for (int c = c0; c <= c1; ++c) {
-            double v;
-            if (cell_value(r, c).to_number(v)) cd.values.push_back(v);
-            else                               ++cd.skipped;
-        }
+    // Re-gather (evaluating formulas) only when the data or range changed —
+    // this runs on every render frame.
+    if (m_chart_gen != m_data_gen || m_chart_r0 != r0 || m_chart_r1 != r1 ||
+        m_chart_c0 != c0 || m_chart_c1 != c1) {
+        m_chart_vals.clear();
+        m_chart_skipped = 0;
+        for (int r = r0; r <= r1; ++r)
+            for (int c = c0; c <= c1; ++c) {
+                double v;
+                if (cell_value(r, c).to_number(v)) m_chart_vals.push_back(v);
+                else                               ++m_chart_skipped;
+            }
+        m_chart_gen = m_data_gen;
+        m_chart_r0 = r0; m_chart_r1 = r1; m_chart_c0 = c0; m_chart_c1 = c1;
+    }
+    cd.values  = m_chart_vals;
+    cd.skipped = m_chart_skipped;
     return cd;
 }
 
@@ -204,6 +209,9 @@ Grid::ColumnStats Grid::column_stats() const {
     // Only summarize while the cursor sits on a column header (row -1).
     if (m_cursor_row >= 0) return st;
     if (m_cursor_col < 0 || m_cursor_col >= m_cols) return st;  // gutter — nothing to summarize
+    // Cached per (data generation, column): this runs every render frame, and
+    // the median sort + full-column evaluation are too heavy to redo per frame.
+    if (m_stats_gen == m_data_gen && m_stats_col == m_cursor_col) return m_stats_cache;
     const int c = m_cursor_col;
     st.valid = true;
     st.name  = m_col_names[c];
@@ -232,6 +240,9 @@ Grid::ColumnStats Grid::column_stats() const {
         st.median = (n % 2) ? nums[n / 2]
                             : (nums[n / 2 - 1] + nums[n / 2]) / 2.0;
     }
+    m_stats_cache = st;
+    m_stats_gen   = m_data_gen;
+    m_stats_col   = c;
     return st;
 }
 

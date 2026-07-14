@@ -13,6 +13,7 @@
 
 #include "col_label.hpp"
 #include "loader/csv_loader.hpp"
+#include "util/numbers.hpp"
 #include "util/strings.hpp"
 #include "writer/csv_writer.hpp"
 
@@ -22,19 +23,10 @@ namespace {
 
 // ── Small value helpers ──────────────────────────────────────────────────────
 
-// Parse a string as a number only if the *entire* trimmed string is numeric.
+// Whole-string numeric parse, shared with the grid so headless filters and
+// interactive sorting agree on what counts as a number.
 bool parse_num(const std::string& s, double& out) {
-    size_t a = s.find_first_not_of(" \t");
-    if (a == std::string::npos) return false;
-    size_t b = s.find_last_not_of(" \t");
-    const std::string t = s.substr(a, b - a + 1);
-    try {
-        size_t used = 0;
-        out = std::stod(t, &used);
-        return used == t.size();
-    } catch (...) {
-        return false;
-    }
+    return tuix::parse_number(s, out);
 }
 
 std::string trim(const std::string& s) {
@@ -178,10 +170,7 @@ struct SortKey { int col; bool desc; };
 int cmp_cells(const std::string& a, const std::string& b) {
     double da, db;
     const bool an = parse_num(a, da), bn = parse_num(b, db);
-    if (an && bn) return (da < db) ? -1 : (da > db ? 1 : 0);
-    if (an != bn) return an ? -1 : 1;   // numbers sort before text
-    const std::string la = tuix::to_lower(a), lb = tuix::to_lower(b);
-    return (la < lb) ? -1 : (la > lb ? 1 : 0);
+    return tuix::cmp_mixed(an, da, a, bn, db, b);
 }
 
 bool apply_sort(SheetData& d, const std::string& spec, std::string& err) {
@@ -279,6 +268,13 @@ bool parse_args(int argc, char* argv[], Options& out) {
     auto need = [&](int& i) -> const char* {
         return (i + 1 < argc) ? argv[++i] : nullptr;
     };
+    // Strict non-negative integer (atoi would turn "--head xyz" into 0 rows).
+    auto parse_count = [](const char* v, int& n) {
+        double d;
+        if (!tuix::parse_number(v, d) || d < 0 || d != static_cast<int>(d)) return false;
+        n = static_cast<int>(d);
+        return true;
+    };
 
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
@@ -305,18 +301,27 @@ bool parse_args(int argc, char* argv[], Options& out) {
             any_flag = true;
         } else if (flag("--head")) {
             const char* v = need(i);
-            if (!v) { out.parse_error = "--head needs a count"; any_flag = true; break; }
-            out.head = std::atoi(v); any_flag = true;
+            if (!v || !parse_count(v, out.head)) {
+                out.parse_error = "--head needs a non-negative row count";
+                any_flag = true; break;
+            }
+            any_flag = true;
         } else if (flag("--tail")) {
             const char* v = need(i);
-            if (!v) { out.parse_error = "--tail needs a count"; any_flag = true; break; }
-            out.tail = std::atoi(v); any_flag = true;
+            if (!v || !parse_count(v, out.tail)) {
+                out.parse_error = "--tail needs a non-negative row count";
+                any_flag = true; break;
+            }
+            any_flag = true;
         } else if (flag("--output") || flag("-o")) {
             const char* v = need(i);
             if (!v) { out.parse_error = a + " needs a path"; any_flag = true; break; }
             out.output = v; any_flag = true;
         } else if (a.size() > 1 && a[0] == '-' && a != "-") {
             out.parse_error = "unknown flag '" + a + "'"; any_flag = true; break;
+        } else if (!out.input.empty()) {
+            out.parse_error = "multiple input files ('" + out.input + "' and '" + a + "')";
+            any_flag = true; break;
         } else {
             out.input = a;   // positional: input path (or "-" for stdin)
         }

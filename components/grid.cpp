@@ -12,6 +12,7 @@
 #include "formulas/evaluator.hpp"
 #include "col_label.hpp"
 #include "sheet.hpp"
+#include "util/numbers.hpp"
 #include "util/strings.hpp"
 
 // ── Construction & calc thread ───────────────────────────────────────────────
@@ -33,6 +34,7 @@ Grid::Grid(int rows, int cols, const Config& cfg)
 }
 
 Grid::~Grid() {
+    m_calc_cache.cancel();   // don't make exit wait for a full suggestion build
     if (m_bg_thread.joinable()) m_bg_thread.join();
 }
 
@@ -41,6 +43,7 @@ void Grid::set_calc_ready_cb(std::function<void()> cb) {
 }
 
 void Grid::launch_build() {
+    ++m_data_gen;   // anything that rebuilds the calc cache changed the data
     m_calc_cache.cancel();
     if (m_bg_thread.joinable()) m_bg_thread.join();
     m_calc_cache.reset();
@@ -59,45 +62,6 @@ Grid::Mode Grid::mode() const noexcept {
 }
 
 // ── Load / save ──────────────────────────────────────────────────────────────
-
-void Grid::load(const SheetData& data) {
-    const int new_cols = static_cast<int>(data.headers.size());
-    const int new_rows = static_cast<int>(data.rows.size());
-
-    m_cols = std::max(1, new_cols);
-    m_rows = std::max(1, new_rows);
-
-    m_cells.assign(m_rows, std::vector<Cell>(m_cols));
-
-    m_col_names.resize(m_cols);
-    for (int c = 0; c < m_cols; ++c)
-        m_col_names[c] = (c < new_cols) ? data.headers[c] : col_letter(c);
-
-    for (int r = 0; r < new_rows; ++r)
-        for (int c = 0; c < std::min(m_cols, (int)data.rows[r].size()); ++c)
-            m_cells[r][c].set_value(data.rows[r][c]);
-
-    m_cursor_row     = 0;
-    m_cursor_col     = 0;
-    m_offset_row     = 0;
-    m_offset_col     = 0;
-    m_editing        = false;
-    m_edit_buf.clear();
-    m_edit_orig.clear();
-    m_undo_stack.clear();
-    m_redo_stack.clear();
-    m_action_boxes.assign(m_rows, ActionBox{});
-    m_col_action_boxes.assign(m_cols, ActionBox{});
-    m_pending_delete_row = -1;
-    m_pending_delete_col = -1;
-    m_col_widths.resize(m_cols);
-    m_col_manual.assign(m_cols, false);   // a fresh load auto-fits every column
-    m_row_heights.assign(m_rows, 1);      // every row starts one line tall
-    for (int c = 0; c < m_cols; ++c)
-        m_col_widths[c] = compute_col_width(c);
-
-    launch_build();
-}
 
 void Grid::save_to(Sheet& s) const {
     s.cells       = m_cells;
@@ -124,6 +88,17 @@ void Grid::load_from(const Sheet& s) {
     m_edit_buf.clear();
     m_edit_orig.clear();
     m_edit_cursor        = 0;
+
+    // View state is per-view, not per-sheet: a captured heatmap scale, sort
+    // marker, chart toggle, or search highlight from the previous sheet/file
+    // would be wrong (or point past the bounds) on the incoming data.
+    m_heat_active  = false;
+    m_chart_active = false;
+    m_sort_col     = -1;
+    m_sort_desc    = false;
+    m_searching    = false;
+    m_search_query.clear();
+    m_search_hits.clear();
 
     m_sheet_name = s.name;
     m_cells      = s.cells;
@@ -203,7 +178,8 @@ Value eval_raw(const std::string& raw, const std::string& sheet,
         s_eval_guard.erase(key);
         return result;
     }
-    try { return Value::number(std::stod(raw)); } catch (...) {}
+    double d;
+    if (tuix::parse_number(raw, d)) return Value::number(d);
     return Value::string(raw);
 }
 
@@ -253,4 +229,11 @@ std::string Grid::cell_display(int r, int c) const {
     if (m_cells[r][c].is_formula())
         return cell_value(r, c).to_display();
     return m_cells[r][c].value();
+}
+
+bool Grid::has_formulas() const {
+    for (int r = 0; r < m_rows; ++r)
+        for (int c = 0; c < m_cols; ++c)
+            if (m_cells[r][c].is_formula()) return true;
+    return false;
 }

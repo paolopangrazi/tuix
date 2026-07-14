@@ -143,7 +143,7 @@ detected and flagged rather than left to hang.
 ### Interface
 
 - **Mouse support**, if you want it: click to select, **drag across cells** to select a range, use the `+` / `-` action boxes to insert or delete rows and columns, drag a column or row border to resize it, and drag the scrollbar or use the wheel to scroll.
-- **Command line**: `:w` saves, `:w file.csv` saves as, `:wq` saves and quits, `:e other.csv` opens another file. The output format follows the extension (`.xlsx` or `.csv`). An overwrite-confirmation prompt prevents accidental clobbering.
+- **Command line**: `:w` saves, `:w file.csv` saves as, `:wq` saves and quits, `:e other.csv` opens another file. The output format follows the extension (`.xlsx` or `.csv`). An overwrite-confirmation prompt prevents accidental clobbering. Saving to `.xlsx` keeps formulas; `.csv` stores their computed values (the status bar reminds you when that happens).
 - A **titlebar** provides Undo / Redo / Open / Save / Save As / Exit buttons.
 - `F1` opens a tabbed keybinding reference; `F12` opens a live configuration editor that writes changes to `config.toml`.
 

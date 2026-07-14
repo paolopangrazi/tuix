@@ -8,7 +8,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
-#include <fstream>
 #include <string>
 #include <unordered_map>
 
@@ -122,7 +121,14 @@ Config Config::load() {
 
     toml::table tbl;
     try { tbl = toml::parse_file(path.string()); }
-    catch (...) { return cfg; }
+    catch (const std::exception& e) {
+        cfg.load_warning = "config.toml ignored: " + std::string(e.what());
+        return cfg;
+    }
+    catch (...) {
+        cfg.load_warning = "config.toml ignored: parse error";
+        return cfg;
+    }
 
     // [theme] is applied first so a named preset becomes the base palette; the
     // [colors] block below then overrides individual slots on top of it.
