@@ -18,12 +18,12 @@
 // ── Construction & calc thread ───────────────────────────────────────────────
 
 Grid::Grid(int rows, int cols, const Config& cfg)
-    : k_cell_w(cfg.grid.cell_width),
+    : m_cell_w(cfg.grid.cell_width),
       m_rows(rows), m_cols(cols),
       m_cfg(cfg),
       m_cells(rows, std::vector<Cell>(cols)),
       m_col_names(cols),
-      m_col_widths(cols, k_cell_w),
+      m_col_widths(cols, m_cell_w),
       m_col_manual(cols, false),
       m_row_heights(rows, 1),
       m_action_boxes(rows),
@@ -109,7 +109,7 @@ void Grid::load_from(const Sheet& s) {
     m_rows       = static_cast<int>(m_cells.size());
     m_cols       = m_rows ? static_cast<int>(m_cells[0].size()) : static_cast<int>(m_col_names.size());
     if (m_rows == 0) { m_rows = 1; m_cells.assign(1, std::vector<Cell>(std::max(1, m_cols))); }
-    if (m_cols == 0) { m_cols = 1; for (auto& r : m_cells) r.assign(1, Cell{}); m_col_names.assign(1, col_letter(0)); m_col_widths.assign(1, k_cell_w); }
+    if (m_cols == 0) { m_cols = 1; for (auto& r : m_cells) r.assign(1, Cell{}); m_col_names.assign(1, col_letter(0)); m_col_widths.assign(1, m_cell_w); }
     m_col_manual.resize(m_cols, false);   // legacy snapshots predate this field
     m_row_heights.resize(m_rows, 1);       // ditto; default every row to one line
 
@@ -117,7 +117,7 @@ void Grid::load_from(const Sheet& s) {
     // auto-fit every column the user hasn't manually pinned — otherwise freshly
     // opened files clip all content to that default. Pinned widths (tracked by
     // col_manual and preserved across sheet switches) are left untouched.
-    m_col_widths.resize(m_cols, k_cell_w);
+    m_col_widths.resize(m_cols, m_cell_w);
     for (int c = 0; c < m_cols; ++c)
         if (!m_col_manual[c]) m_col_widths[c] = compute_col_width(c);
 

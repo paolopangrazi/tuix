@@ -21,7 +21,7 @@ void Grid::append_col() {
     for (auto& row : m_cells)
         row.emplace_back();
     m_col_names.push_back(col_letter(m_cols));
-    m_col_widths.push_back(k_cell_w);
+    m_col_widths.push_back(m_cell_w);
     m_col_manual.push_back(false);
     m_col_action_boxes.emplace_back();
     ++m_cols;
@@ -56,7 +56,7 @@ void Grid::insert_col(int c) {
     for (auto& row : m_cells)
         row.insert(row.begin() + c + 1, Cell{});
     m_col_names.insert(m_col_names.begin() + c + 1, new_name);
-    m_col_widths.insert(m_col_widths.begin() + c + 1, k_cell_w);
+    m_col_widths.insert(m_col_widths.begin() + c + 1, m_cell_w);
     m_col_manual.insert(m_col_manual.begin() + c + 1, false);
     m_col_action_boxes.insert(m_col_action_boxes.begin() + c + 1, ActionBox{});
     ++m_cols;

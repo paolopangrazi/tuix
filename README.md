@@ -457,8 +457,10 @@ non-zero, so headless runs fail loudly in scripts.
 
 tuiX reads `~/.config/tuix/config.toml` at startup (XDG-compliant — it respects
 `$XDG_CONFIG_HOME`). Every setting is optional; missing keys fall back to sensible defaults.
-Colors accept an **ANSI name** or a **palette index `0–15`**, which is what allows tuiX to
-track your terminal theme.
+Colors accept an **ANSI name** or a **palette index `0–15`** (which is what allows tuiX to
+track your terminal theme), plus **`"#rrggbb"` / `"#rgb"` hex** and **`"rgb(r,g,b)"`** for
+pinning exact TrueColor values. See `config.toml.example` for the full slot list, including
+the `[theme]` presets and TrueColor effect slots.
 
 ```toml
 [colors]
@@ -488,6 +490,7 @@ nav_right   = ["l"]
 insert_mode = ["i", "a"]
 delete_cell = ["x"]
 undo        = ["u"]
+redo        = []          # Ctrl+R is built in; add characters for extra bindings
 insert_row  = ["+"]
 delete_row  = ["-"]
 insert_col  = ["+"]
@@ -503,7 +506,8 @@ chart       = ["c"]
 cmd_mode    = [":"]
 
 [grid]
-cell_width = 12   # minimum column width (min 4)
+cell_width = 12          # minimum column width (min 4)
+start_mode = "normal"    # or "insert" to open straight into editing
 ```
 
 > **Tip:** leave the colors as palette names and let your Omarchy theme drive them. Only pin

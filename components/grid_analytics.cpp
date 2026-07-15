@@ -206,7 +206,7 @@ Grid::ColumnStats Grid::column_stats() const {
     if (m_cursor_col < 0 || m_cursor_col >= m_cols) return st;  // gutter — nothing to summarize
     // Cached per (data generation, column): this runs every render frame, and
     // the median sort + full-column evaluation are too heavy to redo per frame.
-    if (m_stats.gen == m_data_gen && m_stats.col == m_cursor_col) return m_stats.stats;
+    if (m_stats.gen == m_data_gen && m_stats.col == m_cursor_col) return m_stats.value;
     const int c = m_cursor_col;
     st.valid = true;
     st.name  = m_col_names[c];
@@ -235,7 +235,7 @@ Grid::ColumnStats Grid::column_stats() const {
         st.median = (n % 2) ? nums[n / 2]
                             : (nums[n / 2 - 1] + nums[n / 2]) / 2.0;
     }
-    m_stats.stats = st;
+    m_stats.value = st;
     m_stats.gen   = m_data_gen;
     m_stats.col   = c;
     return st;

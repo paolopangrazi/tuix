@@ -11,7 +11,7 @@ class Evaluator;
 // call node, the evaluation context, and the Evaluator (to recurse into args).
 using BuiltinFn = Value(*)(const FuncCallExpr&, const EvalContext&, const Evaluator&);
 
-// Look up a built-in by name (the parser preserves the source casing, so the
-// table is matched case-sensitively). Returns nullptr when none matches, which
-// the evaluator turns into a #NAME? error.
+// Look up a built-in by name. The lexer upper-cases identifier tokens, so
+// `name` arrives normalized and the table can match case-sensitively. Returns
+// nullptr when none matches, which the evaluator turns into a #NAME? error.
 BuiltinFn lookup_builtin(const std::string& name);

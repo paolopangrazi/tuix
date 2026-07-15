@@ -55,3 +55,4 @@ animations = false    # opt-in: a gentle "breathing" sweep on the tuiX logo
 # nav_down = ["j"]
 # heatmap  = ["H"]
 # sort_col = ["s"]
+# redo     = ["R"]   # extra redo characters; Ctrl+R always works

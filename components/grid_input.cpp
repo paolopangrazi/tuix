@@ -344,22 +344,24 @@ bool Grid::handle_mouse(Event e) {
     const bool drag_held =
         e.mouse().button == Mouse::Left && e.mouse().motion != Mouse::Released;
 
-    if (m_col_resize.active >= 0) {                    // a column-width drag in progress
+    if (m_col_resize.target >= 0) {             // a column-width drag in progress
         if (drag_held) {
-            set_col_width(m_col_resize.active, m_col_resize.start_size + (mx - m_col_resize.start_pos));
-            m_col_resize.hover = m_col_resize.active;
+            set_col_width(m_col_resize.target,
+                          m_col_resize.start_size + (mx - m_col_resize.start_pos));
+            m_col_resize.hover = m_col_resize.target;
             return true;
         }
-        m_col_resize.active = m_col_resize.hover = -1;   // release (or anything else) ends the drag
+        m_col_resize.target = m_col_resize.hover = -1;   // release ends the drag
         return true;
     }
-    if (m_row_resize.active >= 0) {                   // same, for a row-height drag
+    if (m_row_resize.target >= 0) {             // same, for a row-height drag
         if (drag_held) {
-            set_row_height(m_row_resize.active, m_row_resize.start_size + (my - m_row_resize.start_pos));
-            m_row_resize.hover = m_row_resize.active;
+            set_row_height(m_row_resize.target,
+                           m_row_resize.start_size + (my - m_row_resize.start_pos));
+            m_row_resize.hover = m_row_resize.target;
             return true;
         }
-        m_row_resize.active = m_row_resize.hover = -1;
+        m_row_resize.target = m_row_resize.hover = -1;
         return true;
     }
     if (m_mouse_selecting) {                    // painting a multi-cell selection
@@ -383,7 +385,7 @@ bool Grid::handle_mouse(Event e) {
     const int ry = my - m_box.y_min - 1;
     const int k_gutter = ActionBox::k_width + k_rownum_w;
     m_col_resize.hover = (ry == 0) ? border_hit(rx) : -1;
-    m_row_resize.hover  = (rx >= 0 && rx < k_gutter) ? row_border_hit(ry) : -1;
+    m_row_resize.hover = (rx >= 0 && rx < k_gutter) ? row_border_hit(ry) : -1;
     // Header sort affordance: a column under the mouse (but not over its resize
     // border, which owns its own ⇔ handle) shows a clickable ▲ hint.
     m_header_hover = (ry == 0 && rx >= k_gutter && m_col_resize.hover < 0) ? col_at_x(rx) : -1;
@@ -407,16 +409,16 @@ bool Grid::handle_mouse(Event e) {
         // Grab a column boundary to start a resize drag (checked after the action
         // boxes so their +/- keep priority over the surrounding separator).
         if (m_col_resize.hover >= 0) {
-            m_col_resize.active     = m_col_resize.hover;
-            m_col_resize.start_pos = mx;
+            m_col_resize.target     = m_col_resize.hover;
+            m_col_resize.start_pos  = mx;
             m_col_resize.start_size = m_col_widths[m_col_resize.hover];
             return true;
         }
         // Grab a row boundary in the gutter to start a height drag (after the
         // row +/- action boxes above, so those keep priority).
         if (m_row_resize.hover >= 0) {
-            m_row_resize.active     = m_row_resize.hover;
-            m_row_resize.start_pos = my;
+            m_row_resize.target     = m_row_resize.hover;
+            m_row_resize.start_pos  = my;
             m_row_resize.start_size = m_row_heights[m_row_resize.hover];
             return true;
         }

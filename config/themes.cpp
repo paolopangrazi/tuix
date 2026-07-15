@@ -126,7 +126,3 @@ bool apply_theme(const std::string& name, Colors& c) {
     if (name == "dracula")                             { c = dracula();     return true; }
     return false;  // "default" or unknown → keep terminal-native ANSI defaults
 }
-
-std::vector<std::string> theme_names() {
-    return {"default", "tokyo-night", "catppuccin", "nord", "gruvbox", "dracula"};
-}

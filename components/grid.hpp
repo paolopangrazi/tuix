@@ -154,7 +154,7 @@ public:
 
 private:
     // ── Internal state ───────────────────────────────────────────────────────
-    int k_cell_w;
+    int m_cell_w;   // default column width (cfg.grid.cell_width, fixed at construction)
     static constexpr int k_rownum_w = 5;
 
     int m_rows, m_cols;
@@ -182,11 +182,11 @@ private:
     int                            m_pending_delete_row = -1;
     int                            m_pending_delete_col = -1;
 
-    // One mouse resize drag (column width or row height). `active` is the
+    // One mouse resize drag (column width or row height). `target` is the
     // column/row being dragged (-1 when idle); `hover` is the boundary under
     // the cursor, used only to highlight the grabbable separator; `start_pos`
     // (mouse x or y) and `start_size` (width or height) anchor the press.
-    struct ResizeDrag { int active = -1, hover = -1, start_pos = 0, start_size = 0; };
+    struct ResizeDrag { int target = -1, hover = -1, start_pos = 0, start_size = 0; };
     ResizeDrag                     m_col_resize;
     ResizeDrag                     m_row_resize;
     // True while a left-drag is painting a multi-cell selection; the anchor is
@@ -216,7 +216,7 @@ private:
     // summaries (column stats, chart series) are cached against it so they are
     // recomputed only when the data — not just the frame — changes.
     int                            m_data_gen = 0;
-    struct StatsCache { int gen = -1, col = -1; ColumnStats stats; };
+    struct StatsCache { int gen = -1, col = -1; ColumnStats value; };
     mutable StatsCache             m_stats;
     struct ChartCache {
         int gen = -1;
