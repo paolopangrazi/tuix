@@ -10,7 +10,7 @@
 #include <tuple>
 
 #include "formulas/evaluator.hpp"
-#include "col_label.hpp"
+#include "util/col_label.hpp"
 #include "sheet.hpp"
 #include "util/numbers.hpp"
 #include "util/strings.hpp"
@@ -92,7 +92,7 @@ void Grid::load_from(const Sheet& s) {
     // View state is per-view, not per-sheet: a captured heatmap scale, sort
     // marker, chart toggle, or search highlight from the previous sheet/file
     // would be wrong (or point past the bounds) on the incoming data.
-    m_heat_active  = false;
+    m_heat.active  = false;
     m_chart_active = false;
     m_sort_col     = -1;
     m_sort_desc    = false;

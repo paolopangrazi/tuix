@@ -1,5 +1,6 @@
 #include "lexer.hpp"
 #include <cctype>
+#include "util/col_label.hpp"
 #include "util/strings.hpp"
 
 Lexer::Lexer(std::string input) : m_input(std::move(input)) {}
@@ -59,13 +60,6 @@ Token Lexer::read_string() {
     return t;
 }
 
-static int col_letters_to_index(const std::string& s) {
-    int col = 0;
-    for (char c : s)
-        col = col * 26 + (std::toupper((unsigned char)c) - 'A' + 1);
-    return col - 1;
-}
-
 Token Lexer::read_ident_or_ref() {
     // Optional sheet qualifier: Sheet2!A1  or  'My Sheet'!A1
     std::string sheet;
@@ -121,7 +115,7 @@ Token Lexer::read_ident_or_ref() {
         Token t;
         t.type          = TokenType::CELL_REF;
         t.text          = (abs_col ? "$" : "") + letters + (abs_row ? "$" : "") + row_str;
-        t.coord.col     = col_letters_to_index(letters);
+        t.coord.col     = *parse_col_label(letters);  // letters is all-alpha, so this parses
         t.coord.row     = std::stoi(row_str) - 1;
         t.coord.abs_col = abs_col;
         t.coord.abs_row = abs_row;
@@ -153,7 +147,9 @@ std::vector<Token> Lexer::tokenize() {
     while (true) {
         skip_whitespace();
         if (m_pos >= m_input.size()) {
-            tokens.push_back({ TokenType::END });
+            Token end;
+            end.type = TokenType::END;
+            tokens.push_back(end);
             break;
         }
 

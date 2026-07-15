@@ -284,17 +284,13 @@ static Value range_cell(const EvalContext& ctx, const std::string& sheet, int r,
     return sheet.empty() ? ctx.cell_value(r, c) : ctx.cell_value_in(sheet, r, c);
 }
 
-// Strict full-string parse of a numeric operand (rejects "12abc").
-static bool parse_full_number(const std::string& s, double& out) {
-    return tuix::parse_number(s, out);
-}
-
 // A value usable for ordered/equality matching: numbers, booleans, and numeric
 // strings collapse to a double; empty cells and errors do not count as numbers.
+// String parsing is strict full-string (tuix::parse_number rejects "12abc").
 static bool to_strict_number(const Value& v, double& out) {
     if (v.is_number())  { out = v.as_number();              return true; }
     if (v.is_boolean()) { out = v.as_boolean() ? 1.0 : 0.0; return true; }
-    if (v.is_string())  return parse_full_number(v.as_string(), out);
+    if (v.is_string())  return tuix::parse_number(v.as_string(), out);
     return false;
 }
 
@@ -332,7 +328,7 @@ static bool match_criterion(const Value& cell, const Value& crit) {
     std::string rest = s.substr(i);
     Value operand = Value::string(rest);
     double on;
-    if (parse_full_number(rest, on)) operand = Value::number(on);
+    if (tuix::parse_number(rest, on)) operand = Value::number(on);
 
     if (op.empty() || op == "=") return values_equal(cell, operand);
     if (op == "<>")              return !values_equal(cell, operand);

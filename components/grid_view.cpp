@@ -7,7 +7,7 @@
 
 #include <ftxui/screen/terminal.hpp>
 
-#include "col_label.hpp"
+#include "util/col_label.hpp"
 #include "util/text_width.hpp"
 
 using namespace ftxui;

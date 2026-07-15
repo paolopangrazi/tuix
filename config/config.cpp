@@ -1,4 +1,5 @@
 #include "config.hpp"
+#include "config_schema.hpp"
 #include "themes.hpp"
 
 #include <toml++/toml.hpp>
@@ -102,6 +103,65 @@ static std::vector<char> parse_keys(const toml::node& node, std::vector<char> fa
     return result.empty() ? fallback : result;
 }
 
+// ---- schema ----------------------------------------------------------------
+// The one list of toml key ↔ Config member pairs (see config_schema.hpp).
+
+const ColorSlot k_color_slots[] = {
+    { "cursor_bg",       &Colors::cursor_bg       },
+    { "cursor_fg",       &Colors::cursor_fg       },
+    { "selection_bg",    &Colors::selection_bg    },
+    { "selection_fg",    &Colors::selection_fg    },
+    { "header",          &Colors::header          },
+    { "row_number",      &Colors::row_number      },
+    { "dimmed",          &Colors::dimmed          },
+    { "insert_badge_bg", &Colors::insert_badge_bg },
+    { "insert_badge_fg", &Colors::insert_badge_fg },
+    { "normal_badge_bg", &Colors::normal_badge_bg },
+    { "normal_badge_fg", &Colors::normal_badge_fg },
+    { "titlebar_bg",     &Colors::titlebar_bg     },
+    { "titlebar_fg",     &Colors::titlebar_fg     },
+    { "formula_fg",      &Colors::formula_fg      },
+    { "accent",          &Colors::accent          },
+    { "accent2",         &Colors::accent2         },
+    { "border",          &Colors::border          },
+    { "border_focus",    &Colors::border_focus    },
+    { "grid_bg",         &Colors::grid_bg         },
+    { "zebra_bg",        &Colors::zebra_bg        },
+    { "header_bg",       &Colors::header_bg       },
+    { "crosshair",       &Colors::crosshair       },
+    { "search_bg",       &Colors::search_bg       },
+    { "search_fg",       &Colors::search_fg       },
+    { "yank_fg",         &Colors::yank_fg         },
+    { "scrollbar_thumb", &Colors::scrollbar_thumb },
+    { "scrollbar_track", &Colors::scrollbar_track },
+};
+const int k_color_slot_count = (int)(sizeof(k_color_slots) / sizeof(k_color_slots[0]));
+
+const KeySlot k_key_slots[] = {
+    { "nav_up",      &Keys::nav_up      },
+    { "nav_down",    &Keys::nav_down    },
+    { "nav_left",    &Keys::nav_left    },
+    { "nav_right",   &Keys::nav_right   },
+    { "insert_mode", &Keys::insert_mode },
+    { "delete_cell", &Keys::delete_cell },
+    { "undo",        &Keys::undo        },
+    { "redo",        &Keys::redo        },
+    { "insert_row",  &Keys::insert_row  },
+    { "delete_row",  &Keys::delete_row  },
+    { "insert_col",  &Keys::insert_col  },
+    { "delete_col",  &Keys::delete_col  },
+    { "rename_col",  &Keys::rename_col  },
+    { "col_widen",   &Keys::col_widen   },
+    { "col_narrow",  &Keys::col_narrow  },
+    { "row_taller",  &Keys::row_taller  },
+    { "row_shorter", &Keys::row_shorter },
+    { "sort_col",    &Keys::sort_col    },
+    { "heatmap",     &Keys::heatmap     },
+    { "chart",       &Keys::chart       },
+    { "cmd_mode",    &Keys::cmd_mode    },
+};
+const int k_key_slot_count = (int)(sizeof(k_key_slots) / sizeof(k_key_slots[0]));
+
 // ---- config path ----------------------------------------------------------
 
 static std::filesystem::path config_path() {
@@ -143,64 +203,19 @@ Config Config::load() {
     }
 
     if (auto* c = tbl["colors"].as_table()) {
-        auto col = [&](std::string_view key, Color def) -> Color {
-            if (auto* n = c->get(key)) return parse_color(*n, def);
-            return def;
-        };
-        cfg.colors.cursor_bg       = col("cursor_bg",       cfg.colors.cursor_bg);
-        cfg.colors.cursor_fg       = col("cursor_fg",       cfg.colors.cursor_fg);
-        cfg.colors.selection_bg    = col("selection_bg",    cfg.colors.selection_bg);
-        cfg.colors.selection_fg    = col("selection_fg",    cfg.colors.selection_fg);
-        cfg.colors.header          = col("header",          cfg.colors.header);
-        cfg.colors.row_number      = col("row_number",      cfg.colors.row_number);
-        cfg.colors.dimmed          = col("dimmed",          cfg.colors.dimmed);
-        cfg.colors.insert_badge_bg = col("insert_badge_bg", cfg.colors.insert_badge_bg);
-        cfg.colors.insert_badge_fg = col("insert_badge_fg", cfg.colors.insert_badge_fg);
-        cfg.colors.normal_badge_bg = col("normal_badge_bg", cfg.colors.normal_badge_bg);
-        cfg.colors.normal_badge_fg = col("normal_badge_fg", cfg.colors.normal_badge_fg);
-        cfg.colors.titlebar_bg     = col("titlebar_bg",     cfg.colors.titlebar_bg);
-        cfg.colors.titlebar_fg     = col("titlebar_fg",     cfg.colors.titlebar_fg);
-        cfg.colors.formula_fg      = col("formula_fg",      cfg.colors.formula_fg);
-        cfg.colors.accent          = col("accent",          cfg.colors.accent);
-        cfg.colors.accent2         = col("accent2",         cfg.colors.accent2);
-        cfg.colors.border          = col("border",          cfg.colors.border);
-        cfg.colors.border_focus    = col("border_focus",    cfg.colors.border_focus);
-        cfg.colors.grid_bg         = col("grid_bg",         cfg.colors.grid_bg);
-        cfg.colors.zebra_bg        = col("zebra_bg",        cfg.colors.zebra_bg);
-        cfg.colors.header_bg       = col("header_bg",       cfg.colors.header_bg);
-        cfg.colors.crosshair       = col("crosshair",       cfg.colors.crosshair);
-        cfg.colors.search_bg       = col("search_bg",       cfg.colors.search_bg);
-        cfg.colors.search_fg       = col("search_fg",       cfg.colors.search_fg);
-        cfg.colors.yank_fg         = col("yank_fg",         cfg.colors.yank_fg);
-        cfg.colors.scrollbar_thumb = col("scrollbar_thumb", cfg.colors.scrollbar_thumb);
-        cfg.colors.scrollbar_track = col("scrollbar_track", cfg.colors.scrollbar_track);
+        for (int i = 0; i < k_color_slot_count; ++i) {
+            const ColorSlot& s = k_color_slots[i];
+            if (auto* n = c->get(s.key))
+                cfg.colors.*s.member = parse_color(*n, cfg.colors.*s.member);
+        }
     }
 
     if (auto* k = tbl["keys"].as_table()) {
-        auto keys = [&](std::string_view key, std::vector<char> def) -> std::vector<char> {
-            if (auto* n = k->get(key)) return parse_keys(*n, def);
-            return def;
-        };
-        cfg.keys.nav_up      = keys("nav_up",      cfg.keys.nav_up);
-        cfg.keys.nav_down    = keys("nav_down",     cfg.keys.nav_down);
-        cfg.keys.nav_left    = keys("nav_left",     cfg.keys.nav_left);
-        cfg.keys.nav_right   = keys("nav_right",    cfg.keys.nav_right);
-        cfg.keys.insert_mode = keys("insert_mode",  cfg.keys.insert_mode);
-        cfg.keys.delete_cell = keys("delete_cell",  cfg.keys.delete_cell);
-        cfg.keys.undo        = keys("undo",         cfg.keys.undo);
-        cfg.keys.insert_row  = keys("insert_row",   cfg.keys.insert_row);
-        cfg.keys.delete_row  = keys("delete_row",   cfg.keys.delete_row);
-        cfg.keys.insert_col  = keys("insert_col",   cfg.keys.insert_col);
-        cfg.keys.delete_col  = keys("delete_col",   cfg.keys.delete_col);
-        cfg.keys.rename_col  = keys("rename_col",   cfg.keys.rename_col);
-        cfg.keys.col_widen   = keys("col_widen",    cfg.keys.col_widen);
-        cfg.keys.col_narrow  = keys("col_narrow",   cfg.keys.col_narrow);
-        cfg.keys.row_taller  = keys("row_taller",   cfg.keys.row_taller);
-        cfg.keys.row_shorter = keys("row_shorter",  cfg.keys.row_shorter);
-        cfg.keys.sort_col    = keys("sort_col",     cfg.keys.sort_col);
-        cfg.keys.heatmap     = keys("heatmap",      cfg.keys.heatmap);
-        cfg.keys.chart       = keys("chart",        cfg.keys.chart);
-        cfg.keys.cmd_mode    = keys("cmd_mode",     cfg.keys.cmd_mode);
+        for (int i = 0; i < k_key_slot_count; ++i) {
+            const KeySlot& s = k_key_slots[i];
+            if (auto* n = k->get(s.key))
+                cfg.keys.*s.member = parse_keys(*n, cfg.keys.*s.member);
+        }
     }
 
     if (auto* g = tbl["grid"].as_table()) {

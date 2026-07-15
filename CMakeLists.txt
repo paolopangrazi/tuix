@@ -79,7 +79,6 @@ add_library(tuix_core STATIC
     components/grid_input.cpp
     components/titlebar.cpp
     components/body.cpp
-    components/statusbar.cpp
     components/status_area.cpp
     components/suggestion_bar.cpp
     components/column_stats.cpp
@@ -121,6 +120,11 @@ target_link_libraries(tuix_core PUBLIC
     OpenXLSX::OpenXLSX
     Threads::Threads
 )
+
+# Project code builds warning-clean; keep it that way (deps are untouched).
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(tuix_core PRIVATE -Wall -Wextra)
+endif()
 
 # ---------------------------------------------------------------------------
 # tuix — the executable

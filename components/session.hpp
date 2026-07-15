@@ -9,6 +9,10 @@ class Body;
 // and brokers I/O between disk and the in-memory Grid.
 class Session {
 public:
+    // Dimensions of a fresh, empty sheet (also the startup grid in main.cpp).
+    static constexpr int k_default_rows = 50;
+    static constexpr int k_default_cols = 26;
+
     explicit Session(Body& body);
 
     // Parsing/IO failures are reported via the grid's status bar.

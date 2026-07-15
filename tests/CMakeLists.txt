@@ -27,6 +27,7 @@ add_executable(tuix_tests
     integration/sort_grid_test.cpp
     integration/chart_grid_test.cpp
     integration/config_theme_test.cpp
+    integration/config_save_test.cpp
 )
 
 target_link_libraries(tuix_tests PRIVATE tuix_core doctest::doctest)

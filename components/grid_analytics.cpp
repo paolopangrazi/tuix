@@ -8,7 +8,7 @@
 #include <sstream>
 #include <string>
 
-#include "col_label.hpp"
+#include "util/col_label.hpp"
 #include "formulas/evaluator.hpp"
 #include "util/numbers.hpp"
 #include "util/strings.hpp"
@@ -69,17 +69,12 @@ void Grid::sort_by(const std::vector<SortKey>& keys) {
         launch_build();
     }
 
-    const std::string label = col_letter(keys[0].col) + (keys[0].descending ? " ▼" : " ▲");
+    const std::string label = m_col_names[keys[0].col] + (keys[0].descending ? " ▼" : " ▲");
     set_status(has_formulas() ? "Sorted by " + label + "  (formula refs not adjusted)"
                               : "Sorted by " + label);
 }
 
 void Grid::sort_spec(const std::string& spec) {
-    auto dir_is_desc = [](const std::string& w) {
-        const std::string l = tuix::to_lower(w);
-        return l == "desc" || l == "descending" || l == "d";
-    };
-
     std::vector<SortKey> keys;
     auto add_key = [&](const std::string& token) {
         std::istringstream iss(token);
@@ -90,9 +85,9 @@ void Grid::sort_spec(const std::string& spec) {
         if (!w1.empty()) {
             if (auto c = parse_col_label(w1)) {        // "B [dir]"
                 col = *c;
-                if (!w2.empty()) desc = dir_is_desc(w2);
+                if (!w2.empty()) desc = tuix::is_desc_token(w2);
             } else {                                   // bare direction on current column
-                desc = dir_is_desc(w1);
+                desc = tuix::is_desc_token(w1);
             }
         }
         if (col >= 0 && col < m_cols) keys.push_back({col, desc});
@@ -116,7 +111,7 @@ void Grid::sort_spec(const std::string& spec) {
 // ── Heatmap ──────────────────────────────────────────────────────────────────
 
 void Grid::toggle_heatmap() {
-    if (m_heat_active) { m_heat_active = false; set_status("Heatmap off"); return; }
+    if (m_heat.active) { m_heat.active = false; set_status("Heatmap off"); return; }
 
     int r0, r1, c0, c1;
     if (m_has_selection && m_cursor_row >= 0 && m_cursor_col >= 0) {
@@ -141,9 +136,9 @@ void Grid::toggle_heatmap() {
         }
     if (!any) { set_status("Heatmap: no numeric values in range"); return; }
 
-    m_heat_r0 = r0; m_heat_r1 = r1; m_heat_c0 = c0; m_heat_c1 = c1;
-    m_heat_min = mn; m_heat_max = mx;
-    m_heat_active = true;
+    m_heat.r0 = r0; m_heat.r1 = r1; m_heat.c0 = c0; m_heat.c1 = c1;
+    m_heat.min = mn; m_heat.max = mx;
+    m_heat.active = true;
     m_has_selection = false;                 // reveal the colors (selection would mask them)
     set_status("Heatmap on");
 }
@@ -184,21 +179,21 @@ Grid::ChartData Grid::chart_data() const {
 
     // Re-gather (evaluating formulas) only when the data or range changed —
     // this runs on every render frame.
-    if (m_chart_gen != m_data_gen || m_chart_r0 != r0 || m_chart_r1 != r1 ||
-        m_chart_c0 != c0 || m_chart_c1 != c1) {
-        m_chart_vals.clear();
-        m_chart_skipped = 0;
+    if (m_chart.gen != m_data_gen || m_chart.r0 != r0 || m_chart.r1 != r1 ||
+        m_chart.c0 != c0 || m_chart.c1 != c1) {
+        m_chart.values.clear();
+        m_chart.skipped = 0;
         for (int r = r0; r <= r1; ++r)
             for (int c = c0; c <= c1; ++c) {
                 double v;
-                if (cell_value(r, c).to_number(v)) m_chart_vals.push_back(v);
-                else                               ++m_chart_skipped;
+                if (cell_value(r, c).to_number(v)) m_chart.values.push_back(v);
+                else                               ++m_chart.skipped;
             }
-        m_chart_gen = m_data_gen;
-        m_chart_r0 = r0; m_chart_r1 = r1; m_chart_c0 = c0; m_chart_c1 = c1;
+        m_chart.gen = m_data_gen;
+        m_chart.r0 = r0; m_chart.r1 = r1; m_chart.c0 = c0; m_chart.c1 = c1;
     }
-    cd.values  = m_chart_vals;
-    cd.skipped = m_chart_skipped;
+    cd.values  = m_chart.values;
+    cd.skipped = m_chart.skipped;
     return cd;
 }
 
@@ -211,7 +206,7 @@ Grid::ColumnStats Grid::column_stats() const {
     if (m_cursor_col < 0 || m_cursor_col >= m_cols) return st;  // gutter — nothing to summarize
     // Cached per (data generation, column): this runs every render frame, and
     // the median sort + full-column evaluation are too heavy to redo per frame.
-    if (m_stats_gen == m_data_gen && m_stats_col == m_cursor_col) return m_stats_cache;
+    if (m_stats.gen == m_data_gen && m_stats.col == m_cursor_col) return m_stats.stats;
     const int c = m_cursor_col;
     st.valid = true;
     st.name  = m_col_names[c];
@@ -240,9 +235,9 @@ Grid::ColumnStats Grid::column_stats() const {
         st.median = (n % 2) ? nums[n / 2]
                             : (nums[n / 2 - 1] + nums[n / 2]) / 2.0;
     }
-    m_stats_cache = st;
-    m_stats_gen   = m_data_gen;
-    m_stats_col   = c;
+    m_stats.stats = st;
+    m_stats.gen   = m_data_gen;
+    m_stats.col   = c;
     return st;
 }
 

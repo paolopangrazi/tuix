@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     int  tab    = Main;
 
     const Config cfg = Config::load();
-    Body    body(50, 26, cfg);
+    Body    body(Session::k_default_rows, Session::k_default_cols, cfg);
     Session session(body);
 
     body.grid().set_calc_ready_cb([&] { screen.PostEvent(ftxui::Event::Custom); });
@@ -51,9 +51,9 @@ int main(int argc, char* argv[]) {
     if (!cfg.load_warning.empty()) body.grid().set_status(cfg.load_warning);
 
     auto body_comp = body.make_component();
-    auto go_main   = [&] { tab = 0; body_comp->TakeFocus(); };
+    auto go_main   = [&] { tab = Main; body_comp->TakeFocus(); };
 
-    // ── Dialogs (tabs 1..6) ──────────────────────────────────────────────────
+    // ── Dialogs (the remaining Tab entries) ──────────────────────────────────
     ConfirmDialog exit_dialog(cfg, 44,
         [] { return text("  Are you sure you want to exit?  ") | bold | center; },
         [&] { screen.Exit(); },

@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <string>
 
-#include "col_label.hpp"
+#include "util/col_label.hpp"
 #include "util/strings.hpp"
 
 bool Grid::goto_ref(const std::string& a1) {

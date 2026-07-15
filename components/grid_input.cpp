@@ -181,7 +181,11 @@ bool Grid::handle_normal_nav(Event e) {
     }
     if (m_cfg.key_is(e, m_cfg.keys.heatmap)) { toggle_heatmap(); return true; }
     if (m_cfg.key_is(e, m_cfg.keys.chart))   { cycle_chart();    return true; }
-    if (m_cfg.key_is(e, m_cfg.keys.insert_mode) || e == Event::F2) { start_edit(false); return true; }  // i/a/F2: edit (cell or header name)
+    // i/a/F2 start editing; on a column header the rename_col binding applies
+    // (same keys by default, but independently configurable).
+    const auto& edit_keys = (m_cursor_row < 0) ? m_cfg.keys.rename_col
+                                               : m_cfg.keys.insert_mode;
+    if (m_cfg.key_is(e, edit_keys) || e == Event::F2) { start_edit(false); return true; }
     if (m_cursor_row < 0) {  // column header: action box inserts / deletes columns
         if (m_cfg.key_is(e, m_cfg.keys.insert_col)) { insert_col(m_cursor_col);     return true; }
         if (m_cfg.key_is(e, m_cfg.keys.delete_col)) { try_delete_col(m_cursor_col); return true; }
@@ -202,7 +206,9 @@ bool Grid::handle_normal_nav(Event e) {
         return true;
     }
     if (m_cfg.key_is(e, m_cfg.keys.undo)) { undo(); return true; }
-    if (e == Event::Special("\x12"))      { redo(); return true; }  // Ctrl+R
+    // Ctrl+R always redoes; keys.redo can add a plain-character binding on top
+    // (character bindings can't express Ctrl chords, so the default is empty).
+    if (e == Event::Special("\x12") || m_cfg.key_is(e, m_cfg.keys.redo)) { redo(); return true; }
 
     // `/` opens search; n/N step through matches (vim-style).
     if (!m_insert_sticky && e == Event::Character('/')) { start_search();  return true; }
@@ -338,22 +344,22 @@ bool Grid::handle_mouse(Event e) {
     const bool drag_held =
         e.mouse().button == Mouse::Left && e.mouse().motion != Mouse::Released;
 
-    if (m_resize_col >= 0) {                    // a column-width drag in progress
+    if (m_col_resize.active >= 0) {                    // a column-width drag in progress
         if (drag_held) {
-            set_col_width(m_resize_col, m_resize_start_w + (mx - m_resize_start_x));
-            m_resize_hover = m_resize_col;
+            set_col_width(m_col_resize.active, m_col_resize.start_size + (mx - m_col_resize.start_pos));
+            m_col_resize.hover = m_col_resize.active;
             return true;
         }
-        m_resize_col = m_resize_hover = -1;   // release (or anything else) ends the drag
+        m_col_resize.active = m_col_resize.hover = -1;   // release (or anything else) ends the drag
         return true;
     }
-    if (m_resize_row >= 0) {                   // same, for a row-height drag
+    if (m_row_resize.active >= 0) {                   // same, for a row-height drag
         if (drag_held) {
-            set_row_height(m_resize_row, m_resize_start_h + (my - m_resize_start_y));
-            m_resize_hrow = m_resize_row;
+            set_row_height(m_row_resize.active, m_row_resize.start_size + (my - m_row_resize.start_pos));
+            m_row_resize.hover = m_row_resize.active;
             return true;
         }
-        m_resize_row = m_resize_hrow = -1;
+        m_row_resize.active = m_row_resize.hover = -1;
         return true;
     }
     if (m_mouse_selecting) {                    // painting a multi-cell selection
@@ -376,11 +382,11 @@ bool Grid::handle_mouse(Event e) {
     const int rx = mx - m_box.x_min - 1;
     const int ry = my - m_box.y_min - 1;
     const int k_gutter = ActionBox::k_width + k_rownum_w;
-    m_resize_hover = (ry == 0) ? border_hit(rx) : -1;
-    m_resize_hrow  = (rx >= 0 && rx < k_gutter) ? row_border_hit(ry) : -1;
+    m_col_resize.hover = (ry == 0) ? border_hit(rx) : -1;
+    m_row_resize.hover  = (rx >= 0 && rx < k_gutter) ? row_border_hit(ry) : -1;
     // Header sort affordance: a column under the mouse (but not over its resize
     // border, which owns its own ⇔ handle) shows a clickable ▲ hint.
-    m_header_hover = (ry == 0 && rx >= k_gutter && m_resize_hover < 0) ? col_at_x(rx) : -1;
+    m_header_hover = (ry == 0 && rx >= k_gutter && m_col_resize.hover < 0) ? col_at_x(rx) : -1;
 
     if (e.mouse().button == Mouse::WheelUp)   { move(-3, 0); return true; }
     if (e.mouse().button == Mouse::WheelDown) { move( 3, 0); return true; }
@@ -400,18 +406,18 @@ bool Grid::handle_mouse(Event e) {
         }
         // Grab a column boundary to start a resize drag (checked after the action
         // boxes so their +/- keep priority over the surrounding separator).
-        if (m_resize_hover >= 0) {
-            m_resize_col     = m_resize_hover;
-            m_resize_start_x = mx;
-            m_resize_start_w = m_col_widths[m_resize_hover];
+        if (m_col_resize.hover >= 0) {
+            m_col_resize.active     = m_col_resize.hover;
+            m_col_resize.start_pos = mx;
+            m_col_resize.start_size = m_col_widths[m_col_resize.hover];
             return true;
         }
         // Grab a row boundary in the gutter to start a height drag (after the
         // row +/- action boxes above, so those keep priority).
-        if (m_resize_hrow >= 0) {
-            m_resize_row     = m_resize_hrow;
-            m_resize_start_y = my;
-            m_resize_start_h = m_row_heights[m_resize_hrow];
+        if (m_row_resize.hover >= 0) {
+            m_row_resize.active     = m_row_resize.hover;
+            m_row_resize.start_pos = my;
+            m_row_resize.start_size = m_row_heights[m_row_resize.hover];
             return true;
         }
         if (!select_at_mouse(mx, my)) return false;

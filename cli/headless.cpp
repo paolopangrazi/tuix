@@ -11,7 +11,7 @@
 
 #include <unistd.h>  // isatty, STDIN_FILENO
 
-#include "col_label.hpp"
+#include "util/col_label.hpp"
 #include "loader/csv_loader.hpp"
 #include "util/numbers.hpp"
 #include "util/strings.hpp"
@@ -22,12 +22,6 @@ namespace headless {
 namespace {
 
 // ── Small value helpers ──────────────────────────────────────────────────────
-
-// Whole-string numeric parse, shared with the grid so headless filters and
-// interactive sorting agree on what counts as a number.
-bool parse_num(const std::string& s, double& out) {
-    return tuix::parse_number(s, out);
-}
 
 std::string trim(const std::string& s) {
     size_t a = s.find_first_not_of(" \t");
@@ -110,7 +104,7 @@ bool row_matches(const SheetData& d, size_t row, int col, const Predicate& p,
     }
 
     double cn, rn;
-    const bool numeric = parse_num(cell, cn) && parse_num(p.rhs, rn);
+    const bool numeric = tuix::parse_number(cell, cn) && tuix::parse_number(p.rhs, rn);
     int cmp;  // <0, 0, >0
     if (numeric) {
         cmp = (cn < rn) ? -1 : (cn > rn ? 1 : 0);
@@ -169,7 +163,7 @@ struct SortKey { int col; bool desc; };
 // Numeric-aware, blanks-last comparison mirroring the interactive grid's sort.
 int cmp_cells(const std::string& a, const std::string& b) {
     double da, db;
-    const bool an = parse_num(a, da), bn = parse_num(b, db);
+    const bool an = tuix::parse_number(a, da), bn = tuix::parse_number(b, db);
     return tuix::cmp_mixed(an, da, a, bn, db, b);
 }
 
@@ -184,8 +178,7 @@ bool apply_sort(SheetData& d, const std::string& spec, std::string& err) {
         if (col_tok.empty()) continue;
         auto col = resolve_column(d, col_tok);
         if (!col) { err = "sort: unknown column '" + col_tok + "'"; return false; }
-        const std::string dl = tuix::to_lower(dir_tok);
-        keys.push_back({*col, dl == "desc" || dl == "descending" || dl == "d"});
+        keys.push_back({*col, tuix::is_desc_token(dir_tok)});
     }
     if (keys.empty()) { err = "sort: no valid column"; return false; }
 

@@ -76,7 +76,7 @@ Element Grid::formula_bar() const {
     if (m_cursor_col < 0)       content = "";                          // row-index gutter
     else if (m_editing)         content = m_edit_buf.substr(0, m_edit_cursor) + "_" + m_edit_buf.substr(m_edit_cursor);
     else if (m_cursor_row < 0)  content = m_col_names[m_cursor_col];   // column header
-    else                        content = at(m_cursor_row, m_cursor_col).display();
+    else                        content = at(m_cursor_row, m_cursor_col).value();
     return window(
         hbox({ text(" "), text(label) | bold | color(m_cfg.colors.header), text(" ") }),
         hbox({ text(" "), text(content), filler() })
@@ -94,7 +94,7 @@ Element Grid::render() const {
     // handle so the user sees the column can be dragged to resize. Body rows keep
     // a plain separator so the indicator stays a single, legible glyph.
     auto col_sep = [&](int c, bool header) -> Element {
-        if (header && m_resize_hover >= 0 && c - 1 == m_resize_hover)
+        if (header && m_col_resize.hover >= 0 && c - 1 == m_col_resize.hover)
             return text("⇔") | color(m_cfg.colors.cursor_bg) | bold | size(WIDTH, EQUAL, 1);
         return separator();
     };
@@ -103,7 +103,7 @@ Element Grid::render() const {
     // border, show a "⇕" grab handle in the gutter (a vbox keeps the trailing
     // separator horizontal inside the surrounding hbox).
     auto row_sep = [&](int r) -> Element {
-        if (m_resize_hrow == r)
+        if (m_row_resize.hover == r)
             return hbox({ text("⇕") | color(m_cfg.colors.cursor_bg) | bold | size(WIDTH, EQUAL, 1),
                           vbox({ separator() }) | flex });
         return separator();
@@ -111,11 +111,11 @@ Element Grid::render() const {
 
     // Heatmap background+foreground for a numeric cell inside the active region.
     auto heat_at = [&](int r, int c) -> std::optional<std::pair<Color, Color>> {
-        if (!m_heat_active) return std::nullopt;
-        if (r < m_heat_r0 || r > m_heat_r1 || c < m_heat_c0 || c > m_heat_c1) return std::nullopt;
+        if (!m_heat.active) return std::nullopt;
+        if (r < m_heat.r0 || r > m_heat.r1 || c < m_heat.c0 || c > m_heat.c1) return std::nullopt;
         double v;
         if (!cell_value(r, c).to_number(v)) return std::nullopt;
-        const double t = (m_heat_max > m_heat_min) ? (v - m_heat_min) / (m_heat_max - m_heat_min) : 0.5;
+        const double t = (m_heat.max > m_heat.min) ? (v - m_heat.min) / (m_heat.max - m_heat.min) : 0.5;
         int R, G, B;
         heat_rgb(t, R, G, B);
         const Color fg = (0.299 * R + 0.587 * G + 0.114 * B) > 140 ? Color::Black : Color::White;

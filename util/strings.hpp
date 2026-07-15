@@ -27,4 +27,11 @@ inline bool iequals(const std::string& a, const std::string& b) {
     return true;
 }
 
+// Direction word in a sort spec ("B desc, A"): shared by the interactive
+// :sort command and the headless --sort flag so they accept the same forms.
+inline bool is_desc_token(const std::string& word) {
+    const std::string l = to_lower(word);
+    return l == "desc" || l == "descending" || l == "d";
+}
+
 }  // namespace tuix

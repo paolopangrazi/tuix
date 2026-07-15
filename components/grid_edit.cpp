@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <string>
 
-#include "col_label.hpp"
+#include "util/col_label.hpp"
 #include "util/clipboard.hpp"
 
 // ── Row / column structure ───────────────────────────────────────────────────
@@ -267,6 +267,8 @@ void Grid::paste_yanked() {
             cell.set_value(m_yank_data[dr][dc]);
         }
     }
+    for (int dc = 0; dc < (int)m_yank_data[0].size(); ++dc)
+        refit_col(m_cursor_col + dc);   // pasted content may be wider than the column
     m_yank_row = -1;
     m_yank_col = -1;
     // Paste may have appended rows/cols and rewrote a block of cells, so the

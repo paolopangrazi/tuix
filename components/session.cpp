@@ -1,7 +1,7 @@
 #include "session.hpp"
 
 #include "body.hpp"
-#include "col_label.hpp"
+#include "util/col_label.hpp"
 #include "loader/csv_loader.hpp"
 #include "loader/xlsx_loader.hpp"
 #include "writer/csv_writer.hpp"
@@ -32,6 +32,10 @@ bool is_xlsx(const std::string& path) {
     return tuix::to_lower(std::filesystem::path(path).extension().string()) == ".xlsx";
 }
 
+// Placeholder width a Sheet snapshot carries until the grid auto-fits it on
+// load (Grid::load_from refits every non-pinned column to its content).
+constexpr int k_snapshot_col_width = 12;
+
 // Build a Sheet by loading SheetData through a temporary Grid-style fill.
 // Inactive sheets need cell values for save, so we materialize the SheetData
 // straight into a Sheet's cell grid.
@@ -42,7 +46,7 @@ Sheet sheet_from_data(std::string name, const SheetData& data) {
     const int ncols = std::max<int>(1, static_cast<int>(data.headers.size()));
     s.cells.assign(nrows, std::vector<Cell>(ncols));
     s.col_names.resize(ncols);
-    s.col_widths.assign(ncols, 12);
+    s.col_widths.assign(ncols, k_snapshot_col_width);
     for (int c = 0; c < ncols; ++c)
         s.col_names[c] = (c < (int)data.headers.size()) ? data.headers[c] : std::string{};
     for (int r = 0; r < (int)data.rows.size(); ++r)
@@ -81,12 +85,11 @@ Session::Session(Body& body) : m_body(body) {
 Sheet Session::new_empty_sheet(std::string name) const {
     Sheet s;
     s.name = std::move(name);
-    constexpr int kRows = 50, kCols = 26;
-    s.cells.assign(kRows, std::vector<Cell>(kCols));
-    s.col_names.resize(kCols);
-    for (int c = 0; c < kCols; ++c)
+    s.cells.assign(k_default_rows, std::vector<Cell>(k_default_cols));
+    s.col_names.resize(k_default_cols);
+    for (int c = 0; c < k_default_cols; ++c)
         s.col_names[c] = col_letter(c);
-    s.col_widths.assign(kCols, 12);
+    s.col_widths.assign(k_default_cols, k_snapshot_col_width);
     return s;
 }
 

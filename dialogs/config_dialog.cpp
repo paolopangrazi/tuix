@@ -2,6 +2,7 @@
 #include "dialog_shell.hpp"
 
 #include "config/config.hpp"
+#include "config/config_schema.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -25,58 +26,26 @@ toml::array make_key_arr(const std::string& s) {
 ConfigDialog::ConfigDialog(const Config& cfg, std::function<void()> on_close)
     : m_cfg(cfg), m_on_close(std::move(on_close)),
       m_tab_names{"Colors", "Keys", "Grid"} {
+    m_color_bufs.resize(k_color_slot_count);
+    m_key_bufs.resize(k_key_slot_count);
     refresh_from_cfg();
 
-    in_cursor_bg       = Input(&cb_cursor_bg,       "");
-    in_cursor_fg       = Input(&cb_cursor_fg,       "");
-    in_selection_bg    = Input(&cb_selection_bg,    "");
-    in_selection_fg    = Input(&cb_selection_fg,    "");
-    in_header          = Input(&cb_header,          "");
-    in_row_number      = Input(&cb_row_number,      "");
-    in_dimmed          = Input(&cb_dimmed,          "");
-    in_insert_badge_bg = Input(&cb_insert_badge_bg, "");
-    in_insert_badge_fg = Input(&cb_insert_badge_fg, "");
-    in_normal_badge_bg = Input(&cb_normal_badge_bg, "");
-    in_normal_badge_fg = Input(&cb_normal_badge_fg, "");
-    in_titlebar_bg     = Input(&cb_titlebar_bg,     "");
-    in_titlebar_fg     = Input(&cb_titlebar_fg,     "");
-    in_formula_fg      = Input(&cb_formula_fg,      "");
-
-    in_nav_up      = Input(&kb_nav_up,      "");
-    in_nav_down    = Input(&kb_nav_down,    "");
-    in_nav_left    = Input(&kb_nav_left,    "");
-    in_nav_right   = Input(&kb_nav_right,   "");
-    in_insert_mode = Input(&kb_insert_mode, "");
-    in_delete_cell = Input(&kb_delete_cell, "");
-    in_undo        = Input(&kb_undo,        "");
-    in_insert_row  = Input(&kb_insert_row,  "");
-    in_delete_row  = Input(&kb_delete_row,  "");
-    in_insert_col  = Input(&kb_insert_col,  "");
-    in_delete_col  = Input(&kb_delete_col,  "");
-    in_rename_col  = Input(&kb_rename_col,  "");
-    in_cmd_mode    = Input(&kb_cmd_mode,    "");
-
-    in_cell_width  = Input(&gb_cell_width,  "");
-    in_start_mode  = Input(&gb_start_mode,  "");
+    InputOption opt;
+    opt.multiline = false;   // single-line fields; Enter must not insert '\n'
+    for (int i = 0; i < k_color_slot_count; ++i)
+        m_color_inputs.push_back(Input(&m_color_bufs[i], "", opt));
+    for (int i = 0; i < k_key_slot_count; ++i)
+        m_key_inputs.push_back(Input(&m_key_bufs[i], "", opt));
+    in_cell_width = Input(&gb_cell_width, "", opt);
+    in_start_mode = Input(&gb_start_mode, "", opt);
 
     m_tab_toggle = Menu(&m_tab_names, &m_tab, MenuOption::Horizontal());
 
-    auto colors_tab = Container::Vertical({
-        in_cursor_bg, in_cursor_fg, in_selection_bg, in_selection_fg,
-        in_header, in_row_number, in_dimmed,
-        in_insert_badge_bg, in_insert_badge_fg,
-        in_normal_badge_bg, in_normal_badge_fg,
-        in_titlebar_bg, in_titlebar_fg, in_formula_fg,
-    });
-    auto keys_tab = Container::Vertical({
-        in_nav_up, in_nav_down, in_nav_left, in_nav_right,
-        in_insert_mode, in_delete_cell, in_undo,
-        in_insert_row, in_delete_row, in_insert_col, in_delete_col,
-        in_rename_col, in_cmd_mode,
-    });
-    auto grid_tab = Container::Vertical({ in_cell_width, in_start_mode });
-
-    m_content = Container::Tab({ colors_tab, keys_tab, grid_tab }, &m_tab);
+    m_content = Container::Tab({
+        Container::Vertical(m_color_inputs),
+        Container::Vertical(m_key_inputs),
+        Container::Vertical({ in_cell_width, in_start_mode }),
+    }, &m_tab);
 
     m_save_btn = Button("  Save  ", [this]{ save_to_file(); },
                         make_dialog_btn_style(m_cfg));
@@ -85,81 +54,46 @@ ConfigDialog::ConfigDialog(const Config& cfg, std::function<void()> on_close)
 }
 
 void ConfigDialog::refresh_from_cfg() {
-    auto cn = [](Color c) { return Config::color_to_name(c); };
-    cb_cursor_bg       = cn(m_cfg.colors.cursor_bg);
-    cb_cursor_fg       = cn(m_cfg.colors.cursor_fg);
-    cb_selection_bg    = cn(m_cfg.colors.selection_bg);
-    cb_selection_fg    = cn(m_cfg.colors.selection_fg);
-    cb_header          = cn(m_cfg.colors.header);
-    cb_row_number      = cn(m_cfg.colors.row_number);
-    cb_dimmed          = cn(m_cfg.colors.dimmed);
-    cb_insert_badge_bg = cn(m_cfg.colors.insert_badge_bg);
-    cb_insert_badge_fg = cn(m_cfg.colors.insert_badge_fg);
-    cb_normal_badge_bg = cn(m_cfg.colors.normal_badge_bg);
-    cb_normal_badge_fg = cn(m_cfg.colors.normal_badge_fg);
-    cb_titlebar_bg     = cn(m_cfg.colors.titlebar_bg);
-    cb_titlebar_fg     = cn(m_cfg.colors.titlebar_fg);
-    cb_formula_fg      = cn(m_cfg.colors.formula_fg);
-    kb_nav_up      = kstr(m_cfg.keys.nav_up);
-    kb_nav_down    = kstr(m_cfg.keys.nav_down);
-    kb_nav_left    = kstr(m_cfg.keys.nav_left);
-    kb_nav_right   = kstr(m_cfg.keys.nav_right);
-    kb_insert_mode = kstr(m_cfg.keys.insert_mode);
-    kb_delete_cell = kstr(m_cfg.keys.delete_cell);
-    kb_undo        = kstr(m_cfg.keys.undo);
-    kb_insert_row  = kstr(m_cfg.keys.insert_row);
-    kb_delete_row  = kstr(m_cfg.keys.delete_row);
-    kb_insert_col  = kstr(m_cfg.keys.insert_col);
-    kb_delete_col  = kstr(m_cfg.keys.delete_col);
-    kb_rename_col  = kstr(m_cfg.keys.rename_col);
-    kb_cmd_mode    = kstr(m_cfg.keys.cmd_mode);
-    gb_cell_width  = std::to_string(m_cfg.grid.cell_width);
-    gb_start_mode  = m_cfg.grid.start_insert ? "insert" : "normal";
-    m_tab          = 0;
+    // Theme RGB values have no ANSI name, so color_to_name gives "" — shown as
+    // a blank field, and save_to_file leaves blank slots untouched in the file.
+    for (int i = 0; i < k_color_slot_count; ++i)
+        m_color_bufs[i] = Config::color_to_name(m_cfg.colors.*k_color_slots[i].member);
+    for (int i = 0; i < k_key_slot_count; ++i)
+        m_key_bufs[i] = kstr(m_cfg.keys.*k_key_slots[i].member);
+    gb_cell_width = std::to_string(m_cfg.grid.cell_width);
+    gb_start_mode = m_cfg.grid.start_insert ? "insert" : "normal";
+    m_tab = 0;
     m_status.clear();
 }
 
 void ConfigDialog::save_to_file() {
+    const auto path = Config::config_file_path();
+    if (path.empty()) { m_status = "Cannot save: no config path (HOME unset)"; return; }
+
+    // Read-modify-write: everything this editor doesn't manage — the [theme]
+    // block, slots left blank here, hand-written extras — survives a save.
     toml::table tbl;
-    toml::table ct;
-    ct.insert("cursor_bg",       cb_cursor_bg);
-    ct.insert("cursor_fg",       cb_cursor_fg);
-    ct.insert("selection_bg",    cb_selection_bg);
-    ct.insert("selection_fg",    cb_selection_fg);
-    ct.insert("header",          cb_header);
-    ct.insert("row_number",      cb_row_number);
-    ct.insert("dimmed",          cb_dimmed);
-    ct.insert("insert_badge_bg", cb_insert_badge_bg);
-    ct.insert("insert_badge_fg", cb_insert_badge_fg);
-    ct.insert("normal_badge_bg", cb_normal_badge_bg);
-    ct.insert("normal_badge_fg", cb_normal_badge_fg);
-    ct.insert("titlebar_bg",     cb_titlebar_bg);
-    ct.insert("titlebar_fg",     cb_titlebar_fg);
-    ct.insert("formula_fg",      cb_formula_fg);
-    tbl.insert("colors", std::move(ct));
+    try { tbl = toml::parse_file(path.string()); } catch (...) { /* start fresh */ }
 
-    toml::table kt;
-    kt.insert("nav_up",      make_key_arr(kb_nav_up));
-    kt.insert("nav_down",    make_key_arr(kb_nav_down));
-    kt.insert("nav_left",    make_key_arr(kb_nav_left));
-    kt.insert("nav_right",   make_key_arr(kb_nav_right));
-    kt.insert("insert_mode", make_key_arr(kb_insert_mode));
-    kt.insert("delete_cell", make_key_arr(kb_delete_cell));
-    kt.insert("undo",        make_key_arr(kb_undo));
-    kt.insert("insert_row",  make_key_arr(kb_insert_row));
-    kt.insert("delete_row",  make_key_arr(kb_delete_row));
-    kt.insert("insert_col",  make_key_arr(kb_insert_col));
-    kt.insert("delete_col",  make_key_arr(kb_delete_col));
-    kt.insert("rename_col",  make_key_arr(kb_rename_col));
-    kt.insert("cmd_mode",    make_key_arr(kb_cmd_mode));
-    tbl.insert("keys", std::move(kt));
+    auto section = [&](const char* name) -> toml::table& {
+        if (!tbl[name].as_table()) tbl.insert_or_assign(name, toml::table{});
+        return *tbl[name].as_table();
+    };
 
-    toml::table gt;
-    try { gt.insert("cell_width", std::stoi(gb_cell_width)); } catch (...) {}
-    gt.insert("start_mode", (gb_start_mode == "insert") ? "insert" : "normal");
-    tbl.insert("grid", std::move(gt));
+    toml::table& ct = section("colors");
+    for (int i = 0; i < k_color_slot_count; ++i)
+        if (!m_color_bufs[i].empty())   // blank = keep whatever the file has
+            ct.insert_or_assign(k_color_slots[i].key, m_color_bufs[i]);
 
-    auto path = Config::config_file_path();
+    toml::table& kt = section("keys");
+    for (int i = 0; i < k_key_slot_count; ++i)
+        if (!m_key_bufs[i].empty())
+            kt.insert_or_assign(k_key_slots[i].key, make_key_arr(m_key_bufs[i]));
+
+    toml::table& gt = section("grid");
+    try { gt.insert_or_assign("cell_width", std::stoi(gb_cell_width)); } catch (...) {}
+    gt.insert_or_assign("start_mode", (gb_start_mode == "insert") ? "insert" : "normal");
+
     std::filesystem::create_directories(path.parent_path());
     std::ofstream out(path);
     out << tbl;
@@ -168,60 +102,48 @@ void ConfigDialog::save_to_file() {
 
 Component ConfigDialog::component() {
     auto renderer = Renderer(m_container, [this] {
-        const int lw = 20, vw = 20;
-        auto crow = [&](const char* label, Component inp) -> Element {
+        const int lw = 16, vw = 14;
+        auto crow = [&](const char* label, const Component& inp) -> Element {
             return hbox({
                 text("  "),
                 text(label) | size(WIDTH, EQUAL, lw) | color(m_cfg.colors.dimmed),
                 inp->Render() | size(WIDTH, EQUAL, vw),
             });
         };
-        const char* color_hint =
-            "black  red  green  yellow  blue  magenta  cyan  white\n"
-            "gray_dark  gray_light  *_light variants (e.g. green_light)";
-        const char* keys_hint = "Space-separated chars  (e.g.  i a)";
+        // The color/key lists are long, so lay their rows out in two columns.
+        auto two_col = [&](const std::vector<Component>& inputs,
+                           auto&& label_of) -> Element {
+            const int n = (int)inputs.size(), half = (n + 1) / 2;
+            Elements left, right;
+            for (int i = 0; i < n; ++i)
+                (i < half ? left : right).push_back(crow(label_of(i), inputs[i]));
+            return hbox({ vbox(std::move(left)), text("  "), vbox(std::move(right)) });
+        };
+
         Element page;
         switch (m_tab) {
         default:
-        case 0:
+        case 0: {
+            const char* color_hint =
+                "ANSI names (green, gray_dark, cyan_light, ...), #rrggbb, or rgb(r,g,b).\n"
+                "Blank = keep the current (theme) value.";
             page = vbox({
-                crow("cursor_bg",       in_cursor_bg),
-                crow("cursor_fg",       in_cursor_fg),
-                crow("selection_bg",    in_selection_bg),
-                crow("selection_fg",    in_selection_fg),
-                crow("header",          in_header),
-                crow("row_number",      in_row_number),
-                crow("dimmed",          in_dimmed),
-                crow("insert_badge_bg", in_insert_badge_bg),
-                crow("insert_badge_fg", in_insert_badge_fg),
-                crow("normal_badge_bg", in_normal_badge_bg),
-                crow("normal_badge_fg", in_normal_badge_fg),
-                crow("titlebar_bg",     in_titlebar_bg),
-                crow("titlebar_fg",     in_titlebar_fg),
-                crow("formula_fg",      in_formula_fg),
+                two_col(m_color_inputs, [](int i) { return k_color_slots[i].key; }),
                 text(""),
                 hbox({ text("  "), paragraph(color_hint) | color(m_cfg.colors.dimmed) }),
             });
             break;
-        case 1:
+        }
+        case 1: {
+            const char* keys_hint =
+                "Space-separated characters (e.g.  i a).  Blank = keep default.";
             page = vbox({
-                crow("nav_up",      in_nav_up),
-                crow("nav_down",    in_nav_down),
-                crow("nav_left",    in_nav_left),
-                crow("nav_right",   in_nav_right),
-                crow("insert_mode", in_insert_mode),
-                crow("delete_cell", in_delete_cell),
-                crow("undo",        in_undo),
-                crow("insert_row",  in_insert_row),
-                crow("delete_row",  in_delete_row),
-                crow("insert_col",  in_insert_col),
-                crow("delete_col",  in_delete_col),
-                crow("rename_col",  in_rename_col),
-                crow("cmd_mode",    in_cmd_mode),
+                two_col(m_key_inputs, [](int i) { return k_key_slots[i].key; }),
                 text(""),
                 hbox({ text("  "), text(keys_hint) | color(m_cfg.colors.dimmed) }),
             });
             break;
+        }
         case 2: {
             const char* grid_hint = "start_mode: normal  or  insert";
             page = vbox({
@@ -238,7 +160,7 @@ Component ConfigDialog::component() {
             vbox({
                 m_tab_toggle->Render(),
                 separator(),
-                page | size(WIDTH, EQUAL, lw + vw + 4),
+                page | size(WIDTH, EQUAL, 2 * (lw + vw + 2) + 4),
                 separator(),
                 hbox({ filler(), m_save_btn->Render(), filler() }),
             })

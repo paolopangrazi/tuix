@@ -52,6 +52,7 @@ struct Keys {
     std::vector<char> insert_mode = {'i', 'a'};
     std::vector<char> delete_cell = {'x'};
     std::vector<char> undo        = {'u'};
+    std::vector<char> redo        = {};    // Ctrl+R is built in; chars added here also redo
     std::vector<char> insert_row  = {'+'};
     std::vector<char> delete_row  = {'-'};
     std::vector<char> insert_col  = {'+'};

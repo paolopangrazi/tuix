@@ -23,11 +23,13 @@ class Grid : public EvalContext {
 public:
     // A history step is either a single-cell edit or a whole-row reorder (sort).
     // For Reorder, `order` is the permutation that was applied: new[i] = old[order[i]];
-    // undo applies its inverse, and row/col/before/after are unused. The new
-    // fields are last (with defaults) so existing `{row,col,before,after}` init
-    // keeps working for cell edits.
+    // undo applies its inverse, and row/col/before/after are unused.
     enum class HistoryKind { Cell, Reorder };
     struct HistoryEntry {
+        HistoryEntry() = default;
+        HistoryEntry(int r, int c, std::string b, std::string a)   // a cell edit
+            : row(r), col(c), before(std::move(b)), after(std::move(a)) {}
+
         int row = 0, col = 0;
         std::string before, after;
         HistoryKind kind = HistoryKind::Cell;
@@ -180,19 +182,13 @@ private:
     int                            m_pending_delete_row = -1;
     int                            m_pending_delete_col = -1;
 
-    // Mouse column-resize drag. m_resize_col is the column being dragged (-1 when
-    // idle); m_resize_hover is the boundary under the cursor, used only to
-    // highlight the grabbable separator. m_resize_start_* anchor the press.
-    int                            m_resize_col     = -1;
-    int                            m_resize_hover   = -1;
-    int                            m_resize_start_x = 0;
-    int                            m_resize_start_w = 0;
-    // Mouse row-resize drag, mirroring the column fields above: m_resize_row is
-    // the row being dragged, m_resize_hrow the bottom border under the cursor.
-    int                            m_resize_row     = -1;
-    int                            m_resize_hrow    = -1;
-    int                            m_resize_start_y = 0;
-    int                            m_resize_start_h = 0;
+    // One mouse resize drag (column width or row height). `active` is the
+    // column/row being dragged (-1 when idle); `hover` is the boundary under
+    // the cursor, used only to highlight the grabbable separator; `start_pos`
+    // (mouse x or y) and `start_size` (width or height) anchor the press.
+    struct ResizeDrag { int active = -1, hover = -1, start_pos = 0, start_size = 0; };
+    ResizeDrag                     m_col_resize;
+    ResizeDrag                     m_row_resize;
     // True while a left-drag is painting a multi-cell selection; the anchor is
     // m_sel_row/m_sel_col and the moving end is the cursor.
     bool                           m_mouse_selecting = false;
@@ -205,9 +201,12 @@ private:
 
     // Heatmap: when active, numeric cells in the rectangle [r0..r1]×[c0..c1] are
     // shaded along a cold→hot gradient scaled to the captured min/max.
-    bool                           m_heat_active = false;
-    int                            m_heat_r0 = 0, m_heat_c0 = 0, m_heat_r1 = 0, m_heat_c1 = 0;
-    double                         m_heat_min = 0.0, m_heat_max = 0.0;
+    struct HeatmapState {
+        bool   active = false;
+        int    r0 = 0, c0 = 0, r1 = 0, c1 = 0;
+        double min = 0.0, max = 0.0;
+    };
+    HeatmapState                   m_heat;
 
     // Chart panel: which type is showing (Bar/Line/Histogram), or none.
     bool                           m_chart_active = false;
@@ -217,13 +216,15 @@ private:
     // summaries (column stats, chart series) are cached against it so they are
     // recomputed only when the data — not just the frame — changes.
     int                            m_data_gen = 0;
-    mutable int                    m_stats_gen = -1, m_stats_col = -1;
-    mutable ColumnStats            m_stats_cache;
-    mutable int                    m_chart_gen = -1;
-    mutable int                    m_chart_r0 = -1, m_chart_c0 = -1,
-                                   m_chart_r1 = -1, m_chart_c1 = -1;
-    mutable std::vector<double>    m_chart_vals;
-    mutable int                    m_chart_skipped = 0;
+    struct StatsCache { int gen = -1, col = -1; ColumnStats stats; };
+    mutable StatsCache             m_stats;
+    struct ChartCache {
+        int gen = -1;
+        int r0 = -1, c0 = -1, r1 = -1, c1 = -1;
+        std::vector<double> values;
+        int skipped = 0;
+    };
+    mutable ChartCache             m_chart;
 
     std::vector<HistoryEntry> m_undo_stack;
     std::vector<HistoryEntry> m_redo_stack;
