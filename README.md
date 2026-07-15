@@ -379,6 +379,37 @@ tuix --filter 'last_name =~ ^M'          data.csv   # regex
 Bad columns, malformed predicates, and invalid regexes report an error and exit
 non-zero, so headless runs fail loudly in scripts.
 
+### Examples
+
+```bash
+# All engineers earning more than 70 k, sorted by salary descending
+tuix --filter 'department == Engineering' \
+     --filter 'salary > 70000' \
+     --sort 'salary desc' \
+     employees.csv
+
+# Top 5 earners — name, department, salary
+tuix --sort 'salary desc' \
+     --head 5 \
+     --select 'first_name,last_name,department,salary' \
+     employees.csv
+
+# Everyone whose last name starts with M, regardless of case (regex)
+tuix --filter 'last_name =~ ^[Mm]' employees.csv
+
+# Products in the Electronics category, highest revenue first
+tuix --filter 'category == Electronics' \
+     --sort 'revenue desc' \
+     --select 'product,units,revenue' \
+     sales.csv
+
+# Read from a pipe; save the result to a file instead of stdout
+cat employees.csv | tuix --filter 'remote == yes' --sort 'salary desc' -o remote.csv
+
+# Columns can be referred to by letter when there's no header or you prefer brevity
+tuix --filter 'F > 80000' employees.csv   # F is the salary column
+```
+
 ---
 
 ## Key bindings
