@@ -14,6 +14,7 @@
 #include "cmd_mode.hpp"
 #include "config/config.hpp"
 #include "cli/headless.hpp"
+#include "util/native_file_dialog.hpp"
 
 #include "confirm_dialog.hpp"
 #include "path_input_dialog.hpp"
@@ -131,7 +132,23 @@ int main(int argc, char* argv[]) {
         [&] { return body.grid().can_undo(); },
         [&] { body.grid().redo(); },
         [&] { return body.grid().can_redo(); },
-        [&] { open_dialog.clear_buffer(); tab = Open; },
+        [&] {
+            // Prefer the OS-native picker (Explorer's IFileOpenDialog on
+            // Windows); fall back to the typed-path dialog when there is no
+            // native dialog available (every non-Windows platform, or no GUI).
+            auto res = tuix::native_open_file(session.dir_of_current());
+            switch (res.status) {
+                case tuix::FileDialogStatus::Ok:
+                    session.load(session.resolve(res.path));
+                    go_main();
+                    break;
+                case tuix::FileDialogStatus::Cancelled:
+                    break;  // user backed out — leave the current sheet alone
+                case tuix::FileDialogStatus::Unavailable:
+                    open_dialog.clear_buffer(); tab = Open;
+                    break;
+            }
+        },
         [&] { if (session.has_path()) tab = SaveConfirm; },
         [&] {
             save_as_dialog.set_buffer(session.has_path()

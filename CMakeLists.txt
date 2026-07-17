@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(tuix VERSION 1.0.1 LANGUAGES CXX)
+project(tuix VERSION 1.0.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -104,6 +104,7 @@ add_library(tuix_core STATIC
     dialogs/config_dialog.cpp
     dialogs/sheet_actions_dialog.cpp
     util/clipboard.cpp
+    util/native_file_dialog.cpp
     util/text_width.cpp
     loader/csv_loader.cpp
     loader/xlsx_loader.cpp
@@ -130,6 +131,12 @@ target_link_libraries(tuix_core PUBLIC
     OpenXLSX::OpenXLSX
     Threads::Threads
 )
+
+# Windows: the native Explorer file picker (util/native_file_dialog.cpp) uses
+# the COM shell dialog APIs from ole32.
+if(WIN32)
+    target_link_libraries(tuix_core PUBLIC ole32)
+endif()
 
 # Project code builds warning-clean; keep it that way (deps are untouched).
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
