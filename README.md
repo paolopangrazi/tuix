@@ -41,7 +41,7 @@ and macOS; Windows is not yet supported.
 - **Multi-sheet** — XLSX workbooks open with a tab per worksheet; cycle, add, rename, and delete them, and reference across them with `Sheet2!A1`.
 - **Live feedback** — per-cell formula suggestions and range statistics update as you work.
 - **Theme-aware** — colors map to your terminal's ANSI palette, so tuiX adopts your theme automatically.
-- **Scriptable** — a headless mode turns tuiX into a unix filter: `cat data.csv | tuix --filter 'salary > 50000' --sort dept`.
+- **Scriptable** — a headless mode turns tuiX into a CSV filter on any platform: `tuix --filter 'salary > 50000' --sort dept data.csv` (or pipe via stdin on Linux/macOS/CMD).
 
 ---
 
@@ -334,10 +334,10 @@ tuix path/to/file.xlsx      # open an Excel file
 
 ## Headless mode
 
-Beyond the interactive editor, tuiX doubles as a **unix filter**: give it any
-transform flag (or pipe CSV into it) and it reads CSV, applies a pipeline, and
-writes CSV to stdout — never touching the terminal UI. This makes tuiX
-scriptable and composable with the rest of your shell.
+Beyond the interactive editor, tuiX doubles as a **scriptable CSV filter**: give
+it any transform flag (or pipe CSV into it) and it reads CSV, applies a
+pipeline, and writes CSV to stdout — never touching the terminal UI. Works on
+Linux, macOS, and Windows.
 
 ```bash
 # Filter, sort, and pick columns from a file → stdout
@@ -350,6 +350,28 @@ cat samples/csv/employees.csv | tuix --filter 'first_name =~ ^A' --head 20 -o to
 
 The pipeline always runs in a fixed order: **filter → sort → head/tail →
 select**, so each stage sees the previous stage's output.
+
+### Windows notes
+
+The **file-argument form works identically** on Windows Terminal (any shell):
+
+```powershell
+tuix --filter "salary > 50000" --sort department --select name,department in.csv > out.csv
+```
+
+For **piped input**, use CMD's `type` — it passes bytes transparently. PowerShell's
+pipe serialises through its object model and can garble encoding:
+
+```cmd
+:: CMD — byte-transparent, always safe
+type in.csv | tuix --filter "salary > 50000" > out.csv
+```
+
+```powershell
+# PowerShell — pipe encoding can be unreliable; prefer the file argument
+# or force CMD-style piping:
+cmd /c "type in.csv | tuix --filter ""salary > 50000"""
+```
 
 ### Options
 
