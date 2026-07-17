@@ -19,6 +19,8 @@ jobs:
             target: linux-x86_64
           - os: macos-latest
             target: macos-arm64
+          - os: windows-latest
+            target: windows-x86_64
 
     steps:
       - name: Checkout (with submodules)
@@ -30,19 +32,28 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build build --parallel --config Release
 
       - name: Stage install
-        run: cmake --install build --prefix "stage/tuix-${{ github.ref_name }}-${{ matrix.target }}"
+        run: cmake --install build --config Release --prefix "stage/tuix-${{ github.ref_name }}-${{ matrix.target }}"
 
-      - name: Package
+      # Unix ships a .tar.gz; Windows ships a .zip (friendlier to unpack there).
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
         run: tar -czf "tuix-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" -C stage "tuix-${{ github.ref_name }}-${{ matrix.target }}"
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: Compress-Archive -Path "stage/tuix-${{ github.ref_name }}-${{ matrix.target }}" -DestinationPath "tuix-${{ github.ref_name }}-${{ matrix.target }}.zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: tuix-${{ github.ref_name }}-${{ matrix.target }}
-          path: tuix-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+          path: |
+            tuix-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+            tuix-${{ github.ref_name }}-${{ matrix.target }}.zip
+          if-no-files-found: ignore
 
   release:
     name: Publish release
@@ -57,12 +68,13 @@ jobs:
 
       - name: Generate checksums
         working-directory: artifacts
-        run: sha256sum *.tar.gz > SHA256SUMS
+        run: sha256sum *.tar.gz *.zip > SHA256SUMS
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/*.tar.gz
+            artifacts/*.zip
             artifacts/SHA256SUMS
           generate_release_notes: true

@@ -1,9 +1,19 @@
 cmake_minimum_required(VERSION 3.14)
-project(tuix VERSION 0.2.2 LANGUAGES CXX)
+project(tuix VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# On MSVC, statically link the C runtime so the released tuix.exe is fully
+# self-contained (no Visual C++ redistributable needed). Set before any
+# add_subdirectory so the vendored deps inherit the same runtime.
+if(MSVC)
+    if(POLICY CMP0091)
+        cmake_policy(SET CMP0091 NEW)
+    endif()
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 
 # Default to Release if no build type specified (common quality-of-life)
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)

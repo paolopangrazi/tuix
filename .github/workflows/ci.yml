@@ -13,12 +13,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        compiler: [gcc, clang]
-        exclude:
+        include:
+          - os: ubuntu-latest
+            compiler: gcc
+          - os: ubuntu-latest
+            compiler: clang
           # macOS uses Apple Clang by default; gcc adds little value here
           - os: macos-latest
-            compiler: gcc
+            compiler: clang
+          # Windows uses MSVC (a multi-config generator)
+          - os: windows-latest
+            compiler: msvc
 
     steps:
       - name: Checkout (with submodules)
@@ -41,10 +46,24 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build build --parallel --config Release
 
-      - name: Verify binary
+      # Single-config generators (Make/Ninja) drop the binary in build/; the
+      # MSVC multi-config generator puts it in build/Release/.
+      - name: Verify binary (Unix)
+        if: runner.os != 'Windows'
         run: test -x ./build/tuix
 
-      - name: Test install
-        run: cmake --install build --prefix "$RUNNER_TEMP/install" && test -x "$RUNNER_TEMP/install/bin/tuix"
+      - name: Verify binary (Windows)
+        if: runner.os == 'Windows'
+        run: if (-not (Test-Path ./build/Release/tuix.exe)) { exit 1 }
+
+      - name: Test install (Unix)
+        if: runner.os != 'Windows'
+        run: cmake --install build --config Release --prefix "$RUNNER_TEMP/install" && test -x "$RUNNER_TEMP/install/bin/tuix"
+
+      - name: Test install (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cmake --install build --config Release --prefix "$env:RUNNER_TEMP/install"
+          if (-not (Test-Path "$env:RUNNER_TEMP/install/bin/tuix.exe")) { exit 1 }

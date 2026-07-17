@@ -61,8 +61,13 @@ void copy_to_clipboard(const std::string& text) {
 
     // Write straight to the controlling terminal so we don't fight FTXUI's
     // own stdout rendering. OSC 52 is visually inert, so this is safe to
-    // interleave. Fall back to stdout if there is no /dev/tty.
+    // interleave. Fall back to stdout if the console can't be opened.
+    // ("/dev/tty" on POSIX; "CONOUT$" is its Windows-console equivalent.)
+#ifdef _WIN32
+    std::FILE* tty = std::fopen("CONOUT$", "w");
+#else
     std::FILE* tty = std::fopen("/dev/tty", "w");
+#endif
     if (!tty) tty = stdout;
     std::fwrite(seq.data(), 1, seq.size(), tty);
     std::fflush(tty);

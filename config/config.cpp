@@ -165,10 +165,21 @@ const int k_key_slot_count = (int)(sizeof(k_key_slots) / sizeof(k_key_slots[0]))
 // ---- config path ----------------------------------------------------------
 
 static std::filesystem::path config_path() {
+    // XDG is honored on every platform if explicitly set.
     const char* xdg = std::getenv("XDG_CONFIG_HOME");
     if (xdg && *xdg) return std::filesystem::path(xdg) / "tuix" / "config.toml";
+#ifdef _WIN32
+    // Windows convention: %APPDATA%\tuix\config.toml, falling back to the
+    // user profile if APPDATA is somehow unset.
+    const char* appdata = std::getenv("APPDATA");
+    if (appdata && *appdata) return std::filesystem::path(appdata) / "tuix" / "config.toml";
+    const char* profile = std::getenv("USERPROFILE");
+    if (profile && *profile)
+        return std::filesystem::path(profile) / ".config" / "tuix" / "config.toml";
+#else
     const char* home = std::getenv("HOME");
     if (home && *home) return std::filesystem::path(home) / ".config" / "tuix" / "config.toml";
+#endif
     return "";
 }
 

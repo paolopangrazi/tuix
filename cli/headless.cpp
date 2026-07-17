@@ -9,7 +9,13 @@
 #include <regex>
 #include <sstream>
 
+#ifdef _WIN32
+#include <io.h>      // _isatty, _fileno
+#define TUIX_ISATTY_STDIN() (_isatty(_fileno(stdin)) != 0)
+#else
 #include <unistd.h>  // isatty, STDIN_FILENO
+#define TUIX_ISATTY_STDIN() (isatty(STDIN_FILENO) != 0)
+#endif
 
 #include "util/col_label.hpp"
 #include "loader/csv_loader.hpp"
@@ -321,7 +327,7 @@ bool parse_args(int argc, char* argv[], Options& out) {
     }
 
     // Headless if any headless flag was seen, or input is being piped in.
-    const bool piped = !isatty(STDIN_FILENO);
+    const bool piped = !TUIX_ISATTY_STDIN();
     out.active = any_flag || (out.input == "-") || (out.input.empty() && piped);
     return out.active;
 }

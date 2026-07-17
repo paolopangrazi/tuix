@@ -253,8 +253,8 @@ tuiX on all 20 built-in Omarchy themes — the same app, your palette.
 
 ## Installation
 
-Prebuilt binaries are available for **Linux (x86_64)** and **macOS (Apple Silicon)**.
-Windows is not yet supported — on Windows or any other platform, build from source.
+Prebuilt binaries are available for **Linux (x86_64)**, **macOS (Apple Silicon)**, and
+**Windows (x86_64)**. On any other platform, build from source.
 
 ### Download a release
 
@@ -262,7 +262,7 @@ Get the latest archive from the [**Releases**](https://github.com/paolopangrazi/
 page, or from the command line (set `VERSION` to the current release):
 
 ```bash
-VERSION=v0.1.0
+VERSION=v1.0.0
 
 # Linux (x86_64)
 curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-linux-x86_64.tar.gz
@@ -273,6 +273,16 @@ install -Dm755 tuix-$VERSION-linux-x86_64/bin/tuix ~/.local/bin/tuix
 curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-macos-arm64.tar.gz
 tar -xzf tuix-$VERSION-macos-arm64.tar.gz
 install -Dm755 tuix-$VERSION-macos-arm64/bin/tuix ~/.local/bin/tuix
+```
+
+On **Windows** (PowerShell), download and extract the `.zip` — it's a single
+self-contained `tuix.exe` (no Visual C++ redistributable needed):
+
+```powershell
+$VERSION = "v1.0.0"
+curl.exe -LO "https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-windows-x86_64.zip"
+Expand-Archive "tuix-$VERSION-windows-x86_64.zip" -DestinationPath .
+# then run tuix-$VERSION-windows-x86_64\bin\tuix.exe (best in Windows Terminal)
 ```
 
 Make sure `~/.local/bin` is on your `PATH`. Each release also ships a `SHA256SUMS` file so
@@ -288,7 +298,7 @@ sha256sum --check --ignore-missing SHA256SUMS   # macOS: shasum -a 256 -c SHA256
 
 ### Build from source
 
-**Requirements:** CMake 3.14+, a C++17 compiler (GCC 8+ / Clang 7+), and Git. Every
+**Requirements:** CMake 3.14+, a C++17 compiler (GCC 8+ / Clang 7+ / MSVC 2019+), and Git. Every
 dependency — [FTXUI](https://github.com/ArthurSonzogni/FTXUI),
 [rapidcsv](https://github.com/d99kris/rapidcsv), [toml++](https://github.com/marzer/tomlplusplus),
 and [OpenXLSX](https://github.com/troldal/OpenXLSX) — is vendored as a git submodule. No
