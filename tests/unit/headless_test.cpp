@@ -161,3 +161,61 @@ TEST_CASE("parse_args rejects multiple input files") {
     headless::parse_args(5, const_cast<char**>(argv), o);
     CHECK(o.parse_error.find("multiple input") != std::string::npos);
 }
+
+TEST_CASE("parse_args captures --sheet") {
+    const char* argv[] = {"tuix", "--sheet", "Sales", "book.xlsx"};
+    Options o;
+    headless::parse_args(4, const_cast<char**>(argv), o);
+    CHECK(o.parse_error.empty());
+    CHECK(o.sheet == "Sales");
+    CHECK(o.input == "book.xlsx");
+
+    const char* missing[] = {"tuix", "--sheet"};
+    Options o2;
+    headless::parse_args(2, const_cast<char**>(missing), o2);
+    CHECK_FALSE(o2.parse_error.empty());
+}
+
+namespace {
+WorkbookData workbook() {
+    WorkbookData wb;
+    wb.sheets.emplace_back("Summary", SheetData{});
+    wb.sheets.emplace_back("Sales",   SheetData{});
+    wb.sheets.emplace_back("Costs",   SheetData{});
+    return wb;
+}
+}  // namespace
+
+TEST_CASE("resolve_sheet: empty selects the first sheet") {
+    auto idx = headless::resolve_sheet(workbook(), "");
+    REQUIRE(idx.has_value());
+    CHECK(*idx == 0);
+}
+
+TEST_CASE("resolve_sheet: matches sheet name case-insensitively") {
+    auto idx = headless::resolve_sheet(workbook(), "sALes");
+    REQUIRE(idx.has_value());
+    CHECK(*idx == 1);
+}
+
+TEST_CASE("resolve_sheet: accepts a 1-based index") {
+    auto idx = headless::resolve_sheet(workbook(), "3");
+    REQUIRE(idx.has_value());
+    CHECK(*idx == 2);
+}
+
+TEST_CASE("resolve_sheet: rejects unknown name and out-of-range index") {
+    CHECK_FALSE(headless::resolve_sheet(workbook(), "Nope").has_value());
+    CHECK_FALSE(headless::resolve_sheet(workbook(), "0").has_value());
+    CHECK_FALSE(headless::resolve_sheet(workbook(), "4").has_value());
+    CHECK_FALSE(headless::resolve_sheet(WorkbookData{}, "").has_value());
+}
+
+TEST_CASE("resolve_sheet: a numeric sheet name wins over index interpretation") {
+    WorkbookData wb;
+    wb.sheets.emplace_back("2024", SheetData{});
+    wb.sheets.emplace_back("2025", SheetData{});
+    auto idx = headless::resolve_sheet(wb, "2025");  // name, not index 2025
+    REQUIRE(idx.has_value());
+    CHECK(*idx == 1);
+}

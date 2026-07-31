@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 #include <numeric>
 #include <optional>
@@ -19,13 +20,21 @@
 
 #include "util/col_label.hpp"
 #include "loader/csv_loader.hpp"
+#include "loader/xlsx_loader.hpp"
 #include "util/numbers.hpp"
 #include "util/strings.hpp"
 #include "writer/csv_writer.hpp"
+#include "writer/xlsx_writer.hpp"
 
 namespace headless {
 
 namespace {
+
+// True when `path`'s extension is .xlsx (case-insensitive) — selects the Excel
+// loader/writer over CSV. Mirrors Session's is_xlsx (components/session.cpp).
+bool is_xlsx(const std::string& path) {
+    return tuix::to_lower(std::filesystem::path(path).extension().string()) == ".xlsx";
+}
 
 // ── Small value helpers ──────────────────────────────────────────────────────
 
@@ -244,6 +253,25 @@ bool apply_select(SheetData& d, const std::string& spec, std::string& err) {
 
 }  // anonymous namespace
 
+// ── Sheet selection (xlsx) ───────────────────────────────────────────────────
+
+std::optional<size_t> resolve_sheet(const WorkbookData& wb, const std::string& spec) {
+    if (wb.sheets.empty()) return std::nullopt;
+
+    const std::string t = trim(spec);
+    if (t.empty()) return size_t{0};                 // default: first sheet
+
+    for (size_t i = 0; i < wb.sheets.size(); ++i)    // exact name wins
+        if (tuix::iequals(wb.sheets[i].first, t)) return i;
+
+    double n;                                         // else a 1-based index
+    if (tuix::parse_number(t, n) && n >= 1 && n == static_cast<long long>(n) &&
+        static_cast<size_t>(n) <= wb.sheets.size())
+        return static_cast<size_t>(n) - 1;
+
+    return std::nullopt;
+}
+
 // ── Pipeline ─────────────────────────────────────────────────────────────────
 
 bool apply(SheetData& data, const Options& opts, std::string& err) {
@@ -298,6 +326,10 @@ bool parse_args(int argc, char* argv[], Options& out) {
             if (!v) { out.parse_error = a + " needs columns"; any_flag = true; break; }
             out.select += (out.select.empty() ? "" : ",") + std::string(v);
             any_flag = true;
+        } else if (flag("--sheet")) {
+            const char* v = need(i);
+            if (!v) { out.parse_error = a + " needs a sheet name or index"; any_flag = true; break; }
+            out.sheet = v; any_flag = true;
         } else if (flag("--head")) {
             const char* v = need(i);
             if (!v || !parse_count(v, out.head)) {
@@ -341,12 +373,28 @@ int run(const Options& opts) {
         return 2;
     }
 
+    // Format is chosen by file extension; stdin/stdout are always CSV.
+    const bool xlsx_in  = !opts.input.empty()  && opts.input  != "-" && is_xlsx(opts.input);
+    const bool xlsx_out = !opts.output.empty() && opts.output != "-" && is_xlsx(opts.output);
+
     SheetData data;
+    std::string sheet_name = "Sheet1";  // xlsx-output name when the source is CSV
     try {
-        if (opts.input.empty() || opts.input == "-")
+        if (xlsx_in) {
+            WorkbookData wb = XlsxLoader::load_workbook(opts.input);
+            auto idx = resolve_sheet(wb, opts.sheet);
+            if (!idx) {
+                std::cerr << "tuix: no such sheet '" << opts.sheet << "' in "
+                          << opts.input << "\n";
+                return 2;
+            }
+            sheet_name = wb.sheets[*idx].first;
+            data       = std::move(wb.sheets[*idx].second);
+        } else if (opts.input.empty() || opts.input == "-") {
             data = CsvLoader::load_stream(std::cin);
-        else
+        } else {
             data = CsvLoader::load(opts.input);
+        }
     } catch (const std::exception& e) {
         std::cerr << "tuix: cannot read input: " << e.what() << "\n";
         return 1;
@@ -359,10 +407,16 @@ int run(const Options& opts) {
     }
 
     try {
-        if (opts.output.empty() || opts.output == "-")
-            CsvWriter::save_stream(std::cout, data);
-        else
-            CsvWriter::save(opts.output, data);
+        if (xlsx_out) {
+            XlsxWriter::save_workbook(opts.output, {{sheet_name, data}});
+        } else {
+            if (xlsx_in)  // xlsx → CSV loses formulas (loader already flattened them)
+                std::cerr << "tuix: note: CSV output stores values, not formulas\n";
+            if (opts.output.empty() || opts.output == "-")
+                CsvWriter::save_stream(std::cout, data);
+            else
+                CsvWriter::save(opts.output, data);
+        }
     } catch (const std::exception& e) {
         std::cerr << "tuix: cannot write output: " << e.what() << "\n";
         return 1;
@@ -375,19 +429,24 @@ void print_help() {
         "tuix — terminal spreadsheet\n\n"
         "Interactive:  tuix [FILE]\n"
         "Headless:     tuix [OPTIONS] [FILE]     (also reads stdin when piped)\n\n"
-        "Headless options (CSV in → CSV out):\n"
+        "Headless options (CSV/XLSX in → CSV/XLSX out; format from extension):\n"
         "  -f, --filter PRED   keep rows matching PRED; repeatable (AND-ed)\n"
         "  -s, --sort SPEC     sort by columns, e.g. 'dept,salary desc'\n"
         "      --select COLS   keep/reorder columns, e.g. 'name,dept'\n"
         "      --head N        keep the first N data rows\n"
         "      --tail N        keep the last N data rows\n"
+        "      --sheet NAME    for .xlsx input, pick a sheet by name or 1-based\n"
+        "                      index (default: first sheet)\n"
         "  -o, --output FILE   write here instead of stdout\n"
         "  -h, --help          show this help\n\n"
+        "A .xlsx path is read/written as Excel; anything else is CSV. stdin and\n"
+        "stdout are always CSV. One sheet in, one sheet out.\n\n"
         "PRED is 'COLUMN OP VALUE'. COLUMN is a header name or letter (A, B...).\n"
         "OP is one of:  ==  !=  <  <=  >  >=  =~ (regex)  contains\n\n"
         "Examples:\n"
         "  tuix --filter 'salary > 50000' --sort dept employees.csv\n"
-        "  cat employees.csv | tuix --filter 'name =~ ^A' --select name,salary\n";
+        "  cat employees.csv | tuix --filter 'name =~ ^A' --select name,salary\n"
+        "  tuix --sheet Sales --filter 'qty > 0' book.xlsx -o out.xlsx\n";
 }
 
 }  // namespace headless

@@ -41,7 +41,7 @@ and macOS; Windows is not yet supported.
 - **Multi-sheet** — XLSX workbooks open with a tab per worksheet; cycle, add, rename, and delete them, and reference across them with `Sheet2!A1`.
 - **Live feedback** — per-cell formula suggestions and range statistics update as you work.
 - **Theme-aware** — colors map to your terminal's ANSI palette, so tuiX adopts your theme automatically.
-- **Scriptable** — a headless mode turns tuiX into a CSV filter on any platform: `tuix --filter 'salary > 50000' --sort dept data.csv` (or pipe via stdin on Linux/macOS/CMD).
+- **Scriptable** — a headless mode turns tuiX into a CSV/XLSX filter on any platform: `tuix --filter 'salary > 50000' --sort dept data.csv` (or pipe via stdin on Linux/macOS/CMD).
 
 ---
 
@@ -334,10 +334,10 @@ tuix path/to/file.xlsx      # open an Excel file
 
 ## Headless mode
 
-Beyond the interactive editor, tuiX doubles as a **scriptable CSV filter**: give
-it any transform flag (or pipe CSV into it) and it reads CSV, applies a
-pipeline, and writes CSV to stdout — never touching the terminal UI. Works on
-Linux, macOS, and Windows.
+Beyond the interactive editor, tuiX doubles as a **scriptable data filter**: give
+it any transform flag (or pipe data into it) and it reads a sheet, applies a
+pipeline, and writes the result to stdout — never touching the terminal UI.
+Works on Linux, macOS, and Windows.
 
 ```bash
 # Filter, sort, and pick columns from a file → stdout
@@ -350,6 +350,30 @@ cat samples/csv/employees.csv | tuix --filter 'first_name =~ ^A' --head 20 -o to
 
 The pipeline always runs in a fixed order: **filter → sort → head/tail →
 select**, so each stage sees the previous stage's output.
+
+### CSV and XLSX
+
+The input and output formats are chosen by **file extension**: a `.xlsx` path is
+read (and written) as an Excel workbook, anything else is CSV. You can mix them
+freely — read from `.xlsx` and write `.csv`, or the reverse.
+
+```bash
+# Excel in, Excel out — filter one sheet and keep the result as .xlsx
+tuix --sheet Sales --filter 'quantity > 0' --sort 'revenue desc' book.xlsx -o out.xlsx
+
+# Convert: Excel in, CSV out
+tuix book.xlsx -o book.csv
+```
+
+An `.xlsx` workbook can hold several sheets, but the pipeline works on **one
+sheet in, one sheet out**. Use `--sheet` to choose which one — by name
+(case-insensitive) or by 1-based index; it defaults to the first sheet. When
+writing `.xlsx`, the result is a single-sheet workbook.
+
+Writing CSV always stores computed **values, not formulas**; a note is printed to
+stderr when an `.xlsx` source is flattened this way. To keep formulas, write
+`.xlsx`. Because Excel files are binary, **stdin and stdout are always CSV** — a
+`.xlsx` must be a real file path, not a pipe.
 
 ### Windows notes
 
@@ -382,12 +406,13 @@ cmd /c "type in.csv | tuix --filter ""salary > 50000"""
 | `--select` | `COLS` | Keep and reorder columns, e.g. `name,dept`. |
 | `--head` | `N` | Keep the first `N` data rows. |
 | `--tail` | `N` | Keep the last `N` data rows. |
+| `--sheet` | `NAME` | For `.xlsx` input, pick a sheet by name or 1-based index (default: first). |
 | `-o`, `--output` | `FILE` | Write to `FILE` instead of stdout. |
 | `-h`, `--help` | | Print usage and exit. |
 
 Input comes from a file argument, or from **stdin** when data is piped in (or
-you pass `-`). The delimiter (comma, semicolon, tab, pipe) is auto-detected and
-preserved on output.
+you pass `-`). For CSV, the delimiter (comma, semicolon, tab, pipe) is
+auto-detected and preserved on output.
 
 ### Filter predicates
 
