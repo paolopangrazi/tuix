@@ -17,9 +17,10 @@ struct OpenFileResult {
     std::string      path;   // valid only when status == Ok
 };
 
-// Show the OS-native "Open File" dialog. Currently implemented only on Windows
-// (the Explorer-style IFileOpenDialog); every other platform returns
-// {Unavailable, ""} so the caller keeps its existing typed-path flow.
+// Show the OS-native "Open File" dialog. Implemented on Windows (the
+// Explorer-style IFileOpenDialog) and macOS (Finder's Open panel via
+// osascript); every other platform returns {Unavailable, ""} so the caller
+// keeps its existing typed-path flow.
 // `initial_dir` (UTF-8) seeds the starting folder when non-empty.
 OpenFileResult native_open_file(const std::string& initial_dir = {});
 

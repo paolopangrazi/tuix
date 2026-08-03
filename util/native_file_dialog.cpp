@@ -90,7 +90,86 @@ OpenFileResult native_open_file(const std::string& initial_dir) {
 
 }  // namespace tuix
 
-#else  // ---- non-Windows: no native picker, caller falls back --------------
+#elif defined(__APPLE__)  // ---- macOS: Finder "Open" panel via osascript -----
+
+#include <array>
+#include <cstdio>
+#include <sys/wait.h>
+
+namespace tuix {
+
+namespace {
+
+// Escape a string for embedding inside an AppleScript double-quoted literal.
+std::string escape_applescript(const std::string& s) {
+    std::string out;
+    out.reserve(s.size());
+    for (char c : s) {
+        if (c == '\\' || c == '"') out += '\\';
+        out += c;
+    }
+    return out;
+}
+
+// Escape a string for embedding inside a single-quoted shell word.
+std::string escape_shell_single(const std::string& s) {
+    std::string out;
+    out.reserve(s.size());
+    for (char c : s) {
+        if (c == '\'') out += "'\\''";
+        else out += c;
+    }
+    return out;
+}
+
+}  // namespace
+
+OpenFileResult native_open_file(const std::string& initial_dir) {
+    OpenFileResult out;  // defaults to Unavailable
+
+    // AppleScript: show Finder's native Open panel, restricted to the formats
+    // tuix understands, and hand back the chosen POSIX path on stdout.
+    std::string script =
+        "POSIX path of (choose file with prompt \"Open \xE2\x80\x94 tuix\"";
+    if (!initial_dir.empty()) {
+        script += " default location (POSIX file \"";
+        script += escape_applescript(initial_dir);
+        script += "\")";
+    }
+    script += " of type {\"csv\", \"xlsx\"})";
+
+    const std::string cmd =
+        "osascript -e '" + escape_shell_single(script) + "' 2>/dev/null";
+
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe) return out;  // couldn't spawn — fall back to the typed dialog
+
+    std::string result;
+    std::array<char, 512> buf;
+    size_t n;
+    while ((n = fread(buf.data(), 1, buf.size(), pipe)) > 0)
+        result.append(buf.data(), n);
+
+    const int status = pclose(pipe);
+
+    // Trim the trailing newline osascript prints after the path.
+    while (!result.empty() && (result.back() == '\n' || result.back() == '\r'))
+        result.pop_back();
+
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0 && !result.empty()) {
+        out.status = FileDialogStatus::Ok;
+        out.path   = std::move(result);
+    } else {
+        // Non-zero exit is overwhelmingly "user pressed Cancel" (AppleScript
+        // error -128). Treat it as such; the current sheet is left untouched.
+        out.status = FileDialogStatus::Cancelled;
+    }
+    return out;
+}
+
+}  // namespace tuix
+
+#else  // ---- other platforms: no native picker, caller falls back ----------
 
 namespace tuix {
 OpenFileResult native_open_file(const std::string&) { return {}; }
