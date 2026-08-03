@@ -43,10 +43,13 @@ jobs:
           fi
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DTUIX_BUILD_TESTS=ON
 
       - name: Build
         run: cmake --build build --parallel --config Release
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --build-config Release
 
       # Single-config generators (Make/Ninja) drop the binary in build/; the
       # MSVC multi-config generator puts it in build/Release/.
