@@ -1,14 +1,13 @@
 #include <doctest/doctest.h>
 
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <string>
-#include <unistd.h>
 
 #include <ftxui/screen/color.hpp>
 
 #include "config/config.hpp"
+#include "support/portable_env.hpp"
 
 namespace fs = std::filesystem;
 using ftxui::Color;
@@ -20,11 +19,11 @@ namespace {
 // can exercise several configs.
 Config load_with(const std::string& body) {
     static const fs::path root =
-        fs::temp_directory_path() / ("tuix_cfg_test_" + std::to_string(::getpid()));
+        fs::temp_directory_path() / ("tuix_cfg_test_" + tuix::test::unique_tag());
     const fs::path dir = root / "tuix";
     fs::create_directories(dir);
     { std::ofstream(dir / "config.toml") << body; }
-    setenv("XDG_CONFIG_HOME", root.string().c_str(), /*overwrite=*/1);
+    tuix::test::set_env("XDG_CONFIG_HOME", root.string());
     return Config::load();
 }
 

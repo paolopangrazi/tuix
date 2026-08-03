@@ -1,16 +1,15 @@
 #include <doctest/doctest.h>
 
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <string>
-#include <unistd.h>
 
 #include <toml++/toml.hpp>
 
 #include "config/config.hpp"
 #include "config/config_schema.hpp"
 #include "config_dialog.hpp"
+#include "support/portable_env.hpp"
 
 namespace fs = std::filesystem;
 
@@ -20,12 +19,12 @@ namespace {
 // returns the config file's path.
 fs::path write_config(const std::string& body) {
     static const fs::path root =
-        fs::temp_directory_path() / ("tuix_save_test_" + std::to_string(::getpid()));
+        fs::temp_directory_path() / ("tuix_save_test_" + tuix::test::unique_tag());
     const fs::path dir = root / "tuix";
     fs::create_directories(dir);
     const fs::path file = dir / "config.toml";
     { std::ofstream(file) << body; }
-    setenv("XDG_CONFIG_HOME", root.string().c_str(), /*overwrite=*/1);
+    tuix::test::set_env("XDG_CONFIG_HOME", root.string());
     return file;
 }
 

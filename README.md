@@ -262,7 +262,7 @@ Get the latest archive from the [**Releases**](https://github.com/paolopangrazi/
 page, or from the command line (set `VERSION` to the current release):
 
 ```bash
-VERSION=v1.1.1
+VERSION=v1.1.2
 
 # Linux (x86_64)
 curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-linux-x86_64.tar.gz
@@ -279,7 +279,7 @@ On **Windows** (PowerShell), download and extract the `.zip` — it's a single
 self-contained `tuix.exe` (no Visual C++ redistributable needed):
 
 ```powershell
-$VERSION = "v1.1.1"
+$VERSION = "v1.1.2"
 curl.exe -LO "https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-windows-x86_64.zip"
 Expand-Archive "tuix-$VERSION-windows-x86_64.zip" -DestinationPath .
 # then run tuix-$VERSION-windows-x86_64\bin\tuix.exe (best in Windows Terminal)
