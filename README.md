@@ -339,6 +339,8 @@ it any transform flag (or pipe data into it) and it reads a sheet, applies a
 pipeline, and writes the result to stdout — never touching the terminal UI.
 Works on Linux, macOS, and Windows.
 
+![tuiX as a headless CSV filter](docs/headless.gif)
+
 ```bash
 # Filter, sort, and pick columns from a file → stdout
 tuix --filter 'salary > 50000' --sort 'department,salary desc' \
