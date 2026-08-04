@@ -4,8 +4,15 @@ on:
   push:
     tags: ['v*']
 
+# Least privilege by default: only the publish job below opts into write.
 permissions:
-  contents: write   # needed to create GitHub releases
+  contents: read
+
+# Serialize per tag, but never cancel — a half-published release is worse than
+# a duplicate run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -42,11 +49,19 @@ jobs:
         with:
           submodules: recursive
 
+      # Tests are built here too: the release flags (static libstdc++, the
+      # universal-binary arch list) differ from CI's, so the suite has to run
+      # against the configuration we actually ship.
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_args }}
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DTUIX_BUILD_TESTS=ON ${{ matrix.cmake_args }}
 
       - name: Build
         run: cmake --build build --parallel --config Release
+
+      # On macOS this exercises the arm64 slice (the runner's own arch); the
+      # cross-compiled x86_64 slice can't be executed here.
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --build-config Release
 
       # Guard against a silently single-arch build (e.g. a dep forcing the
       # host arch): the release artifact must carry both slices.
@@ -75,8 +90,10 @@ jobs:
             exit 1
           fi
 
+      # --component tuix: ship the binary alone, not the vendored deps'
+      # headers and static libs (see the install() rule in CMakeLists.txt).
       - name: Stage install
-        run: cmake --install build --config Release --prefix "stage/tuix-${{ github.ref_name }}-${{ matrix.target }}"
+        run: cmake --install build --config Release --component tuix --prefix "stage/tuix-${{ github.ref_name }}-${{ matrix.target }}"
 
       # Unix ships a .tar.gz; Windows ships a .zip (friendlier to unpack there).
       - name: Package (Unix)
@@ -100,6 +117,8 @@ jobs:
     name: Publish release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # only this job creates the GitHub release
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4

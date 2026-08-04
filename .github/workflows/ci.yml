@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+# A new push to the same branch makes the in-flight run obsolete — drop it
+# rather than paying for a full 5-platform matrix twice.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: ${{ matrix.os }} / ${{ matrix.compiler }}
@@ -46,8 +52,10 @@ jobs:
             echo "CXX=g++" >> "$GITHUB_ENV"
           fi
 
+      # TUIX_WERROR is CI-only: our own sources must stay warning-free (the
+      # vendored deps are exempt — the flag is PRIVATE to tuix_core).
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DTUIX_BUILD_TESTS=ON
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DTUIX_BUILD_TESTS=ON -DTUIX_WERROR=ON
 
       - name: Build
         run: cmake --build build --parallel --config Release
@@ -67,10 +75,10 @@ jobs:
 
       - name: Test install (Unix)
         if: runner.os != 'Windows'
-        run: cmake --install build --config Release --prefix "$RUNNER_TEMP/install" && test -x "$RUNNER_TEMP/install/bin/tuix"
+        run: cmake --install build --config Release --component tuix --prefix "$RUNNER_TEMP/install" && test -x "$RUNNER_TEMP/install/bin/tuix"
 
       - name: Test install (Windows)
         if: runner.os == 'Windows'
         run: |
-          cmake --install build --config Release --prefix "$env:RUNNER_TEMP/install"
+          cmake --install build --config Release --component tuix --prefix "$env:RUNNER_TEMP/install"
           if (-not (Test-Path "$env:RUNNER_TEMP/install/bin/tuix.exe")) { exit 1 }

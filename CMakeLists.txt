@@ -139,8 +139,20 @@ if(WIN32)
 endif()
 
 # Project code builds warning-clean; keep it that way (deps are untouched).
+# TUIX_WERROR promotes that to an error — CI turns it on so a regression can't
+# land unnoticed; it stays off locally so a new compiler's fresh warnings don't
+# block day-to-day work. PRIVATE: only our own sources, never the vendored deps.
+option(TUIX_WERROR "Treat warnings in tuix's own sources as errors" OFF)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(tuix_core PRIVATE -Wall -Wextra)
+    if(TUIX_WERROR)
+        target_compile_options(tuix_core PRIVATE -Werror)
+    endif()
+elseif(MSVC)
+    if(TUIX_WERROR)
+        target_compile_options(tuix_core PRIVATE /WX)
+    endif()
 endif()
 
 # MSVC reports narrowing conversions inside the OpenXLSX headers (C4244/C4267)
@@ -160,7 +172,11 @@ endif()
 add_executable(tuix main.cpp)
 target_link_libraries(tuix PRIVATE tuix_core)
 
-install(TARGETS tuix DESTINATION bin)
+# COMPONENT lets the release packaging install *only* the binary: the vendored
+# deps (OpenXLSX, and doctest when tests are on) register their own install
+# rules, which would otherwise drop headers and static libs into the tarball.
+#   cmake --install build --component tuix --prefix ...
+install(TARGETS tuix DESTINATION bin COMPONENT tuix)
 
 # ---------------------------------------------------------------------------
 # Tests — opt-in (off by default to keep the standard build lean).
