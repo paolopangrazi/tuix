@@ -32,6 +32,12 @@ add_executable(tuix_tests
 
 target_link_libraries(tuix_tests PRIVATE tuix_core doctest::doctest)
 
+# doctest 2.4.11 specializes std::tuple for its stringification hooks, which
+# newer MSVC flags as C5285. Nothing we can fix on our side; mute it.
+if(MSVC)
+    target_compile_options(tuix_tests PRIVATE /wd5285)
+endif()
+
 # For #include "support/...". The tuix_core PUBLIC includes cover the app headers.
 target_include_directories(tuix_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

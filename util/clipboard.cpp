@@ -1,4 +1,5 @@
 #include "util/clipboard.hpp"
+#include "util/env.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -49,7 +50,7 @@ void copy_to_clipboard(const std::string& text) {
 
     // Inside tmux the sequence must be wrapped in a DCS passthrough, with every
     // inner ESC byte doubled (requires `set -g allow-passthrough on`).
-    if (const char* tmux = std::getenv("TMUX"); tmux && *tmux) {
+    if (!env_var("TMUX").empty()) {
         std::string wrapped = "\033Ptmux;";
         for (char ch : seq) {
             wrapped += ch;
@@ -64,9 +65,16 @@ void copy_to_clipboard(const std::string& text) {
     // interleave. Fall back to stdout if the console can't be opened.
     // ("/dev/tty" on POSIX; "CONOUT$" is its Windows-console equivalent.)
 #ifdef _WIN32
-    std::FILE* tty = std::fopen("CONOUT$", "w");
+    const char* tty_path = "CONOUT$";
 #else
-    std::FILE* tty = std::fopen("/dev/tty", "w");
+    const char* tty_path = "/dev/tty";
+#endif
+#ifdef _MSC_VER
+    // MSVC deprecates fopen (C4996) in favor of the checked fopen_s.
+    std::FILE* tty = nullptr;
+    if (fopen_s(&tty, tty_path, "w") != 0) tty = nullptr;
+#else
+    std::FILE* tty = std::fopen(tty_path, "w");
 #endif
     if (!tty) tty = stdout;
     std::fwrite(seq.data(), 1, seq.size(), tty);

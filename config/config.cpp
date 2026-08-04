@@ -1,15 +1,18 @@
 #include "config.hpp"
 #include "config_schema.hpp"
 #include "themes.hpp"
+#include "util/env.hpp"
 
 #include <toml++/toml.hpp>
 #include <ftxui/screen/color.hpp>
 
 #include <cctype>
+#include <charconv>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 using namespace ftxui;
@@ -61,13 +64,27 @@ static bool parse_truecolor(const std::string& s, Color& out) {
         return false;
     }
     if (s.rfind("rgb(", 0) == 0 && s.back() == ')') {
-        int r = 0, g = 0, b = 0;
-        if (std::sscanf(s.c_str(), "rgb(%d,%d,%d)", &r, &g, &b) == 3 ||
-            std::sscanf(s.c_str(), "rgb( %d , %d , %d )", &r, &g, &b) == 3) {
-            auto clamp8 = [](int v) { return (uint8_t)(v < 0 ? 0 : v > 255 ? 255 : v); };
-            out = Color::RGB(clamp8(r), clamp8(g), clamp8(b));
-            return true;
+        // Hand-rolled rather than sscanf: MSVC deprecates the latter (C4996).
+        std::string_view body(s);
+        body.remove_prefix(4);
+        body.remove_suffix(1);
+        int comp[3] = {0, 0, 0};
+        size_t pos = 0;
+        for (int i = 0; i < 3; ++i) {
+            while (pos < body.size() && std::isspace((unsigned char)body[pos])) ++pos;
+            size_t start = pos;
+            while (pos < body.size() && body[pos] >= '0' && body[pos] <= '9') ++pos;
+            if (pos == start) return false;                       // no digits
+            if (std::from_chars(body.data() + start, body.data() + pos, comp[i]).ec
+                != std::errc{}) return false;
+            while (pos < body.size() && std::isspace((unsigned char)body[pos])) ++pos;
+            bool last = (i == 2);
+            if (last ? pos != body.size() : (pos >= body.size() || body[pos++] != ','))
+                return false;
         }
+        auto clamp8 = [](int v) { return (uint8_t)(v < 0 ? 0 : v > 255 ? 255 : v); };
+        out = Color::RGB(clamp8(comp[0]), clamp8(comp[1]), clamp8(comp[2]));
+        return true;
     }
     return false;
 }
@@ -165,20 +182,21 @@ const int k_key_slot_count = (int)(sizeof(k_key_slots) / sizeof(k_key_slots[0]))
 // ---- config path ----------------------------------------------------------
 
 static std::filesystem::path config_path() {
+    using tuix::env_var;
     // XDG is honored on every platform if explicitly set.
-    const char* xdg = std::getenv("XDG_CONFIG_HOME");
-    if (xdg && *xdg) return std::filesystem::path(xdg) / "tuix" / "config.toml";
+    std::string xdg = env_var("XDG_CONFIG_HOME");
+    if (!xdg.empty()) return std::filesystem::path(xdg) / "tuix" / "config.toml";
 #ifdef _WIN32
     // Windows convention: %APPDATA%\tuix\config.toml, falling back to the
     // user profile if APPDATA is somehow unset.
-    const char* appdata = std::getenv("APPDATA");
-    if (appdata && *appdata) return std::filesystem::path(appdata) / "tuix" / "config.toml";
-    const char* profile = std::getenv("USERPROFILE");
-    if (profile && *profile)
+    std::string appdata = env_var("APPDATA");
+    if (!appdata.empty()) return std::filesystem::path(appdata) / "tuix" / "config.toml";
+    std::string profile = env_var("USERPROFILE");
+    if (!profile.empty())
         return std::filesystem::path(profile) / ".config" / "tuix" / "config.toml";
 #else
-    const char* home = std::getenv("HOME");
-    if (home && *home) return std::filesystem::path(home) / ".config" / "tuix" / "config.toml";
+    std::string home = env_var("HOME");
+    if (!home.empty()) return std::filesystem::path(home) / ".config" / "tuix" / "config.toml";
 #endif
     return "";
 }

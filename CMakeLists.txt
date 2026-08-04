@@ -143,6 +143,17 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(tuix_core PRIVATE -Wall -Wextra)
 endif()
 
+# MSVC reports narrowing conversions inside the OpenXLSX headers (C4244/C4267)
+# against whichever of our TUs includes them. Silence them at the two include
+# sites rather than patching the submodule.
+if(MSVC)
+    set_source_files_properties(
+        loader/xlsx_loader.cpp
+        writer/xlsx_writer.cpp
+        PROPERTIES COMPILE_OPTIONS "/wd4244;/wd4267"
+    )
+endif()
+
 # ---------------------------------------------------------------------------
 # tuix — the executable
 # ---------------------------------------------------------------------------
