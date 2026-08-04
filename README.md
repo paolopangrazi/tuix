@@ -16,6 +16,22 @@ without leaving your terminal. tuiX is a single native C++ binary built on
 
 <video src="https://github.com/user-attachments/assets/651a9673-4791-4660-a642-3d17b1e80670" autoplay loop muted playsinline width="800"></video>
 
+### Platform support
+
+| Platform | Architecture | Prebuilt binary | Requirements |
+|---|---|---|---|
+| Linux | x86_64 | `linux-x86_64.tar.gz` | glibc 2.35+ (Ubuntu 22.04, Debian 12, RHEL 9) |
+| Linux | arm64 / aarch64 | `linux-arm64.tar.gz` | glibc 2.35+ — Raspberry Pi, Ampere, Asahi |
+| macOS | Apple Silicon | `macos-universal.tar.gz` | universal binary |
+| macOS | Intel (x86_64) | `macos-universal.tar.gz` | same archive as Apple Silicon |
+| Windows | x86_64 | `windows-x86_64.zip` | self-contained `.exe`, no VC++ redistributable |
+| Windows | arm64 | — | [build from source](#build-from-source) |
+| BSD / other | any | — | [build from source](#build-from-source) |
+
+Archives are named `tuix-<version>-<target>`. Each prebuilt binary is compiled and
+test-run in CI on the platform it targets. The C++ runtime is linked statically, so
+the binaries carry no dependencies beyond the system libc.
+
 **[Overview](#overview) · [Features](#features) · [Theming](#theming) · [Gallery](#theme-gallery) · [Installation](#installation) · [Usage](#usage) · [Headless mode](#headless-mode) · [Key bindings](#key-bindings) · [Configuration](#configuration) · [License](#license)**
 
 </div>
@@ -30,14 +46,15 @@ Navigation and editing follow vim conventions, and a built-in formula engine eva
 expressions on the fly.
 
 It is developed on and for [Omarchy](https://omarchy.org) ([see gallery](#theme-gallery))
-and works on any compatible Linux distribution. Prebuilt binaries are available for Linux
-and macOS; Windows is not yet supported.
+and works on any compatible Linux distribution. Prebuilt binaries are available for
+Linux (x86_64 and arm64), macOS (Apple Silicon and Intel) and Windows — see
+[platform support](#platform-support).
 
 **Highlights**
 
 - **Native and lightweight** — a single binary with a sub-second cold start and no runtime dependencies.
 - **vim-style editing** — `h j k l`, `gg`, `G`, `0`, `$`, `/` search, modal editing, and `:` commands.
-- **Formula engine** — 26 functions, cell references, and ranges, evaluated live.
+- **Formula engine** — 27 functions, cell references, and ranges, evaluated live.
 - **Multi-sheet** — XLSX workbooks open with a tab per worksheet; cycle, add, rename, and delete them, and reference across them with `Sheet2!A1`.
 - **Live feedback** — per-cell formula suggestions and range statistics update as you work.
 - **Theme-aware** — colors map to your terminal's ANSI palette, so tuiX adopts your theme automatically.
@@ -75,7 +92,7 @@ and macOS; Windows is not yet supported.
 ### Formulas
 
 Cells beginning with `=` are evaluated through a lexer → parser → evaluator pipeline that
-supports cell references, ranges, and 26 functions:
+supports cell references, ranges, and 27 functions:
 
 ```
 =A1 + B2 * 3                     arithmetic & precedence
@@ -124,6 +141,7 @@ yields `#REF!`, and cycles across sheets are detected just like on a single shee
 | | `UPPER` | `UPPER(text)` | Convert text to upper case |
 | | `LOWER` | `LOWER(text)` | Convert text to lower case |
 | | `TRIM` | `TRIM(text)` | Remove leading/trailing whitespace |
+| **Chart** | `SPARKLINE` | `SPARKLINE(range)` | Mini in-cell bar chart of a numeric range |
 
 Criteria for `COUNTIF` / `SUMIF` / `AVERAGEIF` accept a comparison operator
 (`">10"`, `"<=5"`, `"<>x"`) or a plain value for equality; text matching is
@@ -266,20 +284,22 @@ page, or from the command line (set `VERSION` to the current release):
 ```bash
 VERSION=v1.1.5
 
+mkdir -p ~/.local/bin
+
 # Linux (x86_64)
 curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-linux-x86_64.tar.gz
 tar -xzf tuix-$VERSION-linux-x86_64.tar.gz
-install -Dm755 tuix-$VERSION-linux-x86_64/bin/tuix ~/.local/bin/tuix
+install -m755 tuix-$VERSION-linux-x86_64/bin/tuix ~/.local/bin/tuix
 
 # Linux (arm64 — Raspberry Pi, Ampere, Asahi)
 curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-linux-arm64.tar.gz
 tar -xzf tuix-$VERSION-linux-arm64.tar.gz
-install -Dm755 tuix-$VERSION-linux-arm64/bin/tuix ~/.local/bin/tuix
+install -m755 tuix-$VERSION-linux-arm64/bin/tuix ~/.local/bin/tuix
 
 # macOS (universal — Apple Silicon and Intel)
 curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-macos-universal.tar.gz
 tar -xzf tuix-$VERSION-macos-universal.tar.gz
-install -Dm755 tuix-$VERSION-macos-universal/bin/tuix ~/.local/bin/tuix
+install -m755 tuix-$VERSION-macos-universal/bin/tuix ~/.local/bin/tuix
 ```
 
 On **Windows** (PowerShell), download and extract the `.zip` — it's a single
@@ -305,7 +325,7 @@ sha256sum --check --ignore-missing SHA256SUMS   # macOS: shasum -a 256 -c SHA256
 
 ### Build from source
 
-**Requirements:** CMake 3.14+, a C++17 compiler (GCC 8+ / Clang 7+ / MSVC 2019+), and Git. Every
+**Requirements:** CMake 3.15+, a C++17 compiler (GCC 9+ / Clang 9+ / MSVC 2019+), and Git. Every
 dependency — [FTXUI](https://github.com/ArthurSonzogni/FTXUI),
 [rapidcsv](https://github.com/d99kris/rapidcsv), [toml++](https://github.com/marzer/tomlplusplus),
 and [OpenXLSX](https://github.com/troldal/OpenXLSX) — is vendored as a git submodule. No
@@ -324,8 +344,11 @@ cmake --build build
 Install it onto your `PATH`:
 
 ```bash
-cmake --install build --prefix ~/.local   # → ~/.local/bin/tuix
+cmake --install build --component tuix --prefix ~/.local   # → ~/.local/bin/tuix
 ```
+
+> `--component tuix` installs just the binary; without it the vendored
+> dependencies add their own headers and static libraries to the prefix.
 
 ---
 

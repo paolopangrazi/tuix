@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.14)
+# 3.15 is the real floor: deps/openxlsx declares cmake_minimum_required(3.15
+# FATAL_ERROR), so anything lower fails at add_subdirectory anyway.
+cmake_minimum_required(VERSION 3.15)
 project(tuix VERSION 1.1.5 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
