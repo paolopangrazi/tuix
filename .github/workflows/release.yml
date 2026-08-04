@@ -17,8 +17,12 @@ jobs:
         include:
           - os: ubuntu-latest
             target: linux-x86_64
+          # One fat binary covering Apple Silicon and Intel Macs: the runner is
+          # arm64, so x86_64 is a cross-compile (hence no test run here).
           - os: macos-latest
-            target: macos-arm64
+            target: macos-universal
+            # Quoted: the `;` would otherwise be a shell command separator.
+            cmake_args: '"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"'
           - os: windows-latest
             target: windows-x86_64
 
@@ -29,10 +33,19 @@ jobs:
           submodules: recursive
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_args }}
 
       - name: Build
         run: cmake --build build --parallel --config Release
+
+      # Guard against a silently single-arch build (e.g. a dep forcing the
+      # host arch): the release artifact must carry both slices.
+      - name: Verify universal binary
+        if: matrix.target == 'macos-universal'
+        run: |
+          lipo -info build/tuix
+          lipo -archs build/tuix | grep -q arm64
+          lipo -archs build/tuix | grep -q x86_64
 
       - name: Stage install
         run: cmake --install build --config Release --prefix "stage/tuix-${{ github.ref_name }}-${{ matrix.target }}"
