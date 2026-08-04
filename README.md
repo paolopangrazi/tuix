@@ -14,7 +14,7 @@ Open a CSV or XLSX file, move through it with vim keys, evaluate formulas, and s
 without leaving your terminal. tuiX is a single native C++ binary built on
 [FTXUI](https://github.com/ArthurSonzogni/FTXUI), with no runtime dependencies.
 
-<video src="https://github.com/user-attachments/assets/651a9673-4791-4660-a642-3d17b1e80670" autoplay loop muted playsinline width="800"></video>
+<img src="docs/demo.gif" alt="tuiX opening an XLSX file, navigating with vim keys, editing cells and evaluating formulas in the terminal" width="800">
 
 ### Platform support
 
