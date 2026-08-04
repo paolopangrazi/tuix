@@ -253,7 +253,7 @@ tuiX on all 20 built-in Omarchy themes — the same app, your palette.
 
 ## Installation
 
-Prebuilt binaries are available for **Linux (x86_64)**, **macOS (universal — Apple
+Prebuilt binaries are available for **Linux (x86_64, arm64)**, **macOS (universal — Apple
 Silicon and Intel)**, and **Windows (x86_64)**. On any other platform, build from source.
 
 ### Download a release
@@ -268,6 +268,11 @@ VERSION=v1.1.3
 curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-linux-x86_64.tar.gz
 tar -xzf tuix-$VERSION-linux-x86_64.tar.gz
 install -Dm755 tuix-$VERSION-linux-x86_64/bin/tuix ~/.local/bin/tuix
+
+# Linux (arm64 — Raspberry Pi, Ampere, Asahi)
+curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-linux-arm64.tar.gz
+tar -xzf tuix-$VERSION-linux-arm64.tar.gz
+install -Dm755 tuix-$VERSION-linux-arm64/bin/tuix ~/.local/bin/tuix
 
 # macOS (universal — Apple Silicon and Intel)
 curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-macos-universal.tar.gz

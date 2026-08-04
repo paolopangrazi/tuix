@@ -17,6 +17,10 @@ jobs:
         include:
           - os: ubuntu-latest
             target: linux-x86_64
+          # Native arm64 runner (free for public repos) — no cross-toolchain,
+          # no emulation.
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
           # One fat binary covering Apple Silicon and Intel Macs: the runner is
           # arm64, so x86_64 is a cross-compile (hence no test run here).
           - os: macos-latest

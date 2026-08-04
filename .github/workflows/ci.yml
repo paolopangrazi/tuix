@@ -18,6 +18,10 @@ jobs:
             compiler: gcc
           - os: ubuntu-latest
             compiler: clang
+          # Native arm64: the release ships a linux-arm64 binary, so the tests
+          # need to run on that arch before a tag is cut.
+          - os: ubuntu-24.04-arm
+            compiler: gcc
           # macOS uses Apple Clang by default; gcc adds little value here
           - os: macos-latest
             compiler: clang
