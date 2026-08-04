@@ -39,8 +39,9 @@ struct Options {
     int                      head = -1;    // keep first N data rows (-1 = all)
     int                      tail = -1;    // keep last N data rows (-1 = all)
 
-    bool        active    = false;         // headless mode requested
-    bool        show_help = false;         // --help was passed
+    bool        active       = false;      // headless mode requested
+    bool        show_help    = false;      // --help was passed
+    bool        show_version = false;      // --version was passed
     std::string parse_error;               // non-empty → bad flags, exit 2
 };
 
@@ -63,5 +64,9 @@ int run(const Options& opts);
 
 // Print headless usage to stdout.
 void print_help();
+
+// Print "tuix <version>" to stdout — the version baked in at configure time
+// from project(tuix VERSION ...).
+void print_version();
 
 }  // namespace headless

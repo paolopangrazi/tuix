@@ -176,6 +176,16 @@ TEST_CASE("parse_args captures --sheet") {
     CHECK_FALSE(o2.parse_error.empty());
 }
 
+TEST_CASE("parse_args captures --version and it wins over a bad flag combo") {
+    for (const char* flag : {"--version", "-V"}) {
+        const char* argv[] = {"tuix", flag};
+        Options o;
+        CHECK(headless::parse_args(2, const_cast<char**>(argv), o));  // headless, not the TUI
+        CHECK(o.show_version);
+        CHECK(o.parse_error.empty());
+    }
+}
+
 namespace {
 WorkbookData workbook() {
     WorkbookData wb;

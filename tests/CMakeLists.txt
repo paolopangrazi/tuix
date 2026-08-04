@@ -2,6 +2,12 @@
 # Test framework: doctest, fetched on demand (only when TUIX_BUILD_TESTS=ON).
 # ---------------------------------------------------------------------------
 include(FetchContent)
+
+# doctest v2.4.11 declares cmake_minimum_required(VERSION 3.0), which CMake >= 4
+# rejects outright. Set here (not only at the top level, where the same variable
+# is needed for miniz) so the test build stands on its own.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+
 FetchContent_Declare(doctest
     GIT_REPOSITORY https://github.com/doctest/doctest.git
     GIT_TAG        v2.4.11

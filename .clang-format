@@ -1,4 +1,11 @@
 ---
+# Advisory only — deliberately NOT enforced in CI.
+#
+# tuix is formatted by hand: paired single-line if/else kept on aligned lines,
+# `{ a, b }` init-list spacing, and wraps chosen for readability rather than
+# for the column limit. clang-format cannot reproduce any of that, so running
+# it across a whole file fights the surrounding style (~5.7k lines would move
+# repo-wide). Use it on new code as a starting point, then adjust by hand.
 BasedOnStyle: LLVM
 Language: Cpp
 Standard: c++17

@@ -73,6 +73,39 @@ jobs:
         if: runner.os == 'Windows'
         run: if (-not (Test-Path ./build/Release/tuix.exe)) { exit 1 }
 
+      # tuix_tests links tuix_core, *not* main.cpp — without this step the
+      # executable's own arg handling and the headless entry point ship with no
+      # CI coverage at all. bash on the Windows runner is git-bash.
+      - name: Smoke test the binary
+        shell: bash
+        run: |
+          bin=./build/tuix
+          [ -x "$bin" ] || bin=./build/Release/tuix.exe
+          "$bin" --version
+          "$bin" --help > /dev/null
+
+          # The documented pipeline order (filter → sort → head → select),
+          # end to end through argv rather than through the unit-test fakes.
+          got=$("$bin" --filter 'salary > 50000' --sort 'department,salary desc' \
+                       --select first_name,department --head 1 \
+                       samples/csv/employees.csv | tr -d '\r')
+          want=$'first_name,department\nIvan,Data'
+          if [ "$got" != "$want" ]; then
+            echo "::error::headless pipeline output changed"
+            printf 'want:\n%s\ngot:\n%s\n' "$want" "$got"
+            exit 1
+          fi
+
+          # stdin → stdout, the other half of the filter contract.
+          rows=$("$bin" --head 2 < samples/csv/employees.csv | wc -l)
+          [ "$rows" -eq 3 ] || { echo "::error::stdin path returned $rows lines, want 3"; exit 1; }
+
+          # A bad column must fail loudly, not emit a half-transformed sheet.
+          if "$bin" --sort nosuchcol samples/csv/employees.csv > /dev/null 2>&1; then
+            echo "::error::an unknown --sort column should exit non-zero"
+            exit 1
+          fi
+
       - name: Test install (Unix)
         if: runner.os != 'Windows'
         run: cmake --install build --config Release --component tuix --prefix "$RUNNER_TEMP/install" && test -x "$RUNNER_TEMP/install/bin/tuix"

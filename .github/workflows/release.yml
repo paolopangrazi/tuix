@@ -15,8 +15,48 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Runs before the 4-platform matrix so a mistagged release fails in seconds
+  # rather than after four builds — and, more to the point, before a release
+  # with the wrong version baked into the binary gets published.
+  version:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout   # no submodules: this step only reads text files
+        uses: actions/checkout@v4
+
+      - name: Tag, CMakeLists and README must agree
+        run: |
+          tag="${{ github.ref_name }}"
+          cmake_ver=$(sed -nE 's/^project\(tuix VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' CMakeLists.txt)
+          if [ -z "$cmake_ver" ]; then
+            echo "::error::could not read the version out of CMakeLists.txt"
+            exit 1
+          fi
+          echo "tag=$tag  cmake=v$cmake_ver"
+          if [ "$tag" != "v$cmake_ver" ]; then
+            echo "::error::tag $tag != project(tuix VERSION $cmake_ver) — bump CMakeLists.txt or move the tag"
+            exit 1
+          fi
+
+          # The README download snippets pin a version; a stale one points
+          # users at release assets that do not exist.
+          readme_vers=$(grep -oE 'VERSION *=? *"?v[0-9]+\.[0-9]+\.[0-9]+' README.md \
+                        | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | sort -u)
+          if [ -z "$readme_vers" ]; then
+            echo "::error::no pinned version found in the README install snippets"
+            exit 1
+          fi
+          for v in $readme_vers; do
+            if [ "$v" != "$tag" ]; then
+              echo "::error::README pins $v but the tag is $tag"
+              exit 1
+            fi
+          done
+
   build:
     name: Build ${{ matrix.target }}
+    needs: version
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -62,6 +102,19 @@ jobs:
       # cross-compiled x86_64 slice can't be executed here.
       - name: Test
         run: ctest --test-dir build --output-on-failure --build-config Release
+
+      # Closes the loop on the version job: that one compares the tag against
+      # CMakeLists.txt as text, this one against what the shipped binary
+      # actually prints. bash on the Windows runner is git-bash.
+      - name: Verify binary reports the tag version
+        shell: bash
+        run: |
+          bin=./build/tuix
+          [ -x "$bin" ] || bin=./build/Release/tuix.exe
+          got=$("$bin" --version | tr -d '\r')
+          want="tuix ${GITHUB_REF_NAME#v}"
+          echo "$got"
+          [ "$got" = "$want" ] || { echo "::error::binary reports '$got', want '$want'"; exit 1; }
 
       # Guard against a silently single-arch build (e.g. a dep forcing the
       # host arch): the release artifact must carry both slices.

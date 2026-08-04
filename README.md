@@ -441,6 +441,7 @@ cmd /c "type in.csv | tuix --filter ""salary > 50000"""
 | `--sheet` | `NAME` | For `.xlsx` input, pick a sheet by name or 1-based index (default: first). |
 | `-o`, `--output` | `FILE` | Write to `FILE` instead of stdout. |
 | `-h`, `--help` | | Print usage and exit. |
+| `-V`, `--version` | | Print the version and exit. |
 
 Input comes from a file argument, or from **stdin** when data is piped in (or
 you pass `-`). For CSV, the delimiter (comma, semicolon, tab, pipe) is

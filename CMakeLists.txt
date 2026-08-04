@@ -56,7 +56,10 @@ add_subdirectory(deps/tomlplusplus)
 # ---------------------------------------------------------------------------
 # OpenXLSX (deps/openxlsx)
 # ---------------------------------------------------------------------------
-# miniz (fetched by OpenXLSX) requires this policy flag on CMake >= 3.30
+# Vendored deps that still declare a pre-3.5 cmake_minimum_required are a hard
+# error on CMake >= 4; this floor keeps them configurable. It is load-bearing
+# for miniz (fetched by OpenXLSX) *and* for doctest in tests/ — that one sets
+# it again locally, so this line can move without breaking the test build.
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 set(OPENXLSX_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 set(OPENXLSX_CREATE_DOCS   OFF CACHE BOOL "" FORCE)  # don't require Doxygen/Graphviz
@@ -71,6 +74,12 @@ add_subdirectory(deps/openxlsx)
 # shell over this library so the same code can be linked into the test suite.
 # ---------------------------------------------------------------------------
 find_package(Threads REQUIRED)
+
+# project(VERSION) is the single source of truth for the version; `tuix
+# --version` prints what this generates, so a released binary can identify
+# itself and CI can check the tag against it.
+configure_file(util/version.hpp.in
+               "${CMAKE_CURRENT_BINARY_DIR}/generated/util/version.hpp" @ONLY)
 
 add_library(tuix_core STATIC
     config/config.cpp
@@ -124,6 +133,7 @@ target_include_directories(tuix_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}            # for loader/csv_loader.hpp from within components/
     ${CMAKE_CURRENT_SOURCE_DIR}/components # for body.hpp, grid.hpp, etc.
     ${CMAKE_CURRENT_SOURCE_DIR}/dialogs    # for dialog_shell.hpp etc.
+    ${CMAKE_CURRENT_BINARY_DIR}/generated  # for the generated util/version.hpp
     ${RAPIDCSV_INCLUDE_DIR}
 )
 
