@@ -253,8 +253,8 @@ tuiX on all 20 built-in Omarchy themes — the same app, your palette.
 
 ## Installation
 
-Prebuilt binaries are available for **Linux (x86_64)**, **macOS (Apple Silicon)**, and
-**Windows (x86_64)**. On any other platform, build from source.
+Prebuilt binaries are available for **Linux (x86_64)**, **macOS (universal — Apple
+Silicon and Intel)**, and **Windows (x86_64)**. On any other platform, build from source.
 
 ### Download a release
 
@@ -262,24 +262,24 @@ Get the latest archive from the [**Releases**](https://github.com/paolopangrazi/
 page, or from the command line (set `VERSION` to the current release):
 
 ```bash
-VERSION=v1.1.2
+VERSION=v1.1.3
 
 # Linux (x86_64)
 curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-linux-x86_64.tar.gz
 tar -xzf tuix-$VERSION-linux-x86_64.tar.gz
 install -Dm755 tuix-$VERSION-linux-x86_64/bin/tuix ~/.local/bin/tuix
 
-# macOS (Apple Silicon)
-curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-macos-arm64.tar.gz
-tar -xzf tuix-$VERSION-macos-arm64.tar.gz
-install -Dm755 tuix-$VERSION-macos-arm64/bin/tuix ~/.local/bin/tuix
+# macOS (universal — Apple Silicon and Intel)
+curl -LO https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-macos-universal.tar.gz
+tar -xzf tuix-$VERSION-macos-universal.tar.gz
+install -Dm755 tuix-$VERSION-macos-universal/bin/tuix ~/.local/bin/tuix
 ```
 
 On **Windows** (PowerShell), download and extract the `.zip` — it's a single
 self-contained `tuix.exe` (no Visual C++ redistributable needed):
 
 ```powershell
-$VERSION = "v1.1.2"
+$VERSION = "v1.1.3"
 curl.exe -LO "https://github.com/paolopangrazi/tuix/releases/download/$VERSION/tuix-$VERSION-windows-x86_64.zip"
 Expand-Archive "tuix-$VERSION-windows-x86_64.zip" -DestinationPath .
 # then run tuix-$VERSION-windows-x86_64\bin\tuix.exe (best in Windows Terminal)
