@@ -255,6 +255,8 @@ tuiX on all 20 built-in Omarchy themes — the same app, your palette.
 
 Prebuilt binaries are available for **Linux (x86_64, arm64)**, **macOS (universal — Apple
 Silicon and Intel)**, and **Windows (x86_64)**. On any other platform, build from source.
+The Linux binaries link the C++ runtime statically and require only glibc 2.35 or newer
+(Ubuntu 22.04, Debian 12, RHEL 9 and up).
 
 ### Download a release
 

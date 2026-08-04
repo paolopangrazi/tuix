@@ -15,12 +15,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          # Built on the oldest supported runner (glibc 2.35) and with the C++
+          # runtime linked in statically, so the binary also runs on distros
+          # older than the builder — glibc is forward- but not backward-
+          # compatible. Do NOT move these to ubuntu-latest.
+          - os: ubuntu-22.04
             target: linux-x86_64
+            cmake_args: '"-DCMAKE_EXE_LINKER_FLAGS=-static-libstdc++ -static-libgcc"'
           # Native arm64 runner (free for public repos) — no cross-toolchain,
           # no emulation.
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-22.04-arm
             target: linux-arm64
+            cmake_args: '"-DCMAKE_EXE_LINKER_FLAGS=-static-libstdc++ -static-libgcc"'
           # One fat binary covering Apple Silicon and Intel Macs: the runner is
           # arm64, so x86_64 is a cross-compile (hence no test run here).
           - os: macos-latest
@@ -50,6 +56,24 @@ jobs:
           lipo -info build/tuix
           lipo -archs build/tuix | grep -q arm64
           lipo -archs build/tuix | grep -q x86_64
+
+      # The portability promise, enforced: no libstdc++/libgcc_s dependency,
+      # and no glibc symbol newer than 2.35 (Ubuntu 22.04 / Debian 12 / RHEL 9).
+      - name: Verify Linux portability
+        if: runner.os == 'Linux'
+        run: |
+          ldd build/tuix
+          if ldd build/tuix | grep -E 'libstdc\+\+|libgcc_s'; then
+            echo "::error::binary still links the shared C++ runtime"
+            exit 1
+          fi
+          max=$(objdump -T build/tuix \
+                | grep -oE 'GLIBC_2\.[0-9]+' | sort -uV | tail -1)
+          echo "highest glibc symbol required: $max"
+          if [ "$(printf '%s\nGLIBC_2.35\n' "$max" | sort -V | tail -1)" != "GLIBC_2.35" ]; then
+            echo "::error::requires $max, above the 2.35 floor"
+            exit 1
+          fi
 
       - name: Stage install
         run: cmake --install build --config Release --prefix "stage/tuix-${{ github.ref_name }}-${{ matrix.target }}"
