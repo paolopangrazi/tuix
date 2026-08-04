@@ -17,7 +17,7 @@
 #include "formulas/value.hpp"
 #include "config/config.hpp"
 
-struct Sheet;
+class Sheet;
 
 class Grid : public EvalContext {
 public:
