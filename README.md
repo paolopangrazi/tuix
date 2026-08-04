@@ -32,7 +32,7 @@ Archives are named `tuix-<version>-<target>`. Each prebuilt binary is compiled a
 test-run in CI on the platform it targets. The C++ runtime is linked statically, so
 the binaries carry no dependencies beyond the system libc.
 
-**[Overview](#overview) · [Features](#features) · [Theming](#theming) · [Gallery](#theme-gallery) · [Installation](#installation) · [Usage](#usage) · [Headless mode](#headless-mode) · [Key bindings](#key-bindings) · [Configuration](#configuration) · [License](#license)**
+**[Overview](#overview) · [Headless mode](#headless-mode) · [Features](#features) · [Theming](#theming) · [Gallery](#theme-gallery) · [Installation](#installation) · [Usage](#usage) · [Key bindings](#key-bindings) · [Configuration](#configuration) · [License](#license)**
 
 </div>
 
@@ -59,6 +59,146 @@ Linux (x86_64 and arm64), macOS (Apple Silicon and Intel) and Windows — see
 - **Live feedback** — per-cell formula suggestions and range statistics update as you work.
 - **Theme-aware** — colors map to your terminal's ANSI palette, so tuiX adopts your theme automatically.
 - **Scriptable** — a headless mode turns tuiX into a CSV/XLSX filter on any platform: `tuix --filter 'salary > 50000' --sort dept data.csv` (or pipe via stdin on Linux/macOS/CMD).
+
+---
+
+## Headless mode
+
+Beyond the interactive editor, tuiX doubles as a **scriptable data filter**: give
+it any transform flag (or pipe data into it) and it reads a sheet, applies a
+pipeline, and writes the result to stdout — never touching the terminal UI.
+Works on Linux, macOS, and Windows.
+
+![tuiX as a headless CSV filter](docs/headless.gif)
+
+```bash
+# Filter, sort, and pick columns from a file → stdout
+tuix --filter 'salary > 50000' --sort 'department,salary desc' \
+     --select first_name,department,salary samples/csv/employees.csv
+
+# Read from a pipe, keep names starting with A, write the top 20 to a file
+cat samples/csv/employees.csv | tuix --filter 'first_name =~ ^A' --head 20 -o top.csv
+```
+
+The pipeline always runs in a fixed order: **filter → sort → head/tail →
+select**, so each stage sees the previous stage's output.
+
+### CSV and XLSX
+
+The input and output formats are chosen by **file extension**: a `.xlsx` path is
+read (and written) as an Excel workbook, anything else is CSV. You can mix them
+freely — read from `.xlsx` and write `.csv`, or the reverse.
+
+```bash
+# Excel in, Excel out — filter one sheet and keep the result as .xlsx
+tuix --sheet Sales --filter 'quantity > 0' --sort 'revenue desc' book.xlsx -o out.xlsx
+
+# Convert: Excel in, CSV out
+tuix book.xlsx -o book.csv
+```
+
+An `.xlsx` workbook can hold several sheets, but the pipeline works on **one
+sheet in, one sheet out**. Use `--sheet` to choose which one — by name
+(case-insensitive) or by 1-based index; it defaults to the first sheet. When
+writing `.xlsx`, the result is a single-sheet workbook.
+
+Writing CSV always stores computed **values, not formulas**; a note is printed to
+stderr when an `.xlsx` source is flattened this way. To keep formulas, write
+`.xlsx`. Because Excel files are binary, **stdin and stdout are always CSV** — a
+`.xlsx` must be a real file path, not a pipe.
+
+### Windows notes
+
+The **file-argument form works identically** on Windows Terminal (any shell):
+
+```powershell
+tuix --filter "salary > 50000" --sort department --select name,department in.csv > out.csv
+```
+
+For **piped input**, use CMD's `type` — it passes bytes transparently. PowerShell's
+pipe serialises through its object model and can garble encoding:
+
+```cmd
+:: CMD — byte-transparent, always safe
+type in.csv | tuix --filter "salary > 50000" > out.csv
+```
+
+```powershell
+# PowerShell — pipe encoding can be unreliable; prefer the file argument
+# or force CMD-style piping:
+cmd /c "type in.csv | tuix --filter ""salary > 50000"""
+```
+
+### Options
+
+| Flag | Argument | Effect |
+|---|---|---|
+| `-f`, `--filter` | `PRED` | Keep rows matching `PRED`. Repeatable — multiple filters are **AND**-ed. |
+| `-s`, `--sort` | `SPEC` | Sort by one or more columns, e.g. `'dept,salary desc'`. |
+| `--select` | `COLS` | Keep and reorder columns, e.g. `name,dept`. |
+| `--head` | `N` | Keep the first `N` data rows. |
+| `--tail` | `N` | Keep the last `N` data rows. |
+| `--sheet` | `NAME` | For `.xlsx` input, pick a sheet by name or 1-based index (default: first). |
+| `-o`, `--output` | `FILE` | Write to `FILE` instead of stdout. |
+| `-h`, `--help` | | Print usage and exit. |
+| `-V`, `--version` | | Print the version and exit. |
+
+Input comes from a file argument, or from **stdin** when data is piped in (or
+you pass `-`). For CSV, the delimiter (comma, semicolon, tab, pipe) is
+auto-detected and preserved on output.
+
+### Filter predicates
+
+A predicate is `COLUMN OP VALUE`. **`COLUMN`** is a header name (case-insensitive)
+or a spreadsheet column letter (`A`, `B`, `AA`…). **`OP`** is one of:
+
+| Operator | Match |
+|---|---|
+| `==` &nbsp; `!=` | Equal / not equal (numeric when both sides are numbers, else case-insensitive text) |
+| `<` &nbsp; `<=` &nbsp; `>` &nbsp; `>=` | Ordered comparison (numeric or lexicographic) |
+| `=~` | Value matches the given **regular expression** (ECMAScript) |
+| `contains` | Value contains the given substring (case-insensitive) |
+
+```bash
+tuix --filter 'department == Engineering' data.csv   # exact match
+tuix --filter 'salary >= 80000'          data.csv   # numeric compare
+tuix --filter 'role contains Engineer'   data.csv   # substring
+tuix --filter 'last_name =~ ^M'          data.csv   # regex
+```
+
+Bad columns, malformed predicates, and invalid regexes report an error and exit
+non-zero, so headless runs fail loudly in scripts.
+
+### Examples
+
+```bash
+# All engineers earning more than 70 k, sorted by salary descending
+tuix --filter 'department == Engineering' \
+     --filter 'salary > 70000' \
+     --sort 'salary desc' \
+     employees.csv
+
+# Top 5 earners — name, department, salary
+tuix --sort 'salary desc' \
+     --head 5 \
+     --select 'first_name,last_name,department,salary' \
+     employees.csv
+
+# Everyone whose last name starts with M, regardless of case (regex)
+tuix --filter 'last_name =~ ^[Mm]' employees.csv
+
+# Products in the Electronics category, highest revenue first
+tuix --filter 'category == Electronics' \
+     --sort 'revenue desc' \
+     --select 'product,units,revenue' \
+     sales.csv
+
+# Read from a pipe; save the result to a file instead of stdout
+cat employees.csv | tuix --filter 'remote == yes' --sort 'salary desc' -o remote.csv
+
+# Columns can be referred to by letter when there's no header or you prefer brevity
+tuix --filter 'F > 80000' employees.csv   # F is the salary column
+```
 
 ---
 
@@ -358,146 +498,6 @@ cmake --install build --component tuix --prefix ~/.local   # → ~/.local/bin/tu
 tuix                        # start with a blank sheet
 tuix path/to/file.csv       # open a CSV
 tuix path/to/file.xlsx      # open an Excel file
-```
-
----
-
-## Headless mode
-
-Beyond the interactive editor, tuiX doubles as a **scriptable data filter**: give
-it any transform flag (or pipe data into it) and it reads a sheet, applies a
-pipeline, and writes the result to stdout — never touching the terminal UI.
-Works on Linux, macOS, and Windows.
-
-![tuiX as a headless CSV filter](docs/headless.gif)
-
-```bash
-# Filter, sort, and pick columns from a file → stdout
-tuix --filter 'salary > 50000' --sort 'department,salary desc' \
-     --select first_name,department,salary samples/csv/employees.csv
-
-# Read from a pipe, keep names starting with A, write the top 20 to a file
-cat samples/csv/employees.csv | tuix --filter 'first_name =~ ^A' --head 20 -o top.csv
-```
-
-The pipeline always runs in a fixed order: **filter → sort → head/tail →
-select**, so each stage sees the previous stage's output.
-
-### CSV and XLSX
-
-The input and output formats are chosen by **file extension**: a `.xlsx` path is
-read (and written) as an Excel workbook, anything else is CSV. You can mix them
-freely — read from `.xlsx` and write `.csv`, or the reverse.
-
-```bash
-# Excel in, Excel out — filter one sheet and keep the result as .xlsx
-tuix --sheet Sales --filter 'quantity > 0' --sort 'revenue desc' book.xlsx -o out.xlsx
-
-# Convert: Excel in, CSV out
-tuix book.xlsx -o book.csv
-```
-
-An `.xlsx` workbook can hold several sheets, but the pipeline works on **one
-sheet in, one sheet out**. Use `--sheet` to choose which one — by name
-(case-insensitive) or by 1-based index; it defaults to the first sheet. When
-writing `.xlsx`, the result is a single-sheet workbook.
-
-Writing CSV always stores computed **values, not formulas**; a note is printed to
-stderr when an `.xlsx` source is flattened this way. To keep formulas, write
-`.xlsx`. Because Excel files are binary, **stdin and stdout are always CSV** — a
-`.xlsx` must be a real file path, not a pipe.
-
-### Windows notes
-
-The **file-argument form works identically** on Windows Terminal (any shell):
-
-```powershell
-tuix --filter "salary > 50000" --sort department --select name,department in.csv > out.csv
-```
-
-For **piped input**, use CMD's `type` — it passes bytes transparently. PowerShell's
-pipe serialises through its object model and can garble encoding:
-
-```cmd
-:: CMD — byte-transparent, always safe
-type in.csv | tuix --filter "salary > 50000" > out.csv
-```
-
-```powershell
-# PowerShell — pipe encoding can be unreliable; prefer the file argument
-# or force CMD-style piping:
-cmd /c "type in.csv | tuix --filter ""salary > 50000"""
-```
-
-### Options
-
-| Flag | Argument | Effect |
-|---|---|---|
-| `-f`, `--filter` | `PRED` | Keep rows matching `PRED`. Repeatable — multiple filters are **AND**-ed. |
-| `-s`, `--sort` | `SPEC` | Sort by one or more columns, e.g. `'dept,salary desc'`. |
-| `--select` | `COLS` | Keep and reorder columns, e.g. `name,dept`. |
-| `--head` | `N` | Keep the first `N` data rows. |
-| `--tail` | `N` | Keep the last `N` data rows. |
-| `--sheet` | `NAME` | For `.xlsx` input, pick a sheet by name or 1-based index (default: first). |
-| `-o`, `--output` | `FILE` | Write to `FILE` instead of stdout. |
-| `-h`, `--help` | | Print usage and exit. |
-| `-V`, `--version` | | Print the version and exit. |
-
-Input comes from a file argument, or from **stdin** when data is piped in (or
-you pass `-`). For CSV, the delimiter (comma, semicolon, tab, pipe) is
-auto-detected and preserved on output.
-
-### Filter predicates
-
-A predicate is `COLUMN OP VALUE`. **`COLUMN`** is a header name (case-insensitive)
-or a spreadsheet column letter (`A`, `B`, `AA`…). **`OP`** is one of:
-
-| Operator | Match |
-|---|---|
-| `==` &nbsp; `!=` | Equal / not equal (numeric when both sides are numbers, else case-insensitive text) |
-| `<` &nbsp; `<=` &nbsp; `>` &nbsp; `>=` | Ordered comparison (numeric or lexicographic) |
-| `=~` | Value matches the given **regular expression** (ECMAScript) |
-| `contains` | Value contains the given substring (case-insensitive) |
-
-```bash
-tuix --filter 'department == Engineering' data.csv   # exact match
-tuix --filter 'salary >= 80000'          data.csv   # numeric compare
-tuix --filter 'role contains Engineer'   data.csv   # substring
-tuix --filter 'last_name =~ ^M'          data.csv   # regex
-```
-
-Bad columns, malformed predicates, and invalid regexes report an error and exit
-non-zero, so headless runs fail loudly in scripts.
-
-### Examples
-
-```bash
-# All engineers earning more than 70 k, sorted by salary descending
-tuix --filter 'department == Engineering' \
-     --filter 'salary > 70000' \
-     --sort 'salary desc' \
-     employees.csv
-
-# Top 5 earners — name, department, salary
-tuix --sort 'salary desc' \
-     --head 5 \
-     --select 'first_name,last_name,department,salary' \
-     employees.csv
-
-# Everyone whose last name starts with M, regardless of case (regex)
-tuix --filter 'last_name =~ ^[Mm]' employees.csv
-
-# Products in the Electronics category, highest revenue first
-tuix --filter 'category == Electronics' \
-     --sort 'revenue desc' \
-     --select 'product,units,revenue' \
-     sales.csv
-
-# Read from a pipe; save the result to a file instead of stdout
-cat employees.csv | tuix --filter 'remote == yes' --sort 'salary desc' -o remote.csv
-
-# Columns can be referred to by letter when there's no header or you prefer brevity
-tuix --filter 'F > 80000' employees.csv   # F is the salary column
 ```
 
 ---
