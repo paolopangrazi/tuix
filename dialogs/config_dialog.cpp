@@ -102,12 +102,12 @@ void ConfigDialog::save_to_file() {
 
 Component ConfigDialog::component() {
     auto renderer = Renderer(m_container, [this] {
-        const int lw = 16, vw = 14;
+        constexpr int k_label_w = 16, k_value_w = 14;   // field-row column widths
         auto crow = [&](const char* label, const Component& inp) -> Element {
             return hbox({
                 text("  "),
-                text(label) | size(WIDTH, EQUAL, lw) | color(m_cfg.colors.dimmed),
-                inp->Render() | size(WIDTH, EQUAL, vw),
+                text(label) | size(WIDTH, EQUAL, k_label_w) | color(m_cfg.colors.dimmed),
+                inp->Render() | size(WIDTH, EQUAL, k_value_w),
             });
         };
         // The color/key lists are long, so lay their rows out in two columns.
@@ -160,7 +160,7 @@ Component ConfigDialog::component() {
             vbox({
                 m_tab_toggle->Render(),
                 separator(),
-                page | size(WIDTH, EQUAL, 2 * (lw + vw + 2) + 4),
+                page | size(WIDTH, EQUAL, 2 * (k_label_w + k_value_w + 2) + 4),
                 separator(),
                 hbox({ filler(), m_save_btn->Render(), filler() }),
             })

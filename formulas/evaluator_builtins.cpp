@@ -93,20 +93,23 @@ static Value fn_counta(const FuncCallExpr& f, const EvalContext& ctx, const Eval
     return Value::number(static_cast<double>(count));
 }
 
-static Value fn_min(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
+// Shared body for MIN/MAX: gather numeric args, then reduce with `pick`
+// (std::min_element or std::max_element).
+template <class Pick>
+static Value minmax(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev, Pick pick) {
     std::vector<double> nums;
     Value err = collect_numbers(f, ctx, ev, nums);
     if (err.is_error()) return err;
     if (nums.empty()) return Value::error(FormulaError::NUM);
-    return Value::number(*std::min_element(nums.begin(), nums.end()));
+    return Value::number(*pick(nums.begin(), nums.end()));
+}
+
+static Value fn_min(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
+    return minmax(f, ctx, ev, [](auto b, auto e) { return std::min_element(b, e); });
 }
 
 static Value fn_max(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    std::vector<double> nums;
-    Value err = collect_numbers(f, ctx, ev, nums);
-    if (err.is_error()) return err;
-    if (nums.empty()) return Value::error(FormulaError::NUM);
-    return Value::number(*std::max_element(nums.begin(), nums.end()));
+    return minmax(f, ctx, ev, [](auto b, auto e) { return std::max_element(b, e); });
 }
 
 // ── Conditionals (IF / IFERROR / IFS / IFNA) ─────────────────────────────────
@@ -145,11 +148,19 @@ static Value fn_ifna(const FuncCallExpr& f, const EvalContext& ctx, const Evalua
 
 // ── Math (one-argument and MOD / ROUND) ──────────────────────────────────────
 
-static Value fn_abs(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
+// Shared body for the plain one-argument math functions: check arity, eval
+// the single numeric arg, then hand it to `transform` (which returns the
+// final Value, so it can itself signal a domain error like SQRT(-1)).
+template <class F>
+static Value unary_math(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev, F transform) {
     double n;
     if (f.args.size() != 1 || !eval_num_arg(f, 0, ctx, ev, n))
         return Value::error(FormulaError::VALUE);
-    return Value::number(std::abs(n));
+    return transform(n);
+}
+
+static Value fn_abs(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
+    return unary_math(f, ctx, ev, [](double n) { return Value::number(std::abs(n)); });
 }
 
 static Value fn_round(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
@@ -166,18 +177,13 @@ static Value fn_round(const FuncCallExpr& f, const EvalContext& ctx, const Evalu
 }
 
 static Value fn_sqrt(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    double n;
-    if (f.args.size() != 1 || !eval_num_arg(f, 0, ctx, ev, n))
-        return Value::error(FormulaError::VALUE);
-    if (n < 0) return Value::error(FormulaError::NUM);
-    return Value::number(std::sqrt(n));
+    return unary_math(f, ctx, ev, [](double n) {
+        return n < 0 ? Value::error(FormulaError::NUM) : Value::number(std::sqrt(n));
+    });
 }
 
 static Value fn_int(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    double n;
-    if (f.args.size() != 1 || !eval_num_arg(f, 0, ctx, ev, n))
-        return Value::error(FormulaError::VALUE);
-    return Value::number(std::floor(n));
+    return unary_math(f, ctx, ev, [](double n) { return Value::number(std::floor(n)); });
 }
 
 static Value fn_mod(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
@@ -315,6 +321,22 @@ static int value_cmp(const Value& a, const Value& b) {
     return c < 0 ? -1 : (c > 0 ? 1 : 0);
 }
 
+// Approximate-match scan shared by VLOOKUP and MATCH: walk a 1-D sequence of
+// length `len` via `at(i)`, assumed sorted ascending (or descending), and
+// return the index of the last element still on the "key side" of the sort
+// order — i.e. the largest value <= key (ascending) or smallest >= key
+// (descending) — stopping at the first element that breaks that order.
+// -1 if no element qualifies.
+template <class At>
+static int approx_match(int len, At at, const Value& key, bool ascending) {
+    int best = -1;
+    for (int i = 0; i < len; ++i) {
+        int c = value_cmp(at(i), key);
+        if (ascending ? c <= 0 : c >= 0) best = i; else break;
+    }
+    return best;
+}
+
 // Apply an Excel-style criterion to a cell. A numeric criterion is plain
 // equality; a string criterion may carry a leading comparison operator
 // (">10", "<=5", "<>x"), defaulting to equality.
@@ -428,12 +450,11 @@ static Value fn_vlookup(const FuncCallExpr& f, const EvalContext& ctx, const Eva
         return Value::error(FormulaError::NA);
     }
     // Approximate match: largest first-column value <= key, assuming ascending order.
-    int best = -1;
-    for (int r = r0; r <= r1; ++r) {
-        if (value_cmp(range_cell(ctx, sheet, r, c0), key) <= 0) best = r; else break;
-    }
+    int best = approx_match(r1 - r0 + 1,
+                             [&](int i) { return range_cell(ctx, sheet, r0 + i, c0); },
+                             key, /*ascending=*/true);
     return best < 0 ? Value::error(FormulaError::NA)
-                    : range_cell(ctx, sheet, best, target_col);
+                    : range_cell(ctx, sheet, r0 + best, target_col);
 }
 
 static Value fn_match(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
@@ -461,11 +482,7 @@ static Value fn_match(const FuncCallExpr& f, const EvalContext& ctx, const Evalu
             if (values_equal(at(i), key)) return Value::number(i + 1);
         return Value::error(FormulaError::NA);
     }
-    int best = -1;
-    for (int i = 0; i < len; ++i) {
-        int c = value_cmp(at(i), key);
-        if (match_type == 1 ? c <= 0 : c >= 0) best = i; else break;
-    }
+    int best = approx_match(len, at, key, /*ascending=*/match_type == 1);
     return best < 0 ? Value::error(FormulaError::NA) : Value::number(best + 1);
 }
 

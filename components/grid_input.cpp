@@ -136,25 +136,51 @@ bool Grid::handle_search(Event e) {
     return true;  // swallow other keys while the search prompt is open
 }
 
+// handle_normal_nav is one long dispatch chain in NORMAL mode; each
+// try_handle_* below owns one topic and is tried in the same order the
+// checks used to appear inline, so precedence (e.g. resize before edit-start,
+// see try_handle_resize) is unchanged.
 bool Grid::handle_normal_nav(Event e) {
-    if (m_cursor_row >= 0 && m_cursor_col >= 0) {   // selection only over data cells
-        if (e == ShiftArrowUp)    { extend_selection(-1,  0); return true; }
-        if (e == ShiftArrowDown)  { extend_selection( 1,  0); return true; }
-        if (e == ShiftArrowLeft)  { extend_selection( 0, -1); return true; }
-        if (e == ShiftArrowRight) { extend_selection( 0,  1); return true; }
-    }
+    if (try_handle_selection_extend(e)) return true;
+    if (try_handle_escape(e))           return true;
+    if (try_handle_movement(e))         return true;
+    if (try_handle_resize(e))           return true;
+    if (try_handle_view_toggle(e))      return true;
+    if (try_handle_edit_start(e))       return true;
+    if (try_handle_structural(e))       return true;
+    if (try_handle_undo_redo(e))        return true;
+    if (try_handle_search_shortcut(e))  return true;
+    if (try_handle_vim_command(e))      return true;
 
+    if (!e.is_mouse()) return true;       // consume all other keyboard events in NORMAL
+    return false;                         // mouse falls through to handle_mouse
+}
+
+bool Grid::try_handle_selection_extend(Event e) {
+    if (m_cursor_row < 0 || m_cursor_col < 0) return false;   // selection only over data cells
+    if (e == ShiftArrowUp)    { extend_selection(-1,  0); return true; }
+    if (e == ShiftArrowDown)  { extend_selection( 1,  0); return true; }
+    if (e == ShiftArrowLeft)  { extend_selection( 0, -1); return true; }
+    if (e == ShiftArrowRight) { extend_selection( 0,  1); return true; }
+    return false;
+}
+
+bool Grid::try_handle_escape(Event e) {
+    if (e == Event::Escape && m_insert_sticky) { m_insert_sticky = false; return true; }
+    if (e == Event::Escape && m_has_selection)  { m_has_selection = false; return true; }
+    if (e == Event::Escape && !m_search_query.empty()) {  // clear match highlight
+        m_search_query.clear(); m_search_hits.clear(); return true;
+    }
+    return false;
+}
+
+bool Grid::try_handle_movement(Event e) {
     auto nav_move = [&](int dr, int dc) {
         m_has_selection = false;
         move(dr, dc);
         if (m_insert_sticky && m_cursor_col >= 0) start_edit(false);  // header or cell
     };
 
-    if (e == Event::Escape && m_insert_sticky) { m_insert_sticky = false; return true; }
-    if (e == Event::Escape && m_has_selection)  { m_has_selection = false; return true; }
-    if (e == Event::Escape && !m_search_query.empty()) {  // clear match highlight
-        m_search_query.clear(); m_search_hits.clear(); return true;
-    }
     if (e == Event::ArrowUp || m_cfg.key_is(e, m_cfg.keys.nav_up)) {
         nav_move(-1, 0); return true;   // row 0 → header (-1); sticky auto-edits the name
     }
@@ -168,6 +194,10 @@ bool Grid::handle_normal_nav(Event e) {
     if (e == Event::Return)     { m_has_selection = false; move(1, 0); return true; }
     if (e == Event::Tab)        { m_has_selection = false; move(0, 1); return true; }
     if (e == Event::TabReverse) { move(0,-1); return true; }
+    return false;
+}
+
+bool Grid::try_handle_resize(Event e) {
     // Manual column resize: works whenever a column is under the cursor (header
     // or data cell). Checked before the insert/edit keys so `<`/`>` never leak
     // into editing or the data-cell command block below.
@@ -179,13 +209,25 @@ bool Grid::handle_normal_nav(Event e) {
         if (m_cfg.key_is(e, m_cfg.keys.row_taller))  { resize_row(m_cursor_row,  1); return true; }
         if (m_cfg.key_is(e, m_cfg.keys.row_shorter)) { resize_row(m_cursor_row, -1); return true; }
     }
+    return false;
+}
+
+bool Grid::try_handle_view_toggle(Event e) {
     if (m_cfg.key_is(e, m_cfg.keys.heatmap)) { toggle_heatmap(); return true; }
     if (m_cfg.key_is(e, m_cfg.keys.chart))   { cycle_chart();    return true; }
+    return false;
+}
+
+bool Grid::try_handle_edit_start(Event e) {
     // i/a/F2 start editing; on a column header the rename_col binding applies
     // (same keys by default, but independently configurable).
     const auto& edit_keys = (m_cursor_row < 0) ? m_cfg.keys.rename_col
                                                : m_cfg.keys.insert_mode;
     if (m_cfg.key_is(e, edit_keys) || e == Event::F2) { start_edit(false); return true; }
+    return false;
+}
+
+bool Grid::try_handle_structural(Event e) {
     if (m_cursor_row < 0) {  // column header: action box inserts / deletes columns
         if (m_cfg.key_is(e, m_cfg.keys.insert_col)) { insert_col(m_cursor_col);     return true; }
         if (m_cfg.key_is(e, m_cfg.keys.delete_col)) { try_delete_col(m_cursor_col); return true; }
@@ -205,39 +247,47 @@ bool Grid::handle_normal_nav(Event e) {
         else                       { clear_cell(m_cursor_row, m_cursor_col); }
         return true;
     }
+    return false;
+}
+
+bool Grid::try_handle_undo_redo(Event e) {
     if (m_cfg.key_is(e, m_cfg.keys.undo)) { undo(); return true; }
     // Ctrl+R always redoes; keys.redo can add a plain-character binding on top
     // (character bindings can't express Ctrl chords, so the default is empty).
     if (e == Event::Special("\x12") || m_cfg.key_is(e, m_cfg.keys.redo)) { redo(); return true; }
+    return false;
+}
 
+bool Grid::try_handle_search_shortcut(Event e) {
     // `/` opens search; n/N step through matches (vim-style).
     if (!m_insert_sticky && e == Event::Character('/')) { start_search();  return true; }
     if (!m_insert_sticky && e == Event::Character('n')) { search_step( 1); return true; }
     if (!m_insert_sticky && e == Event::Character('N')) { search_step(-1); return true; }
+    return false;
+}
 
+bool Grid::try_handle_vim_command(Event e) {
     // Single-key NORMAL-mode commands, only on a data cell (vim-style).
-    if (!m_insert_sticky && m_cursor_row >= 0 && m_cursor_col >= 0 && e.is_character()) {
-        const std::string ch = e.character();
-        // 'g' is the lone multi-key prefix (gg → top); any other key clears it.
-        if (ch == "g") {
-            if (m_pending_g) { m_pending_g = false; m_has_selection = false; m_cursor_row = 0; adjust_viewport(); }
-            else             { m_pending_g = true; }
-            return true;
-        }
+    if (m_insert_sticky || m_cursor_row < 0 || m_cursor_col < 0 || !e.is_character()) {
         m_pending_g = false;
-        if (ch == "G") { m_has_selection = false; m_cursor_row = m_rows - 1; adjust_viewport(); return true; }
-        if (ch == "0") { m_has_selection = false; m_cursor_col = 0;          adjust_viewport(); return true; }
-        if (ch == "$") { m_has_selection = false; m_cursor_col = m_cols - 1; adjust_viewport(); return true; }
-        if (ch == "o") { insert_row(m_cursor_row);     start_edit(false);    return true; }
-        if (ch == "O") { insert_row(m_cursor_row - 1); start_edit(false);    return true; }
-        if (ch == "y") { yank_selection(); return true; }
-        if (ch == "p" && !m_yank_data.empty()) { paste_yanked(); return true; }
-        return true;  // swallow any other char while on a data cell
+        return false;
+    }
+    const std::string ch = e.character();
+    // 'g' is the lone multi-key prefix (gg → top); any other key clears it.
+    if (ch == "g") {
+        if (m_pending_g) { m_pending_g = false; m_has_selection = false; m_cursor_row = 0; adjust_viewport(); }
+        else             { m_pending_g = true; }
+        return true;
     }
     m_pending_g = false;
-
-    if (!e.is_mouse()) return true;       // consume all other keyboard events in NORMAL
-    return false;                         // mouse falls through to handle_mouse
+    if (ch == "G") { m_has_selection = false; m_cursor_row = m_rows - 1; adjust_viewport(); return true; }
+    if (ch == "0") { m_has_selection = false; m_cursor_col = 0;          adjust_viewport(); return true; }
+    if (ch == "$") { m_has_selection = false; m_cursor_col = m_cols - 1; adjust_viewport(); return true; }
+    if (ch == "o") { insert_row(m_cursor_row);     start_edit(false);    return true; }
+    if (ch == "O") { insert_row(m_cursor_row - 1); start_edit(false);    return true; }
+    if (ch == "y") { yank_selection(); return true; }
+    if (ch == "p" && !m_yank_data.empty()) { paste_yanked(); return true; }
+    return true;  // swallow any other char while on a data cell
 }
 
 // ── Mouse ────────────────────────────────────────────────────────────────────

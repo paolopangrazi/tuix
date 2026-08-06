@@ -305,6 +305,19 @@ private:
     bool handle_normal_nav     (ftxui::Event e);
     bool handle_mouse          (ftxui::Event e);
 
+    // handle_normal_nav is split into these, tried in sequence, one topic
+    // each — see grid_input.cpp for the grouping rationale.
+    bool try_handle_selection_extend(ftxui::Event e);
+    bool try_handle_escape          (ftxui::Event e);
+    bool try_handle_movement        (ftxui::Event e);
+    bool try_handle_resize          (ftxui::Event e);
+    bool try_handle_view_toggle     (ftxui::Event e);
+    bool try_handle_edit_start      (ftxui::Event e);
+    bool try_handle_structural      (ftxui::Event e);
+    bool try_handle_undo_redo       (ftxui::Event e);
+    bool try_handle_search_shortcut (ftxui::Event e);
+    bool try_handle_vim_command     (ftxui::Event e);
+
     // Normalized rectangle spanned by the cursor and the selection anchor;
     // collapses to the cursor cell when no selection is active.
     struct CellRect { int r0, c0, r1, c1; };

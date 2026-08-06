@@ -265,13 +265,16 @@ std::vector<int> Grid::ac_matches() const {
 }
 
 Element Grid::render_ac_popup() const {
+    // Fixed width for the formula-signature column so descriptions line up
+    // across entries regardless of how long each signature is.
+    constexpr int k_sig_col_w = 30;
     const auto matches = ac_matches();
     const int sel = std::clamp(m_ac_sel, 0, (int)matches.size() - 1);
     Elements items;
     for (int i = 0; i < (int)matches.size(); ++i) {
         const bool s = (i == sel);
         const auto& f = k_formulas[matches[i]];
-        auto sig_e  = text(f.sig)  | size(WIDTH, EQUAL, 30);
+        auto sig_e  = text(f.sig)  | size(WIDTH, EQUAL, k_sig_col_w);
         auto desc_e = text(f.desc);
         auto e = hbox({ text(" "), std::move(sig_e), text("  "), std::move(desc_e), text(" "), filler() });
         if (s)
