@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "util/strings.hpp"
+
 void Workbook::set_active(int i) {
     if (i < 0 || i >= size()) return;
     m_active = i;
@@ -24,15 +26,10 @@ void Workbook::rename(int i, std::string name) {
 }
 
 std::string Workbook::unique_name(std::string hint) const {
-    auto taken = [&](const std::string& n) {
+    return tuix::make_unique_name(hint, 2, [&](const std::string& n) {
         return std::any_of(m_sheets.begin(), m_sheets.end(),
                            [&](const Sheet& s) { return s.name == n; });
-    };
-    if (!taken(hint)) return hint;
-    for (int n = 2; ; ++n) {
-        std::string candidate = hint + std::to_string(n);
-        if (!taken(candidate)) return candidate;
-    }
+    });
 }
 
 void Workbook::clear() {

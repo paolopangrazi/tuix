@@ -12,6 +12,8 @@
 
 using namespace ftxui;
 
+int Grid::gutter_width() noexcept { return ActionBox::k_width + k_rownum_w; }
+
 // ── Cursor movement ──────────────────────────────────────────────────────────
 
 void Grid::move(int dr, int dc) {
@@ -80,7 +82,7 @@ int Grid::vis_rows() const {
 }
 
 int Grid::vis_cols() const {
-    const int gutter = ActionBox::k_width + k_rownum_w;
+    const int gutter = gutter_width();
     int w = m_box.x_max - m_box.x_min + 1;
     if (w <= 2 + gutter) w = Terminal::Size().dimx;
     const int available = w - 2 - gutter;
@@ -158,7 +160,7 @@ void Grid::resize_col(int c, int delta) {
 
 int Grid::border_hit(int rx) const {
     if (rx < 0) return -1;
-    int b = ActionBox::k_width + k_rownum_w;   // gutter, then visible columns
+    int b = gutter_width();   // gutter, then visible columns
     for (int c = m_offset_col; c < m_cols; ++c) {
         b += 1 + m_col_widths[c];              // rx of the separator just past column c
         if (rx >= b - 1 && rx <= b + 1) return c;

@@ -32,17 +32,19 @@ void PathInputDialog::clear_buffer()             { m_buf.clear(); }
 
 Component PathInputDialog::component() {
     auto renderer = Renderer(m_input, [this] {
+        Elements hint_row = { text("  "),
+                               text("Enter") | bold | color(m_cfg.colors.header),
+                               text("  " + m_action_label + "    ") };
+        auto esc_hint = escape_cancel_hint(m_cfg);
+        hint_row.insert(hint_row.end(), esc_hint.begin(), esc_hint.end());
+        hint_row.push_back(filler());
+
         auto inner = window(
             hbox({ text(" "), text(m_title) | bold, text(" ") }),
             vbox({
                 hbox({ text("  "), m_input->Render() | flex }),
                 separatorLight(),
-                hbox({ text("  "),
-                       text("Enter") | bold | color(m_cfg.colors.header),
-                       text("  " + m_action_label + "    "),
-                       text("Esc")   | bold | color(m_cfg.colors.header),
-                       text("  cancel") | color(m_cfg.colors.dimmed),
-                       filler() }),
+                hbox(std::move(hint_row)),
             })
         ) | size(WIDTH, LESS_THAN, 60) | center;
         auto bottom = hbox({
@@ -52,8 +54,5 @@ Component PathInputDialog::component() {
         });
         return render_dialog_shell(inner, bottom);
     });
-    return CatchEvent(renderer, [this](Event e) {
-        if (e == Event::Escape) { m_on_close(); return true; }
-        return false;
-    });
+    return add_escape_to_close(renderer, m_on_close);
 }

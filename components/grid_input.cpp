@@ -253,7 +253,7 @@ void Grid::scroll_to_mouse_y(int my) {
 }
 
 int Grid::col_at_x(int rx) const {
-    int x = rx - (ActionBox::k_width + k_rownum_w);   // skip the row-number gutter
+    int x = rx - gutter_width();   // skip the row-number gutter
     for (int c = m_offset_col; c < m_cols; ++c) {
         x -= 1 + m_col_widths[c];                     // separator + cell
         if (x < 0) return c;
@@ -279,7 +279,7 @@ bool Grid::select_at_mouse(int mx, int my) {
     const int rx = mx - m_box.x_min - 1;
     const int ry = my - m_box.y_min - 1;
 
-    if (ry == 0 && rx >= ActionBox::k_width + k_rownum_w) {   // header band → header row (-1)
+    if (ry == 0 && rx >= gutter_width()) {   // header band → header row (-1)
         const int c = col_at_x(rx);
         if (c < 0) return false;
         commit_edit();
@@ -310,7 +310,7 @@ void Grid::drag_select_to(int mx, int my) {
     // Column: col_at_x folds each separator into the adjacent cell, so it only
     // returns -1 in the gutter or past the last column — clamp those.
     int c = col_at_x(rx);
-    if (c < 0) c = (rx < ActionBox::k_width + k_rownum_w) ? m_offset_col : last_col;
+    if (c < 0) c = (rx < gutter_width()) ? m_offset_col : last_col;
 
     // Row: snap to the nearest row, treating the separator line *below* a row as
     // belonging to that row. (row_at_y returns -1 on separators, which made the
@@ -383,12 +383,11 @@ bool Grid::handle_mouse(Event e) {
     // the grabbable row boundary while hovering the left row-number gutter.
     const int rx = mx - m_box.x_min - 1;
     const int ry = my - m_box.y_min - 1;
-    const int k_gutter = ActionBox::k_width + k_rownum_w;
     m_col_resize.hover = (ry == 0) ? border_hit(rx) : -1;
-    m_row_resize.hover = (rx >= 0 && rx < k_gutter) ? row_border_hit(ry) : -1;
+    m_row_resize.hover = (rx >= 0 && rx < gutter_width()) ? row_border_hit(ry) : -1;
     // Header sort affordance: a column under the mouse (but not over its resize
     // border, which owns its own ⇔ handle) shows a clickable ▲ hint.
-    m_header_hover = (ry == 0 && rx >= k_gutter && m_col_resize.hover < 0) ? col_at_x(rx) : -1;
+    m_header_hover = (ry == 0 && rx >= gutter_width() && m_col_resize.hover < 0) ? col_at_x(rx) : -1;
 
     if (e.mouse().button == Mouse::WheelUp)   { move(-3, 0); return true; }
     if (e.mouse().button == Mouse::WheelDown) { move( 3, 0); return true; }

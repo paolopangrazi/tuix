@@ -7,6 +7,7 @@
 
 #include "util/col_label.hpp"
 #include "util/clipboard.hpp"
+#include "util/strings.hpp"
 
 // ── Row / column structure ───────────────────────────────────────────────────
 
@@ -122,16 +123,11 @@ void Grid::apply_row_permutation(const std::vector<int>& order) {
 }
 
 std::string Grid::unique_col_name(const std::string& name, int skip_col) const {
-    auto taken = [&](const std::string& n) {
+    return tuix::make_unique_name(name, 1, [&](const std::string& n) {
         for (int c = 0; c < m_cols; ++c)
             if (c != skip_col && m_col_names[c] == n) return true;
         return false;
-    };
-    if (!taken(name)) return name;
-    for (int i = 1; ; ++i) {
-        std::string candidate = name + std::to_string(i);
-        if (!taken(candidate)) return candidate;
-    }
+    });
 }
 
 // ── Cell editing ─────────────────────────────────────────────────────────────

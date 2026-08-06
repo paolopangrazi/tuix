@@ -110,19 +110,22 @@ void Grid::sort_spec(const std::string& spec) {
 
 // ── Heatmap ──────────────────────────────────────────────────────────────────
 
+std::optional<Grid::CellRect> Grid::active_range() const noexcept {
+    if (m_has_selection && m_cursor_row >= 0 && m_cursor_col >= 0) return selection_bounds();
+    if (m_cursor_col >= 0)                    // no selection → the whole current column
+        return CellRect{0, m_cursor_col, m_rows - 1, m_cursor_col};
+    return std::nullopt;                      // gutter — nothing to act on
+}
+
 void Grid::toggle_heatmap() {
     if (m_heat.active) { m_heat.active = false; set_status("Heatmap off"); return; }
 
-    int r0, r1, c0, c1;
-    if (m_has_selection && m_cursor_row >= 0 && m_cursor_col >= 0) {
-        const CellRect s = selection_bounds();
-        r0 = s.r0; r1 = s.r1; c0 = s.c0; c1 = s.c1;
-    } else if (m_cursor_col >= 0) {          // no selection → the whole current column
-        r0 = 0; r1 = m_rows - 1; c0 = c1 = m_cursor_col;
-    } else {
+    const auto range = active_range();
+    if (!range) {
         set_status("Heatmap: put the cursor on a column first");
         return;
     }
+    const auto [r0, c0, r1, c1] = *range;
 
     bool any = false;
     double mn = 0, mx = 0;
@@ -164,15 +167,9 @@ Grid::ChartData Grid::chart_data() const {
     cd.active = true;
     cd.type   = m_chart_type;
 
-    int r0, r1, c0, c1;
-    if (m_has_selection && m_cursor_row >= 0 && m_cursor_col >= 0) {
-        const CellRect s = selection_bounds();
-        r0 = s.r0; r1 = s.r1; c0 = s.c0; c1 = s.c1;
-    } else if (m_cursor_col >= 0) {          // no selection → the whole current column
-        r0 = 0; r1 = m_rows - 1; c0 = c1 = m_cursor_col;
-    } else {
-        return cd;                           // gutter — nothing to chart
-    }
+    const auto range = active_range();
+    if (!range) return cd;                   // gutter — nothing to chart
+    const auto [r0, c0, r1, c1] = *range;
 
     cd.label = (c0 == c1 && c0 < static_cast<int>(m_col_names.size()))
                    ? m_col_names[c0] : "selection";

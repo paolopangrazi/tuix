@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "cell.hpp"
-#include "grid.hpp"
+#include "history.hpp"
 
 // Self-contained snapshot of one sheet's editable state.
 // A Workbook owns many of these; Grid is a live "view" into one.
@@ -19,6 +19,6 @@ class Sheet {
     int                                    cursor_col = 0;
     int                                    offset_row = 0;
     int                                    offset_col = 0;
-    std::vector<Grid::HistoryEntry>        undo_stack;
-    std::vector<Grid::HistoryEntry>        redo_stack;
+    std::vector<HistoryEntry>              undo_stack;
+    std::vector<HistoryEntry>              redo_stack;
 };

@@ -106,8 +106,8 @@ Value Evaluator::eval(const Expr& expr, const EvalContext& ctx) const {
                 cmp = (lv.as_number() < rv.as_number()) ? -1 : (lv.as_number() > rv.as_number() ? 1 : 0);
             else if (lv.is_string() && rv.is_string())
                 // Case-insensitive, matching Excel and this app's own
-                // COUNTIF/MATCH/VLOOKUP equality (values_equal).
-                cmp = tuix::to_lower(lv.as_string()).compare(tuix::to_lower(rv.as_string()));
+                // COUNTIF/MATCH/VLOOKUP equality (values_equal) via compare_ci.
+                cmp = tuix::compare_ci(lv.as_string(), rv.as_string());
             else if (lv.is_boolean() && rv.is_boolean())
                 cmp = static_cast<int>(lv.as_boolean()) - static_cast<int>(rv.as_boolean());
             else

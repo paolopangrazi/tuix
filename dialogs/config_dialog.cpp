@@ -187,9 +187,8 @@ Component ConfigDialog::component() {
             .Set(FlexboxConfig::AlignContent::FlexStart));
         return render_dialog_shell(inner, bottom);
     });
-    return CatchEvent(renderer, [this](Event e) {
-        if (e == Event::Escape)             { m_on_close(); return true; }
-        if (e == Event::Special("\x17"))    { save_to_file(); return true; } // Ctrl+W
+    return add_escape_to_close(renderer, m_on_close, [this](Event e) {
+        if (e == Event::Special("\x17")) { save_to_file(); return true; } // Ctrl+W
         return false;
     });
 }

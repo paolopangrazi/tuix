@@ -145,8 +145,5 @@ Component HelpDialog::component() {
             .Set(FlexboxConfig::AlignContent::FlexStart));
         return render_dialog_shell(inner, bottom);
     });
-    return CatchEvent(renderer, [this](Event e) {
-        if (e == Event::Escape) { m_on_close(); return true; }
-        return false;
-    });
+    return add_escape_to_close(renderer, m_on_close);
 }

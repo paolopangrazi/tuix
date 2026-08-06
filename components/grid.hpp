@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <optional>
 #include <string>
 #include <thread>
 #include <utility>
@@ -12,6 +13,7 @@
 #include "actionbox.hpp"
 #include "calc_cache.hpp"
 #include "cell.hpp"
+#include "history.hpp"
 #include "loader/csv_loader.hpp"
 #include "formulas/eval_context.hpp"
 #include "formulas/value.hpp"
@@ -21,24 +23,6 @@ class Sheet;
 
 class Grid : public EvalContext {
 public:
-    // A history step is either a single-cell edit or a whole-row reorder (sort).
-    // For Reorder, `order` is the permutation that was applied: new[i] = old[order[i]];
-    // undo applies its inverse, and row/col/before/after are unused.
-    enum class HistoryKind { Cell, Reorder };
-    struct HistoryEntry {
-        HistoryEntry() = default;
-        HistoryEntry(int r, int c, std::string b, std::string a)   // a cell edit
-            : row(r), col(c), before(std::move(b)), after(std::move(a)) {}
-
-        int row = 0, col = 0;
-        std::string before, after;
-        HistoryKind kind = HistoryKind::Cell;
-        std::vector<int> order;
-    };
-
-    // One sort criterion: column index + ascending/descending.
-    struct SortKey { int col; bool descending; };
-
     // ── Lifecycle, data & persistence (grid.cpp) ─────────────────────────────
     Grid(int rows, int cols, const Config& cfg = {});
     ~Grid();
@@ -156,6 +140,9 @@ private:
     // ── Internal state ───────────────────────────────────────────────────────
     int m_cell_w;   // default column width (cfg.grid.cell_width, fixed at construction)
     static constexpr int k_rownum_w = 5;
+    // Width of the fixed left gutter (per-row action box + row-number column),
+    // shared by hit-testing (grid_input.cpp) and drawing (grid_render.cpp).
+    static int gutter_width() noexcept;
 
     int m_rows, m_cols;
     Config m_cfg;
@@ -323,6 +310,10 @@ private:
     struct CellRect { int r0, c0, r1, c1; };
     CellRect       selection_bounds() const noexcept;
     bool           in_selection(int r, int c) const noexcept;
+
+    // The range a data-summarizing command (heatmap, chart) should act on: the
+    // active selection, else the cursor's whole column, else nothing (gutter).
+    std::optional<CellRect> active_range() const noexcept;
     std::string    cursor_label()  const;
     std::string    cell_display(int r, int c) const;
     ftxui::Element formula_bar()   const;

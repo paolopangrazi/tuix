@@ -123,7 +123,7 @@ Element Grid::render() const {
     };
 
     Elements header;
-    header.push_back(text(std::string(ActionBox::k_width + k_rownum_w, ' ')) | bold | color(m_cfg.colors.header));
+    header.push_back(text(std::string(gutter_width(), ' ')) | bold | color(m_cfg.colors.header));
     for (int c = m_offset_col; c < c_end; ++c) {
         header.push_back(col_sep(c, /*header=*/true));
         const bool hsel    = (m_cursor_row < 0 && c == m_cursor_col);
@@ -166,7 +166,7 @@ Element Grid::render() const {
         // First cell: index + action box, stretched to the row's height.
         if (r == m_pending_delete_row)
             row.push_back(vbox({ text("del?") | bold | color(Color::Red), filler() })
-                          | size(WIDTH, EQUAL, k_rownum_w + ActionBox::k_width) | size(HEIGHT, EQUAL, rh));
+                          | size(WIDTH, EQUAL, gutter_width()) | size(HEIGHT, EQUAL, rh));
         else {
             const bool idx_active = (m_cursor_col < 0 && r == m_cursor_row);
             const bool xrow = m_cfg.theme.crosshair && m_cursor_col >= 0 && r == m_cursor_row;

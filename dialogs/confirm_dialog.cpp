@@ -30,14 +30,8 @@ Component ConfirmDialog::component() {
                 hbox({ filler(), m_yes->Render(), text("    "), m_no->Render(), filler() }),
             })
         ) | size(WIDTH, LESS_THAN, m_width) | center;
-        auto bottom = hbox({
-            text("  "), text("Esc") | bold | color(m_cfg.colors.header),
-            text("  cancel") | color(m_cfg.colors.dimmed), filler(),
-        });
+        auto bottom = escape_cancel_bar(m_cfg);
         return render_dialog_shell(inner, bottom);
     });
-    return CatchEvent(renderer, [this](Event e) {
-        if (e == Event::Escape) { m_on_close(); return true; }
-        return false;
-    });
+    return add_escape_to_close(renderer, m_on_close);
 }
