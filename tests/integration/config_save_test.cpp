@@ -1,40 +1,21 @@
 #include <doctest/doctest.h>
 
-#include <filesystem>
-#include <fstream>
 #include <string>
+#include <vector>
 
 #include <toml++/toml.hpp>
 
 #include "config/config.hpp"
 #include "config/config_schema.hpp"
 #include "config_dialog.hpp"
-#include "support/portable_env.hpp"
-
-namespace fs = std::filesystem;
-
-namespace {
-
-// Point XDG_CONFIG_HOME at a private temp root holding `body` as config.toml;
-// returns the config file's path.
-fs::path write_config(const std::string& body) {
-    static const fs::path root =
-        fs::temp_directory_path() / ("tuix_save_test_" + tuix::test::unique_tag());
-    const fs::path dir = root / "tuix";
-    fs::create_directories(dir);
-    const fs::path file = dir / "config.toml";
-    { std::ofstream(file) << body; }
-    tuix::test::set_env("XDG_CONFIG_HOME", root.string());
-    return file;
-}
-
-}  // namespace
+#include "support/config_test_env.hpp"
 
 // Regression: saving from the F12 editor used to rebuild config.toml from a
 // hard-coded subset, silently dropping [theme] and every slot the dialog
 // didn't know about. Save must merge into the existing file instead.
 TEST_CASE("config editor save preserves [theme] and unrepresentable colors") {
-    const fs::path file = write_config(R"CFG(
+    tuix::test::ConfigTestEnv env("save");
+    Config cfg = env.load(R"CFG(
 [theme]
 name  = "gruvbox"
 zebra = false
@@ -45,14 +26,12 @@ search_bg = "#123456"
 [keys]
 chart = ["X"]
 )CFG");
-
-    Config cfg = Config::load();
     REQUIRE(cfg.theme.name == "gruvbox");
 
     ConfigDialog dlg(cfg, [] {});
     dlg.save_to_file();
 
-    toml::table tbl = toml::parse_file(file.string());
+    toml::table tbl = toml::parse_file(env.file().string());
 
     // [theme] is not managed by the editor — it must survive untouched.
     CHECK(tbl["theme"]["name"].value_or(std::string{}) == "gruvbox");
@@ -81,9 +60,9 @@ TEST_CASE("every schema key slot is loaded from config.toml") {
     std::string body = "[keys]\n";
     for (int i = 0; i < k_key_slot_count; ++i)
         body += std::string(k_key_slots[i].key) + " = [\"Z\"]\n";
-    write_config(body);
 
-    Config cfg = Config::load();
+    tuix::test::ConfigTestEnv env("save");
+    Config cfg = env.load(body);
     for (int i = 0; i < k_key_slot_count; ++i)
         CHECK(cfg.keys.*k_key_slots[i].member == std::vector<char>{'Z'});
 }

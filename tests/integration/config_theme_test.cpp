@@ -1,36 +1,17 @@
 #include <doctest/doctest.h>
 
-#include <filesystem>
-#include <fstream>
 #include <string>
 
 #include <ftxui/screen/color.hpp>
 
 #include "config/config.hpp"
-#include "support/portable_env.hpp"
+#include "support/config_test_env.hpp"
 
-namespace fs = std::filesystem;
 using ftxui::Color;
 
-namespace {
-
-// Write `body` to <tmp>/tuix/config.toml, point XDG_CONFIG_HOME at <tmp>, and
-// return a freshly loaded Config. Each call overwrites the file so a single test
-// can exercise several configs.
-Config load_with(const std::string& body) {
-    static const fs::path root =
-        fs::temp_directory_path() / ("tuix_cfg_test_" + tuix::test::unique_tag());
-    const fs::path dir = root / "tuix";
-    fs::create_directories(dir);
-    { std::ofstream(dir / "config.toml") << body; }
-    tuix::test::set_env("XDG_CONFIG_HOME", root.string());
-    return Config::load();
-}
-
-}  // namespace
-
 TEST_CASE("color parser accepts hex, rgb(), names and palette indices") {
-    Config c = load_with(R"CFG(
+    tuix::test::ConfigTestEnv env("theme");
+    Config c = env.load(R"CFG(
 [colors]
 cursor_bg    = "#ff8800"
 selection_bg = "rgb(10, 20, 30)"
@@ -46,14 +27,16 @@ row_number   = 4
 }
 
 TEST_CASE("a named theme becomes the base palette") {
-    Config c = load_with("[theme]\nname = \"tokyo-night\"\n");
+    tuix::test::ConfigTestEnv env("theme");
+    Config c = env.load("[theme]\nname = \"tokyo-night\"\n");
     CHECK(c.theme.name    == "tokyo-night");
     CHECK(c.colors.header == Color::RGB(0x7d, 0xcf, 0xff));
     CHECK(c.colors.grid_bg == Color::RGB(0x1a, 0x1b, 0x26));
 }
 
 TEST_CASE("[colors] overrides win over the [theme] preset") {
-    Config c = load_with(R"CFG(
+    tuix::test::ConfigTestEnv env("theme");
+    Config c = env.load(R"CFG(
 [theme]
 name = "tokyo-night"
 [colors]
@@ -64,13 +47,15 @@ header = "#ff0000"
 }
 
 TEST_CASE("default theme keeps terminal-native ANSI colors") {
-    Config c = load_with("[theme]\nname = \"default\"\n");
+    tuix::test::ConfigTestEnv env("theme");
+    Config c = env.load("[theme]\nname = \"default\"\n");
     CHECK(c.colors.header  == Color::Green);    // palette name → terminal palette
     CHECK(c.colors.grid_bg == Color::Default);  // transparent canvas
 }
 
 TEST_CASE("theme toggles and bad color input fall back") {
-    Config c = load_with(R"CFG(
+    tuix::test::ConfigTestEnv env("theme");
+    Config c = env.load(R"CFG(
 [theme]
 name = "nord"
 animations = true

@@ -8,17 +8,12 @@
 #include "components/chart_panel.hpp"
 #include "components/grid.hpp"
 #include "config/config.hpp"
+#include "support/grid_test_helpers.hpp"
 
 // Drives a real Grid through the chart cycle and renders the panel, exercising
 // chart_data() gathering and the Canvas drawing end to end.
 
 namespace {
-
-void fill(Grid& g, const std::vector<std::vector<std::string>>& rows) {
-    for (int r = 0; r < (int)rows.size(); ++r)
-        for (int c = 0; c < (int)rows[r].size(); ++c)
-            g.at(r, c).set_value(rows[r][c]);
-}
 
 std::string render(const Config& cfg, const Grid::ChartData& d) {
     using namespace ftxui;
@@ -33,7 +28,7 @@ std::string render(const Config& cfg, const Grid::ChartData& d) {
 TEST_CASE("cycle_chart walks Bar → Line → Histogram → off") {
     Config cfg;
     Grid g(4, 1, cfg);
-    fill(g, {{"3"}, {"1"}, {"4"}, {"1"}});
+    fill_grid(g, {{"3"}, {"1"}, {"4"}, {"1"}});
 
     CHECK_FALSE(g.chart_data().active);
 
@@ -54,7 +49,7 @@ TEST_CASE("cycle_chart walks Bar → Line → Histogram → off") {
 TEST_CASE("chart_data gathers the current column and counts skipped text") {
     Config cfg;
     Grid g(4, 1, cfg);
-    fill(g, {{"10"}, {"oops"}, {"30"}, {"40"}});
+    fill_grid(g, {{"10"}, {"oops"}, {"30"}, {"40"}});
 
     g.cycle_chart();
     auto d = g.chart_data();
@@ -65,7 +60,7 @@ TEST_CASE("chart_data gathers the current column and counts skipped text") {
 TEST_CASE("render_chart_panel draws braille for a non-empty series") {
     Config cfg;
     Grid g(4, 1, cfg);
-    fill(g, {{"3"}, {"1"}, {"4"}, {"1"}});
+    fill_grid(g, {{"3"}, {"1"}, {"4"}, {"1"}});
     g.cycle_chart();   // Bar
 
     const std::string out = render(cfg, g.chart_data());
@@ -79,7 +74,7 @@ TEST_CASE("render_chart_panel draws braille for a non-empty series") {
 TEST_CASE("replace_all invalidates the chart/stats caches") {
     Config cfg;
     Grid g(3, 1, cfg);
-    fill(g, {{"1"}, {"2"}, {"3"}});
+    fill_grid(g, {{"1"}, {"2"}, {"3"}});
     g.cycle_chart();
     CHECK(g.chart_data().values == std::vector<double>{1, 2, 3});
 
@@ -92,7 +87,7 @@ TEST_CASE("replace_all invalidates the chart/stats caches") {
 TEST_CASE("render_chart_panel degrades gracefully with no numeric data") {
     Config cfg;
     Grid g(2, 1, cfg);
-    fill(g, {{"foo"}, {"bar"}});
+    fill_grid(g, {{"foo"}, {"bar"}});
     g.cycle_chart();
 
     auto d = g.chart_data();

@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 
-#include "formulas/evaluator.hpp"
+#include "support/eval_helpers.hpp"
 #include "support/fake_eval_context.hpp"
 
 namespace {
@@ -49,10 +49,6 @@ public:
 private:
     std::map<std::string, std::unique_ptr<FakeEvalContext>> m_sheets;
 };
-
-std::string disp(const std::string& formula, const EvalContext& ctx) {
-    return Evaluator::evaluate_formula(formula, ctx).to_display();
-}
 
 }  // namespace
 
@@ -104,4 +100,21 @@ TEST_CASE("a sheet qualifier without a cell reference is an error") {
     // Lexer emits an ERROR token → parse/eval falls back to #VALUE!.
     CHECK(disp("=Sheet2!", wb) == "#VALUE!");
     CHECK(disp("=Sheet2!+1", wb) == "#VALUE!");
+}
+
+TEST_CASE("lookup functions honor a sheet qualifier on their range") {
+    Workbook wb;
+    wb.current.set(0, 0, Value::string("local"));            // current sheet A1
+    wb.sheet("Sheet2").set(0, 0, Value::string("key"))       // Sheet2 A1:B1
+                       .set(0, 1, Value::number(42));
+    // Previously these read the *current* sheet regardless of the qualifier.
+    CHECK(eval("=VLOOKUP(\"key\", Sheet2!A1:B1, 2, FALSE)", wb).as_number() == 42);
+    CHECK(eval("=COUNTIF(Sheet2!A1:A1, \"key\")", wb).as_number() == 1);
+    CHECK(eval("=INDEX(Sheet2!A1:B1, 1, 2)", wb).as_number() == 42);
+}
+
+TEST_CASE("a qualifier on the range end covers the whole range") {
+    Workbook wb;
+    wb.sheet("Sheet2").set(0, 0, Value::number(10)).set(1, 0, Value::number(20));
+    CHECK(eval("=SUM(A1:Sheet2!A2)", wb).as_number() == 30);   // was: current sheet
 }

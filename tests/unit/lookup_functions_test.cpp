@@ -1,28 +1,11 @@
 #include <doctest/doctest.h>
 
 #include <string>
-#include <vector>
 
-#include "formulas/evaluator.hpp"
+#include "support/eval_helpers.hpp"
 #include "support/fake_eval_context.hpp"
 
 namespace {
-
-std::string disp(const std::string& formula, const EvalContext& ctx) {
-    return Evaluator::evaluate_formula(formula, ctx).to_display();
-}
-
-struct Case {
-    std::string formula;
-    std::string expected;
-};
-
-void run(const std::vector<Case>& cases, const EvalContext& ctx) {
-    for (const auto& c : cases) {
-        CAPTURE(c.formula);
-        CHECK(disp(c.formula, ctx) == c.expected);
-    }
-}
 
 // A small lookup table:
 //        A         B        C
@@ -41,7 +24,7 @@ FakeEvalContext fruit_table() {
 
 TEST_CASE("VLOOKUP exact match") {
     auto ctx = fruit_table();
-    run({
+    run_eval_cases({
         {"=VLOOKUP(\"banana\", A1:C3, 2, FALSE)", "20"},
         {"=VLOOKUP(\"banana\", A1:C3, 3, FALSE)", "2.5"},
         {"=VLOOKUP(\"apple\",  A1:C3, 2, FALSE)", "10"},
@@ -58,7 +41,7 @@ TEST_CASE("VLOOKUP approximate match assumes ascending first column") {
     ctx.set(2, 0, Value::number(70)).set(2, 1, Value::string("C"));
     ctx.set(3, 0, Value::number(80)).set(3, 1, Value::string("B"));
     ctx.set(4, 0, Value::number(90)).set(4, 1, Value::string("A"));
-    run({
+    run_eval_cases({
         {"=VLOOKUP(85, A1:B5, 2)",      "B"},      // largest key <= 85 is 80
         {"=VLOOKUP(90, A1:B5, 2)",      "A"},      // exact boundary
         {"=VLOOKUP(72, A1:B5, 2, TRUE)", "C"},
@@ -68,7 +51,7 @@ TEST_CASE("VLOOKUP approximate match assumes ascending first column") {
 
 TEST_CASE("MATCH over a 1-D range") {
     auto ctx = fruit_table();
-    run({
+    run_eval_cases({
         {"=MATCH(\"cherry\", A1:A3, 0)", "3"},    // exact, column vector
         {"=MATCH(\"apple\",  A1:A3, 0)", "1"},
         {"=MATCH(\"durian\", A1:A3, 0)", "#N/A"},
@@ -85,7 +68,7 @@ TEST_CASE("MATCH requires a one-dimensional range") {
 
 TEST_CASE("INDEX into a range") {
     auto ctx = fruit_table();
-    run({
+    run_eval_cases({
         {"=INDEX(A1:C3, 2, 1)", "banana"},
         {"=INDEX(A1:C3, 3, 2)", "30"},
         {"=INDEX(A1:A3, 2)",    "banana"},   // single column: index is the row
@@ -104,7 +87,7 @@ TEST_CASE("COUNTIF with comparison and equality criteria") {
     FakeEvalContext ctx;
     ctx.set(0, 0, Value::number(5)).set(1, 0, Value::number(15))
        .set(2, 0, Value::number(25)).set(3, 0, Value::number(15));
-    run({
+    run_eval_cases({
         {"=COUNTIF(A1:A4, \">10\")", "3"},
         {"=COUNTIF(A1:A4, \"<=15\")", "3"},
         {"=COUNTIF(A1:A4, 15)",       "2"},
@@ -120,13 +103,21 @@ TEST_CASE("COUNTIF matches text case-insensitively") {
     CHECK(disp("=COUNTIF(A1:A3, \"yes\")", ctx) == "2");
 }
 
+TEST_CASE("COUNTIF criteria use the strict number parse") {
+    FakeEvalContext ctx(5, 2);
+    ctx.set(0, 0, Value::string("0x10"));
+    // "0x10" is text, not 16: it equals itself but is not > 1.
+    CHECK(disp("=COUNTIF(A1:A5, \"0x10\")", ctx) == "1");
+    CHECK(disp("=COUNTIF(A1:A5, \">1\")", ctx) == "0");
+}
+
 TEST_CASE("SUMIF with and without a separate sum range") {
     FakeEvalContext ctx;
     // A: category, B: amount
     ctx.set(0, 0, Value::string("food")).set(0, 1, Value::number(10));
     ctx.set(1, 0, Value::string("rent")).set(1, 1, Value::number(500));
     ctx.set(2, 0, Value::string("food")).set(2, 1, Value::number(20));
-    run({
+    run_eval_cases({
         {"=SUMIF(A1:A3, \"food\", B1:B3)", "30"},
         {"=SUMIF(B1:B3, \">100\")",        "500"},  // sum the criteria range itself
         {"=SUMIF(A1:A3, \"travel\", B1:B3)", "0"},
@@ -138,7 +129,7 @@ TEST_CASE("AVERAGEIF averages matching cells, errors on no match") {
     ctx.set(0, 0, Value::string("a")).set(0, 1, Value::number(10));
     ctx.set(1, 0, Value::string("a")).set(1, 1, Value::number(30));
     ctx.set(2, 0, Value::string("b")).set(2, 1, Value::number(99));
-    run({
+    run_eval_cases({
         {"=AVERAGEIF(A1:A3, \"a\", B1:B3)", "20"},
         {"=AVERAGEIF(A1:A3, \"z\", B1:B3)", "#DIV/0!"},
     }, ctx);
@@ -147,7 +138,7 @@ TEST_CASE("AVERAGEIF averages matching cells, errors on no match") {
 TEST_CASE("IFS returns the first true branch") {
     FakeEvalContext ctx;
     ctx.set(0, 0, Value::number(85));   // A1
-    run({
+    run_eval_cases({
         {"=IFS(A1>=90, \"A\", A1>=80, \"B\", A1>=70, \"C\")", "B"},
         {"=IFS(A1>=90, \"A\", A1>=70, \"C\")",                "C"},
         {"=IFS(A1>=90, \"A\")",                               "#N/A"},  // no branch matches
@@ -156,7 +147,7 @@ TEST_CASE("IFS returns the first true branch") {
 
 TEST_CASE("IFNA only traps #N/A") {
     auto ctx = fruit_table();
-    run({
+    run_eval_cases({
         {"=IFNA(VLOOKUP(\"durian\", A1:C3, 2, FALSE), \"missing\")", "missing"},
         {"=IFNA(VLOOKUP(\"banana\", A1:C3, 2, FALSE), \"missing\")", "20"},
         {"=IFNA(1/0, \"x\")", "#DIV/0!"},   // a non-#N/A error passes through

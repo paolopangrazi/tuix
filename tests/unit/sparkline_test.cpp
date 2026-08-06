@@ -1,17 +1,7 @@
 #include <doctest/doctest.h>
 
-#include <string>
-
-#include "formulas/evaluator.hpp"
+#include "support/eval_helpers.hpp"
 #include "support/fake_eval_context.hpp"
-
-namespace {
-
-std::string disp(const std::string& formula, const EvalContext& ctx) {
-    return Evaluator::evaluate_formula(formula, ctx).to_display();
-}
-
-}  // namespace
 
 TEST_CASE("SPARKLINE maps a range to one block glyph per value") {
     FakeEvalContext ctx;
