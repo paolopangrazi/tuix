@@ -298,7 +298,7 @@ void Grid::scroll_to_mouse_y(int my) {
 int Grid::col_at_x(int rx) const {
     int x = rx - gutter_width();   // skip the row-number gutter
     for (int c = m_offset_col; c < m_cols; ++c) {
-        x -= 1 + m_col_widths[c];                     // separator + cell
+        x -= col_step(c);
         if (x < 0) return c;
     }
     return -1;
@@ -309,7 +309,7 @@ int Grid::row_at_y(int ry) const {
     int line = 2;
     for (int r = m_offset_row; r < m_rows; ++r) {
         if (ry >= line && ry < line + m_row_heights[r]) return r;
-        line += m_row_heights[r] + 1;                 // content lines + separator
+        line += row_step(r);
         if (line > ry) break;
     }
     return -1;

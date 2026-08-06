@@ -6,6 +6,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
+#include <unordered_map>
 #include <vector>
 
 #include "evaluator.hpp"
@@ -60,9 +62,7 @@ static Value fn_sum(const FuncCallExpr& f, const EvalContext& ctx, const Evaluat
     std::vector<double> nums;
     Value err = collect_numbers(f, ctx, ev, nums);
     if (err.is_error()) return err;
-    double total = 0.0;
-    for (double n : nums) total += n;
-    return Value::number(total);
+    return Value::number(std::accumulate(nums.begin(), nums.end(), 0.0));
 }
 
 static Value fn_average(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
@@ -70,26 +70,28 @@ static Value fn_average(const FuncCallExpr& f, const EvalContext& ctx, const Eva
     Value err = collect_numbers(f, ctx, ev, nums);
     if (err.is_error()) return err;
     if (nums.empty()) return Value::error(FormulaError::DIV0);
-    double total = 0.0;
-    for (double n : nums) total += n;
-    return Value::number(total / (double)nums.size());
+    return Value::number(std::accumulate(nums.begin(), nums.end(), 0.0) / (double)nums.size());
+}
+
+// Shared body for COUNT/COUNTA: count the values across all of f's args
+// matching `pred`.
+template <class Pred>
+static int count_matching(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev, Pred pred) {
+    int count = 0;
+    for_each_value(f, ctx, ev, [&](const Value& v) {
+        if (pred(v)) ++count;
+        return true;
+    });
+    return count;
 }
 
 static Value fn_count(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    int count = 0;
-    for_each_value(f, ctx, ev, [&](const Value& v) {
-        if (v.is_number()) ++count;
-        return true;
-    });
+    int count = count_matching(f, ctx, ev, [](const Value& v) { return v.is_number(); });
     return Value::number(static_cast<double>(count));
 }
 
 static Value fn_counta(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
-    int count = 0;
-    for_each_value(f, ctx, ev, [&](const Value& v) {
-        if (!v.is_empty()) ++count;
-        return true;
-    });
+    int count = count_matching(f, ctx, ev, [](const Value& v) { return !v.is_empty(); });
     return Value::number(static_cast<double>(count));
 }
 
@@ -199,22 +201,29 @@ static Value fn_mod(const FuncCallExpr& f, const EvalContext& ctx, const Evaluat
 static Value fn_len(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     if (f.args.size() != 1) return Value::error(FormulaError::VALUE);
     Value v = ev.eval(*f.args[0], ctx);
+    if (v.is_error()) return v;
     return Value::number(static_cast<double>(v.to_display().size()));
 }
 
 static Value fn_upper(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     if (f.args.size() != 1) return Value::error(FormulaError::VALUE);
-    return Value::string(tuix::to_upper(ev.eval(*f.args[0], ctx).to_display()));
+    Value v = ev.eval(*f.args[0], ctx);
+    if (v.is_error()) return v;
+    return Value::string(tuix::to_upper(v.to_display()));
 }
 
 static Value fn_lower(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     if (f.args.size() != 1) return Value::error(FormulaError::VALUE);
-    return Value::string(tuix::to_lower(ev.eval(*f.args[0], ctx).to_display()));
+    Value v = ev.eval(*f.args[0], ctx);
+    if (v.is_error()) return v;
+    return Value::string(tuix::to_lower(v.to_display()));
 }
 
 static Value fn_trim(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     if (f.args.size() != 1) return Value::error(FormulaError::VALUE);
-    std::string s = ev.eval(*f.args[0], ctx).to_display();
+    Value arg = ev.eval(*f.args[0], ctx);
+    if (arg.is_error()) return arg;
+    std::string s = arg.to_display();
     size_t start = s.find_first_not_of(' ');
     if (start == std::string::npos) return Value::string("");
     size_t end = s.find_last_not_of(' ');
@@ -231,8 +240,11 @@ static Value fn_trim(const FuncCallExpr& f, const EvalContext& ctx, const Evalua
 
 static Value fn_concatenate(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     std::string result;
-    for (const auto& arg : f.args)
-        result += ev.eval(*arg, ctx).to_display();
+    for (const auto& arg : f.args) {
+        Value v = ev.eval(*arg, ctx);
+        if (v.is_error()) return v;
+        result += v.to_display();
+    }
     return Value::string(result);
 }
 
@@ -367,13 +379,25 @@ static bool match_criterion(const Value& cell, const Value& crit) {
 
 // ── Conditional aggregates (COUNTIF / SUMIF / AVERAGEIF) ──────────────────────
 
+// Resolves the (range, criteria) argument pair shared by COUNTIF/SUMIF/
+// AVERAGEIF: arg_bounds on args[0] for the range, then evaluates args[1] as
+// the criterion. Returns an error Value on failure (bad range, or a
+// criterion expression that itself errors) — check the result's is_error().
+static Value resolve_criteria_range(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev,
+                                     int& r0, int& c0, int& r1, int& c1, std::string& sheet, Value& crit) {
+    if (!arg_bounds(*f.args[0], ctx, r0, c0, r1, c1, sheet)) return Value::error(FormulaError::VALUE);
+    crit = ev.eval(*f.args[1], ctx);
+    if (crit.is_error()) return crit;
+    return Value::empty();
+}
+
 static Value fn_countif(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {
     if (f.args.size() != 2) return Value::error(FormulaError::VALUE);
     int r0, c0, r1, c1;
     std::string sheet;
-    if (!arg_bounds(*f.args[0], ctx, r0, c0, r1, c1, sheet)) return Value::error(FormulaError::VALUE);
-    Value crit = ev.eval(*f.args[1], ctx);
-    if (crit.is_error()) return crit;
+    Value crit;
+    if (Value err = resolve_criteria_range(f, ctx, ev, r0, c0, r1, c1, sheet, crit); err.is_error())
+        return err;
     int count = 0;
     for (int r = r0; r <= r1; ++r)
         for (int c = c0; c <= c1; ++c) {
@@ -390,9 +414,9 @@ static Value sumif_core(const FuncCallExpr& f, const EvalContext& ctx,
     if (f.args.size() < 2 || f.args.size() > 3) return Value::error(FormulaError::VALUE);
     int r0, c0, r1, c1;
     std::string sheet;
-    if (!arg_bounds(*f.args[0], ctx, r0, c0, r1, c1, sheet)) return Value::error(FormulaError::VALUE);
-    Value crit = ev.eval(*f.args[1], ctx);
-    if (crit.is_error()) return crit;
+    Value crit;
+    if (Value err = resolve_criteria_range(f, ctx, ev, r0, c0, r1, c1, sheet, crit); err.is_error())
+        return err;
 
     bool have_sum = f.args.size() == 3;
     int sr0 = r0, sc0 = c0, sr1 = r1, sc1 = c1;
@@ -537,7 +561,11 @@ static const std::pair<const char*, BuiltinFn> k_functions[] = {
 };
 
 BuiltinFn lookup_builtin(const std::string& name) {
-    for (const auto& [n, fn] : k_functions)
-        if (name == n) return fn;
-    return nullptr;
+    // Built once on first call (thread-safe magic-static init — evaluation
+    // runs on both the UI thread and CalcCache's background thread); a
+    // hash lookup keeps this O(1) as the table grows instead of scanning.
+    static const std::unordered_map<std::string, BuiltinFn> table(
+        std::begin(k_functions), std::end(k_functions));
+    auto it = table.find(name);
+    return it == table.end() ? nullptr : it->second;
 }

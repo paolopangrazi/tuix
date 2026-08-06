@@ -199,6 +199,7 @@ void Grid::apply_history(std::vector<HistoryEntry>& from,
         }
         apply_row_permutation(perm);
         m_cursor_row = std::clamp(m_cursor_row, 0, m_rows - 1);
+        m_cursor_col = std::clamp(m_cursor_col, -1, m_cols - 1);   // -1 = gutter, left as-is; only guard overflow
         to.push_back(std::move(e));
         adjust_viewport();
         launch_build();

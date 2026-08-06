@@ -1,6 +1,7 @@
 #include "suggestion_bar.hpp"
 
 #include "config/config.hpp"
+#include "util/flexbox.hpp"
 
 using namespace ftxui;
 
@@ -16,9 +17,5 @@ Element render_suggestion_bar(const Config& cfg,
             text("    "),
         }));
     }
-    return flexbox(std::move(chips), FlexboxConfig()
-        .Set(FlexboxConfig::Wrap::Wrap)
-        .Set(FlexboxConfig::JustifyContent::FlexStart)
-        .Set(FlexboxConfig::AlignItems::FlexStart)
-        .Set(FlexboxConfig::AlignContent::FlexStart));
+    return flexbox(std::move(chips), tuix::flex_wrap_left());
 }

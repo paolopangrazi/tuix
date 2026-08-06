@@ -83,6 +83,46 @@ Element Grid::formula_bar() const {
     );
 }
 
+std::optional<std::pair<Color, Color>> Grid::heat_at(int r, int c) const {
+    if (!m_heat.active) return std::nullopt;
+    if (r < m_heat.r0 || r > m_heat.r1 || c < m_heat.c0 || c > m_heat.c1) return std::nullopt;
+    double v;
+    if (!cell_value(r, c).to_number(v)) return std::nullopt;
+    const double t = (m_heat.max > m_heat.min) ? (v - m_heat.min) / (m_heat.max - m_heat.min) : 0.5;
+    int R, G, B;
+    heat_rgb(t, R, G, B);
+    const Color fg = (0.299 * R + 0.587 * G + 0.114 * B) > 140 ? Color::Black : Color::White;
+    return std::make_pair(Color::RGB(R, G, B), fg);
+}
+
+Element Grid::cell_style(Element e, int r, int c, bool is_cursor) const {
+    const bool zebra = m_cfg.theme.zebra && (r % 2 == 1);
+    const bool is_yanked = m_yank_row >= 0 && !m_yank_data.empty() &&
+        r >= m_yank_row && r < m_yank_row + (int)m_yank_data.size() &&
+        c >= m_yank_col && c < m_yank_col + (int)m_yank_data[0].size();
+    const bool is_formula = m_cells[r][c].is_formula();
+    const bool search = !m_search_hits.empty() &&
+        std::binary_search(m_search_hits.begin(), m_search_hits.end(), std::make_pair(r, c));
+
+    // Precedence: cursor ▸ heatmap ▸ yank ▸ selection ▸ search ▸ plain.
+    // Zebra is a base tint that shows through the fg-only states (yank/formula).
+    if (is_cursor)
+        return e | bgcolor(m_cfg.colors.cursor_bg) | color(m_cfg.colors.cursor_fg);
+    if (auto h = heat_at(r, c))
+        return e | bgcolor(h->first) | color(h->second);
+    if (is_yanked) {
+        if (zebra) e = e | bgcolor(m_cfg.colors.zebra_bg);
+        return e | color(m_cfg.colors.yank_fg);
+    }
+    if (in_selection(r, c))
+        return e | bgcolor(m_cfg.colors.selection_bg) | color(m_cfg.colors.selection_fg);
+    if (search)
+        return e | bgcolor(m_cfg.colors.search_bg) | color(m_cfg.colors.search_fg);
+    if (zebra)      e = e | bgcolor(m_cfg.colors.zebra_bg);
+    if (is_formula) e = e | color(m_cfg.colors.formula_fg);
+    return e;
+}
+
 Element Grid::render() const {
     const int vr    = vis_rows();
     const int vc    = vis_cols();
@@ -107,19 +147,6 @@ Element Grid::render() const {
             return hbox({ text("⇕") | color(m_cfg.colors.cursor_bg) | bold | size(WIDTH, EQUAL, 1),
                           vbox({ separator() }) | flex });
         return separator();
-    };
-
-    // Heatmap background+foreground for a numeric cell inside the active region.
-    auto heat_at = [&](int r, int c) -> std::optional<std::pair<Color, Color>> {
-        if (!m_heat.active) return std::nullopt;
-        if (r < m_heat.r0 || r > m_heat.r1 || c < m_heat.c0 || c > m_heat.c1) return std::nullopt;
-        double v;
-        if (!cell_value(r, c).to_number(v)) return std::nullopt;
-        const double t = (m_heat.max > m_heat.min) ? (v - m_heat.min) / (m_heat.max - m_heat.min) : 0.5;
-        int R, G, B;
-        heat_rgb(t, R, G, B);
-        const Color fg = (0.299 * R + 0.587 * G + 0.114 * B) > 140 ? Color::Black : Color::White;
-        return std::make_pair(Color::RGB(R, G, B), fg);
     };
 
     Elements header;
@@ -182,39 +209,14 @@ Element Grid::render() const {
 
         for (int c = m_offset_col; c < c_end; ++c) {
             row.push_back(col_sep(c, /*header=*/false));
-            const bool is_cursor  = (r == m_cursor_row && c == m_cursor_col);
-            const bool is_yanked  = m_yank_row >= 0 && !m_yank_data.empty() &&
-                r >= m_yank_row && r < m_yank_row + (int)m_yank_data.size() &&
-                c >= m_yank_col && c < m_yank_col + (int)m_yank_data[0].size();
-            const bool is_formula = m_cells[r][c].is_formula();
+            const bool is_cursor = (r == m_cursor_row && c == m_cursor_col);
             std::string val = (is_cursor && m_editing) ? m_edit_buf : cell_display(r, c);
             val = tuix::truncate_to_width(val, m_col_widths[c]);
             // Stretch the cell to the row's height; content sits on the top line
             // and the highlight (if any) fills the whole box.
             auto e = vbox({ text(val), filler() })
                      | size(WIDTH, EQUAL, m_col_widths[c]) | size(HEIGHT, EQUAL, rh);
-            const bool zebra  = m_cfg.theme.zebra && (r % 2 == 1);
-            const bool search = !m_search_hits.empty() &&
-                std::binary_search(m_search_hits.begin(), m_search_hits.end(), std::make_pair(r, c));
-            // Precedence: cursor ▸ heatmap ▸ yank ▸ selection ▸ search ▸ plain.
-            // Zebra is a base tint that shows through the fg-only states (yank/formula).
-            if (is_cursor)
-                e = e | bgcolor(m_cfg.colors.cursor_bg) | color(m_cfg.colors.cursor_fg);
-            else if (auto h = heat_at(r, c))
-                e = e | bgcolor(h->first) | color(h->second);
-            else if (is_yanked) {
-                if (zebra) e = e | bgcolor(m_cfg.colors.zebra_bg);
-                e = e | color(m_cfg.colors.yank_fg);
-            }
-            else if (in_selection(r, c))
-                e = e | bgcolor(m_cfg.colors.selection_bg) | color(m_cfg.colors.selection_fg);
-            else if (search)
-                e = e | bgcolor(m_cfg.colors.search_bg) | color(m_cfg.colors.search_fg);
-            else {
-                if (zebra)           e = e | bgcolor(m_cfg.colors.zebra_bg);
-                if (is_formula)      e = e | color(m_cfg.colors.formula_fg);
-            }
-            row.push_back(e);
+            row.push_back(cell_style(std::move(e), r, c, is_cursor));
         }
         row.push_back(filler());
         elems.push_back(hbox(std::move(row)));

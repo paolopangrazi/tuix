@@ -134,6 +134,11 @@ TEST_CASE("error propagation") {
         {"=ABS(\"x\")", "#VALUE!"},   // non-numeric argument
         {"=A5",         "#REF!"},     // row 5 is out of a 3-row context
         {"=A1:A3",      "#VALUE!"},   // bare range outside a function
+        {"=LEN(1/0)",             "#DIV/0!"},   // text functions propagate, not stringify
+        {"=UPPER(1/0)",           "#DIV/0!"},
+        {"=LOWER(1/0)",           "#DIV/0!"},
+        {"=TRIM(1/0)",            "#DIV/0!"},
+        {"=CONCATENATE(\"a\",1/0)", "#DIV/0!"},
     }, small);
 }
 
@@ -150,4 +155,5 @@ TEST_CASE("malformed input does not throw") {
     CHECK(disp("=1+", ctx)       == "#VALUE!");
     CHECK(disp("=((1)", ctx)     == "#VALUE!");
     CHECK(disp("=", ctx)         == "#VALUE!");
+    CHECK(disp("=A99999999999999999999", ctx) == "#VALUE!");  // row overflows int
 }

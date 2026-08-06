@@ -13,6 +13,12 @@ public:
     static Value error(FormulaError e);
     static Value empty();
 
+    // Formats a raw double the way a spreadsheet number cell would display
+    // it (trims trailing zeros, etc.) — shorthand for number(v).to_display(),
+    // used by summary UI (column stats, chart panel) that isn't otherwise
+    // working with Values.
+    static std::string display_number(double v) { return number(v).to_display(); }
+
     Type               type()       const noexcept { return m_type; }
     double             as_number()  const noexcept { return m_number; }
     const std::string& as_string()  const noexcept { return m_string; }

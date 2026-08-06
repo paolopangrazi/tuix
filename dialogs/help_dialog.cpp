@@ -2,6 +2,7 @@
 #include "dialog_shell.hpp"
 
 #include "config/config.hpp"
+#include "util/flexbox.hpp"
 
 using namespace ftxui;
 
@@ -11,10 +12,11 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
           "Navigation", "Editing", "Selection", "Search", "Col Header",
           "Row Header", "History", "Formulas", "Sheets", "Mouse", "File", "App",
       } {
+    constexpr int k_key_col_w = 26;   // keybinding column width in each krow
     auto krow = [&](const char* keys, const char* desc) -> Element {
         return hbox({
             text("  "),
-            text(keys) | bold | color(m_cfg.colors.header) | size(WIDTH, EQUAL, 26),
+            text(keys) | bold | color(m_cfg.colors.header) | size(WIDTH, EQUAL, k_key_col_w),
             text("  "),
             text(desc) | color(m_cfg.colors.dimmed),
         });
@@ -138,11 +140,7 @@ Component HelpDialog::component() {
                    text("  close  ") | color(m_cfg.colors.dimmed) }),
             hbox({ text("← →") | bold | color(m_cfg.colors.header),
                    text("  switch tab  ") | color(m_cfg.colors.dimmed) }),
-        }, FlexboxConfig()
-            .Set(FlexboxConfig::Wrap::Wrap)
-            .Set(FlexboxConfig::JustifyContent::FlexStart)
-            .Set(FlexboxConfig::AlignItems::FlexStart)
-            .Set(FlexboxConfig::AlignContent::FlexStart));
+        }, tuix::flex_wrap_left());
         return render_dialog_shell(inner, bottom);
     });
     return add_escape_to_close(renderer, m_on_close);

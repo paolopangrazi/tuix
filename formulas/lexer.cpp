@@ -1,5 +1,6 @@
 #include "lexer.hpp"
 #include <cctype>
+#include <charconv>
 #include "util/col_label.hpp"
 #include "util/strings.hpp"
 
@@ -112,11 +113,19 @@ Token Lexer::read_ident_or_ref() {
         while (m_pos < m_input.size() && std::isdigit((unsigned char)m_input[m_pos]))
             ++m_pos;
         std::string row_str = m_input.substr(row_start, m_pos - row_start);
+        // Bounded parse (not std::stoi): a row number too long/large to fit an
+        // int (e.g. a fat-fingered "A99999999999999") is a lex error here,
+        // not an exception for some caller's try/catch to happen to absorb.
+        int row_num = 0;
+        auto [ptr, ec] = std::from_chars(row_str.data(), row_str.data() + row_str.size(), row_num);
+        if (ec != std::errc()) {
+            Token t; t.type = TokenType::ERROR; t.text = row_str; return t;
+        }
         Token t;
         t.type          = TokenType::CELL_REF;
         t.text          = (abs_col ? "$" : "") + letters + (abs_row ? "$" : "") + row_str;
         t.coord.col     = *parse_col_label(letters);  // letters is all-alpha, so this parses
-        t.coord.row     = std::stoi(row_str) - 1;
+        t.coord.row     = row_num - 1;
         t.coord.abs_col = abs_col;
         t.coord.abs_row = abs_row;
         t.coord.sheet   = sheet;

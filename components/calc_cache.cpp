@@ -30,8 +30,7 @@ CalcCache::SuggList CalcCache::compute_for(const std::string& raw) {
 
     NullCtx ctx;
     auto add = [&](const char* name, const std::string& formula) {
-        Value v = Evaluator::evaluate_formula(formula, ctx);
-        if (!v.is_error()) out.push_back({ name, v.to_display() });
+        if (auto v = Evaluator::try_formula(formula, ctx)) out.push_back({ name, *v });
     };
 
     if (numeric) {

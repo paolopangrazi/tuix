@@ -106,18 +106,16 @@ void Grid::load_from(const Sheet& s) {
     m_col_widths = s.col_widths;
     m_col_manual = s.col_manual;
     m_row_heights = s.row_heights;
-    m_rows       = static_cast<int>(m_cells.size());
-    m_cols       = m_rows ? static_cast<int>(m_cells[0].size()) : static_cast<int>(m_col_names.size());
-    if (m_rows == 0) { m_rows = 1; m_cells.assign(1, std::vector<Cell>(std::max(1, m_cols))); }
-    if (m_cols == 0) { m_cols = 1; for (auto& r : m_cells) r.assign(1, Cell{}); m_col_names.assign(1, col_letter(0)); m_col_widths.assign(1, m_cell_w); }
-    m_col_manual.resize(m_cols, false);   // legacy snapshots predate this field
-    m_row_heights.resize(m_rows, 1);       // ditto; default every row to one line
+    // Guarantees at least 1x1 and reconciles col_manual/col_widths/row_heights
+    // to the actual dimensions (legacy snapshots predate some of these fields).
+    normalize_sheet_dims(m_cells, m_col_names, m_col_widths, m_col_manual, m_row_heights, m_cell_w);
+    m_rows = static_cast<int>(m_cells.size());
+    m_cols = static_cast<int>(m_cells[0].size());
 
     // Sheets arrive from the workbook with a fixed default column width, so
     // auto-fit every column the user hasn't manually pinned — otherwise freshly
     // opened files clip all content to that default. Pinned widths (tracked by
     // col_manual and preserved across sheet switches) are left untouched.
-    m_col_widths.resize(m_cols, m_cell_w);
     for (int c = 0; c < m_cols; ++c)
         if (!m_col_manual[c]) m_col_widths[c] = compute_col_width(c);
 

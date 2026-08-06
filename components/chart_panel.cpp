@@ -33,8 +33,6 @@ std::vector<int> histogram_bins(const std::vector<double>& values, int bins) {
 
 namespace {
 
-std::string num(double v) { return Value::number(v).to_display(); }
-
 // Map a data value to a canvas y (0 = top) given the drawn value window.
 int map_y(double v, double lo, double hi, int h) {
     if (hi <= lo) return h / 2;
@@ -91,7 +89,7 @@ Element header(const Config& cfg, const Grid::ChartData& d) {
     if (!d.values.empty()) {
         const double mn = *std::min_element(d.values.begin(), d.values.end());
         const double mx = *std::max_element(d.values.begin(), d.values.end());
-        chips.push_back(text("min " + num(mn) + "  max " + num(mx) + "  ")
+        chips.push_back(text("min " + Value::display_number(mn) + "  max " + Value::display_number(mx) + "  ")
                         | color(cfg.colors.dimmed));
     }
     chips.push_back(text("[c cycle]") | color(cfg.colors.dimmed));

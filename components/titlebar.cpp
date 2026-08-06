@@ -5,6 +5,8 @@
 
 #include <ftxui/component/animation.hpp>
 
+#include "util/flexbox.hpp"
+
 using namespace ftxui;
 
 TitleBar::TitleBar(
@@ -83,11 +85,7 @@ Element TitleBar::render_buttons() const {
         hbox({ m_btn_save->Render(),    text("  ") }),
         hbox({ m_btn_save_as->Render(), text("    ") }),
         m_btn_exit->Render(),
-    }, FlexboxConfig()
-        .Set(FlexboxConfig::Wrap::Wrap)
-        .Set(FlexboxConfig::JustifyContent::FlexStart)
-        .Set(FlexboxConfig::AlignItems::FlexStart)
-        .Set(FlexboxConfig::AlignContent::FlexStart));
+    }, tuix::flex_wrap_left());
 }
 
 Component TitleBar::component() { return m_btns; }

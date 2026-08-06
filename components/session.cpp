@@ -42,16 +42,18 @@ constexpr int k_snapshot_col_width = 12;
 Sheet sheet_from_data(std::string name, const SheetData& data) {
     Sheet s;
     s.name = std::move(name);
-    const int nrows = std::max<int>(1, static_cast<int>(data.rows.size()));
-    const int ncols = std::max<int>(1, static_cast<int>(data.headers.size()));
+    const int nrows = static_cast<int>(data.rows.size());
+    const int ncols = static_cast<int>(data.headers.size());
     s.cells.assign(nrows, std::vector<Cell>(ncols));
-    s.col_names.resize(ncols);
-    s.col_widths.assign(ncols, k_snapshot_col_width);
-    for (int c = 0; c < ncols; ++c)
-        s.col_names[c] = (c < (int)data.headers.size()) ? data.headers[c] : std::string{};
-    for (int r = 0; r < (int)data.rows.size(); ++r)
+    s.col_names = data.headers;
+    for (int r = 0; r < nrows; ++r)
         for (int c = 0; c < std::min(ncols, (int)data.rows[r].size()); ++c)
             s.cells[r][c].set_value(data.rows[r][c]);
+    // Guarantees at least 1x1 (an empty CSV/sheet) and sizes col_widths/
+    // col_manual/row_heights to match — Grid::load_from does the same when
+    // this sheet becomes active, but callers that only save an inactive
+    // sheet (never routed through load_from) still get a consistent Sheet.
+    normalize_sheet_dims(s.cells, s.col_names, s.col_widths, s.col_manual, s.row_heights, k_snapshot_col_width);
     return s;
 }
 

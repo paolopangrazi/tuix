@@ -1,6 +1,7 @@
 #include "status_area.hpp"
 
 #include "config/config.hpp"
+#include "util/flexbox.hpp"
 
 using namespace ftxui;
 
@@ -29,11 +30,7 @@ Element render_status_area(const Config& cfg,
     auto badge_bg = insert ? cfg.colors.insert_badge_bg : cfg.colors.normal_badge_bg;
     auto badge_fg = insert ? cfg.colors.insert_badge_fg : cfg.colors.normal_badge_fg;
 
-    auto flex_left = FlexboxConfig()
-        .Set(FlexboxConfig::Wrap::Wrap)
-        .Set(FlexboxConfig::JustifyContent::FlexStart)
-        .Set(FlexboxConfig::AlignItems::FlexStart)
-        .Set(FlexboxConfig::AlignContent::FlexStart);
+    auto flex_left = tuix::flex_wrap_left();
 
     Elements lines;
     if (!hint.empty()) {

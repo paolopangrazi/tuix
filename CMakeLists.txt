@@ -87,6 +87,7 @@ add_library(tuix_core STATIC
     components/actionbox.cpp
     components/calc_cache.cpp
     components/cell.cpp
+    components/sheet.cpp
     components/file_bar.cpp
     components/formula_catalog.cpp
     components/heatmap.cpp

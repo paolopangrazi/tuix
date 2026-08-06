@@ -333,6 +333,14 @@ private:
     ftxui::Element render()        const;
     ftxui::Element vscrollbar()    const;
 
+    // Heatmap background+foreground for a numeric cell inside the active
+    // region, else nullopt (outside the region, non-numeric, or heatmap off).
+    std::optional<std::pair<ftxui::Color, ftxui::Color>> heat_at(int r, int c) const;
+    // Applies the cursor/heatmap/yank/selection/search/formula/zebra styling
+    // to a cell's rendered element, in that precedence (render()'s job is
+    // just to build the plain content; this owns all of the highlighting).
+    ftxui::Element cell_style(ftxui::Element e, int r, int c, bool is_cursor) const;
+
     int  vis_rows() const;
     int  vis_cols() const;
     void adjust_viewport();
@@ -344,12 +352,19 @@ private:
     // Set column c's width directly (clamped), pinning it. Shared by keyboard
     // resize and mouse drag.
     void        set_col_width(int c, int w);
+    // One column's width on screen (separator + cell) — the step col_at_x and
+    // border_hit both accumulate while walking columns, so the two hit-tests
+    // can't drift apart.
+    int         col_step(int c) const noexcept { return 1 + m_col_widths[c]; }
     // Column whose right-edge separator sits at/near content-x rx (else -1),
     // for mouse resize hit-testing. rx is mouse-x relative to the grid content.
     int         border_hit(int rx) const;
     // Row-height analogs of the column helpers above.
     void        resize_row(int r, int delta);
     void        set_row_height(int r, int h);
+    // One row's height on screen (content lines + separator) — the step
+    // row_at_y and row_border_hit both accumulate while walking rows.
+    int         row_step(int r) const noexcept { return m_row_heights[r] + 1; }
     // Row whose bottom-edge separator sits on content-line ry (else -1).
     int         row_border_hit(int ry) const;
     // How many rows, starting at offset `off`, fit in the current viewport.

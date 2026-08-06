@@ -3,6 +3,7 @@
 
 #include "config/config.hpp"
 #include "config/config_schema.hpp"
+#include "util/flexbox.hpp"
 #include "util/key_events.hpp"
 
 #include <filesystem>
@@ -13,14 +14,24 @@ using namespace ftxui;
 using namespace tuix::key;
 
 namespace {
-std::string kstr(const std::vector<char>& v) {
+// The key-binding text fields store a vector<char> as a space-separated
+// display string; encode/decode are exact inverses (decode_keys(encode_keys(v))
+// == v) — decode is the more lenient direction, stripping spaces wherever
+// they appear, so stray extra whitespace the user types doesn't cause a
+// mis-split.
+std::string encode_keys(const std::vector<char>& v) {
     std::string r;
     for (char c : v) { if (!r.empty()) r += ' '; r += c; }
     return r;
 }
-toml::array make_key_arr(const std::string& s) {
+std::vector<char> decode_keys(const std::string& s) {
+    std::vector<char> v;
+    for (char c : s) if (c != ' ') v.push_back(c);
+    return v;
+}
+toml::array make_key_arr(const std::vector<char>& keys) {
     toml::array arr;
-    for (char c : s) if (c != ' ') arr.push_back(std::string(1, c));
+    for (char c : keys) arr.push_back(std::string(1, c));
     return arr;
 }
 }
@@ -61,7 +72,7 @@ void ConfigDialog::refresh_from_cfg() {
     for (int i = 0; i < k_color_slot_count; ++i)
         m_color_bufs[i] = Config::color_to_name(m_cfg.colors.*k_color_slots[i].member);
     for (int i = 0; i < k_key_slot_count; ++i)
-        m_key_bufs[i] = kstr(m_cfg.keys.*k_key_slots[i].member);
+        m_key_bufs[i] = encode_keys(m_cfg.keys.*k_key_slots[i].member);
     gb_cell_width = std::to_string(m_cfg.grid.cell_width);
     gb_start_mode = m_cfg.grid.start_insert ? "insert" : "normal";
     m_tab = 0;
@@ -90,7 +101,7 @@ void ConfigDialog::save_to_file() {
     toml::table& kt = section("keys");
     for (int i = 0; i < k_key_slot_count; ++i)
         if (!m_key_bufs[i].empty())
-            kt.insert_or_assign(k_key_slots[i].key, make_key_arr(m_key_bufs[i]));
+            kt.insert_or_assign(k_key_slots[i].key, make_key_arr(decode_keys(m_key_bufs[i])));
 
     toml::table& gt = section("grid");
     try { gt.insert_or_assign("cell_width", std::stoi(gb_cell_width)); } catch (...) {}
@@ -182,11 +193,7 @@ Component ConfigDialog::component() {
                    text("  next field  ") | color(m_cfg.colors.dimmed) }),
             hbox({ text("Esc") | bold | color(m_cfg.colors.header),
                    text("  close  ") | color(m_cfg.colors.dimmed) }),
-        }, FlexboxConfig()
-            .Set(FlexboxConfig::Wrap::Wrap)
-            .Set(FlexboxConfig::JustifyContent::FlexStart)
-            .Set(FlexboxConfig::AlignItems::FlexStart)
-            .Set(FlexboxConfig::AlignContent::FlexStart));
+        }, tuix::flex_wrap_left());
         return render_dialog_shell(inner, bottom);
     });
     return add_escape_to_close(renderer, m_on_close, [this](Event e) {

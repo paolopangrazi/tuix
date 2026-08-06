@@ -162,7 +162,7 @@ int Grid::border_hit(int rx) const {
     if (rx < 0) return -1;
     int b = gutter_width();   // gutter, then visible columns
     for (int c = m_offset_col; c < m_cols; ++c) {
-        b += 1 + m_col_widths[c];              // rx of the separator just past column c
+        b += col_step(c);                      // rx of the separator just past column c
         if (rx >= b - 1 && rx <= b + 1) return c;
         if (b - 1 > rx) break;                 // boundaries only grow → none further can match
     }
@@ -193,7 +193,7 @@ int Grid::row_border_hit(int ry) const {
         const int sep = line + m_row_heights[r];   // separator line below row r
         if (ry == sep) return r;
         if (sep > ry) break;                       // separators only grow downward
-        line = sep + 1;
+        line += row_step(r);                       // == sep + 1
     }
     return -1;
 }

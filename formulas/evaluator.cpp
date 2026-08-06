@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <exception>
+#include <optional>
 
 #include "util/strings.hpp"
 
@@ -140,4 +141,10 @@ Value Evaluator::evaluate_formula(const std::string& formula, const EvalContext&
     } catch (const std::exception&) {
         return Value::error(FormulaError::VALUE);
     }
+}
+
+std::optional<std::string> Evaluator::try_formula(const std::string& formula, const EvalContext& ctx) {
+    Value v = evaluate_formula(formula, ctx);
+    if (v.is_error()) return std::nullopt;
+    return v.to_display();
 }

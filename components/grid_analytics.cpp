@@ -261,8 +261,7 @@ std::vector<Grid::Suggestion> Grid::range_suggestions() const {
 
     std::vector<Suggestion> out;
     auto add = [&](const char* name, const std::string& formula) {
-        Value v = Evaluator::evaluate_formula(formula, *this);
-        if (!v.is_error()) out.push_back({name, v.to_display()});
+        if (auto v = Evaluator::try_formula(formula, *this)) out.push_back({name, *v});
     };
 
     add("SUM",    "=SUM("     + range + ")");
