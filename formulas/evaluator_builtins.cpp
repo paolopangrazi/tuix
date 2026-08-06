@@ -159,7 +159,10 @@ static Value fn_round(const FuncCallExpr& f, const EvalContext& ctx, const Evalu
     if (f.args.size() >= 2 && !eval_num_arg(f, 1, ctx, ev, digits))
         return Value::error(FormulaError::VALUE);
     double factor = std::pow(10.0, std::floor(digits));
-    return Value::number(std::round(n * factor) / factor);
+    if (!std::isfinite(factor) || factor == 0) return Value::error(FormulaError::NUM);
+    double result = std::round(n * factor) / factor;
+    if (!std::isfinite(result)) return Value::error(FormulaError::NUM);
+    return Value::number(result);
 }
 
 static Value fn_sqrt(const FuncCallExpr& f, const EvalContext& ctx, const Evaluator& ev) {

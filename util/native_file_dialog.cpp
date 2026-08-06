@@ -8,8 +8,11 @@
 #include <windows.h>
 #include <shobjidl.h>  // IFileOpenDialog, COMDLG_FILTERSPEC
 #include <shlobj.h>    // SHCreateItemFromParsingName
+#include <wrl/client.h>  // Microsoft::WRL::ComPtr
 
 namespace tuix {
+
+using Microsoft::WRL::ComPtr;
 
 namespace {
 
@@ -43,7 +46,7 @@ OpenFileResult native_open_file(const std::string& initial_dir) {
     const bool did_init = SUCCEEDED(hr_init);
     if (!did_init && hr_init != RPC_E_CHANGED_MODE) return out;
 
-    IFileOpenDialog* dlg = nullptr;
+    ComPtr<IFileOpenDialog> dlg;
     HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER,
                                   IID_PPV_ARGS(&dlg));
     if (SUCCEEDED(hr) && dlg) {
@@ -58,17 +61,16 @@ OpenFileResult native_open_file(const std::string& initial_dir) {
 
         if (!initial_dir.empty()) {
             const std::wstring wdir = to_utf16(initial_dir);
-            IShellItem* folder = nullptr;
+            ComPtr<IShellItem> folder;
             if (SUCCEEDED(SHCreateItemFromParsingName(wdir.c_str(), nullptr, IID_PPV_ARGS(&folder)))
                 && folder) {
-                dlg->SetFolder(folder);
-                folder->Release();
+                dlg->SetFolder(folder.Get());
             }
         }
 
         hr = dlg->Show(nullptr);  // modal; runs its own message pump
         if (SUCCEEDED(hr)) {
-            IShellItem* item = nullptr;
+            ComPtr<IShellItem> item;
             if (SUCCEEDED(dlg->GetResult(&item)) && item) {
                 PWSTR psz = nullptr;
                 if (SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH, &psz)) && psz) {
@@ -76,12 +78,10 @@ OpenFileResult native_open_file(const std::string& initial_dir) {
                     out.path   = to_utf8(psz);
                     CoTaskMemFree(psz);
                 }
-                item->Release();
             }
         } else if (hr == HRESULT_FROM_WIN32(ERROR_CANCELLED)) {
             out.status = FileDialogStatus::Cancelled;
         }
-        dlg->Release();
     }
 
     if (did_init) CoUninitialize();

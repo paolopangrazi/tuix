@@ -255,6 +255,7 @@ void Grid::yank_selection() {
 }
 
 void Grid::paste_yanked() {
+    if (m_yank_data.empty()) return;
     const int need_rows = m_cursor_row + (int)m_yank_data.size();
     const int need_cols = m_cursor_col + (int)m_yank_data[0].size();
     while (m_rows < need_rows) append_row();
