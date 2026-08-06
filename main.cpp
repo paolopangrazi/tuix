@@ -15,6 +15,7 @@
 #include "config/config.hpp"
 #include "cli/headless.hpp"
 #include "util/native_file_dialog.hpp"
+#include "util/key_events.hpp"
 
 #include "confirm_dialog.hpp"
 #include "path_input_dialog.hpp"
@@ -31,6 +32,7 @@ enum Tab { Main, ExitConfirm, Help, SaveConfirm, SaveAs, ConfigEditor, Open, Ren
 
 int main(int argc, char* argv[]) {
     using namespace ftxui;
+    using namespace tuix::key;
 
     // Headless "unix filter" mode: transform CSV and exit before FTXUI grabs
     // the terminal. Triggered by any headless flag or piped stdin.
@@ -269,7 +271,7 @@ int main(int argc, char* argv[]) {
             else { cfg_dialog.refresh_from_cfg(); tab = ConfigEditor; }
             return true;
         }
-        if (e == Event::Special("\x05")) {           // Ctrl+E → toggle exit confirm
+        if (e == CtrlE) {                             // toggle exit confirm
             tab = (tab == Main) ? ExitConfirm : Main;
             return true;
         }
@@ -277,9 +279,9 @@ int main(int argc, char* argv[]) {
                         && body.grid().mode() == Grid::Mode::NORMAL
                         && !body.grid().searching()) {
             // Ctrl+PageDown / Ctrl+PageUp cycle sheets; Ctrl+T adds a new sheet.
-            if (e == Event::Special("\x1B[6;5~")) { cycle_sheet(+1); return true; }
-            if (e == Event::Special("\x1B[5;5~")) { cycle_sheet(-1); return true; }
-            if (e == Event::Special("\x14")) {        // Ctrl+T
+            if (e == CtrlPageDown) { cycle_sheet(+1); return true; }
+            if (e == CtrlPageUp)   { cycle_sheet(-1); return true; }
+            if (e == CtrlT) {
                 session.add_sheet();
                 return true;
             }

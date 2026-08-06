@@ -11,17 +11,10 @@
 #include <ftxui/dom/elements.hpp>
 
 #include "formula_catalog.hpp"
+#include "util/key_events.hpp"
 
 using namespace ftxui;
-
-namespace {
-
-const Event ShiftArrowUp    = Event::Special("\x1B[1;2A");
-const Event ShiftArrowDown  = Event::Special("\x1B[1;2B");
-const Event ShiftArrowRight = Event::Special("\x1B[1;2C");
-const Event ShiftArrowLeft  = Event::Special("\x1B[1;2D");
-
-}  // namespace
+using namespace tuix::key;
 
 // ── Component & dispatch ─────────────────────────────────────────────────────
 
@@ -254,7 +247,7 @@ bool Grid::try_handle_undo_redo(Event e) {
     if (m_cfg.key_is(e, m_cfg.keys.undo)) { undo(); return true; }
     // Ctrl+R always redoes; keys.redo can add a plain-character binding on top
     // (character bindings can't express Ctrl chords, so the default is empty).
-    if (e == Event::Special("\x12") || m_cfg.key_is(e, m_cfg.keys.redo)) { redo(); return true; }
+    if (e == CtrlR || m_cfg.key_is(e, m_cfg.keys.redo)) { redo(); return true; }
     return false;
 }
 

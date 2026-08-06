@@ -3,12 +3,14 @@
 
 #include "config/config.hpp"
 #include "config/config_schema.hpp"
+#include "util/key_events.hpp"
 
 #include <filesystem>
 #include <fstream>
 #include <toml++/toml.hpp>
 
 using namespace ftxui;
+using namespace tuix::key;
 
 namespace {
 std::string kstr(const std::vector<char>& v) {
@@ -188,7 +190,7 @@ Component ConfigDialog::component() {
         return render_dialog_shell(inner, bottom);
     });
     return add_escape_to_close(renderer, m_on_close, [this](Event e) {
-        if (e == Event::Special("\x17")) { save_to_file(); return true; } // Ctrl+W
+        if (e == CtrlW) { save_to_file(); return true; }
         return false;
     });
 }
