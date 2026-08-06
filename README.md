@@ -32,7 +32,7 @@ Archives are named `tuix-<version>-<target>`. Each prebuilt binary is compiled a
 test-run in CI on the platform it targets. The C++ runtime is linked statically, so
 the binaries carry no dependencies beyond the system libc.
 
-**[Overview](#overview) · [Headless mode](#headless-mode) · [Features](#features) · [Theming](#theming) · [Gallery](#theme-gallery) · [Installation](#installation) · [Usage](#usage) · [Key bindings](#key-bindings) · [Configuration](#configuration) · [License](#license)**
+**[Overview](#overview) · [Usage](#usage) · [Headless mode](#headless-mode) · [Features](#features) · [Theming](#theming) · [Gallery](#theme-gallery) · [Installation](#installation) · [Key bindings](#key-bindings) · [Configuration](#configuration) · [License](#license)**
 
 </div>
 
@@ -59,6 +59,28 @@ Linux (x86_64 and arm64), macOS (Apple Silicon and Intel) and Windows — see
 - **Live feedback** — per-cell formula suggestions and range statistics update as you work.
 - **Theme-aware** — colors map to your terminal's ANSI palette, so tuiX adopts your theme automatically.
 - **Scriptable** — a headless mode turns tuiX into a CSV/XLSX filter on any platform: `tuix --filter 'salary > 50000' --sort dept data.csv` (or pipe via stdin on Linux/macOS/CMD).
+
+---
+
+## Usage
+
+```bash
+tuix                        # start with a blank sheet
+tuix path/to/file.csv       # open a CSV
+tuix path/to/file.xlsx      # open an Excel file
+```
+
+tuiX also runs headless as a CSV/XLSX filter — no terminal UI, just a
+transform pipeline over stdin/stdout or files:
+
+```bash
+tuix --filter 'salary > 50000' --sort 'dept,salary desc' --select name,dept in.csv
+cat in.csv | tuix --filter 'name =~ ^A' --head 20 > out.csv
+tuix --sheet Sales --filter 'qty > 0' book.xlsx -o out.xlsx
+```
+
+See [Headless mode](#headless-mode) below for the full flag reference and
+filter syntax.
 
 ---
 
@@ -489,16 +511,6 @@ cmake --install build --component tuix --prefix ~/.local   # → ~/.local/bin/tu
 
 > `--component tuix` installs just the binary; without it the vendored
 > dependencies add their own headers and static libraries to the prefix.
-
----
-
-## Usage
-
-```bash
-tuix                        # start with a blank sheet
-tuix path/to/file.csv       # open a CSV
-tuix path/to/file.xlsx      # open an Excel file
-```
 
 ---
 
