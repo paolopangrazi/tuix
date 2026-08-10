@@ -61,7 +61,7 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DTUIX_BUILD_TESTS=ON -DTUIX_WERROR=OFF
 
       - name: Build
-        run: cmake --build build --parallel --config Release --verbose
+        run: cmake --build build --parallel --config Release
 
       - name: Test
         run: ctest --test-dir build --output-on-failure --build-config Release
