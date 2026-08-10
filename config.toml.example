@@ -49,6 +49,11 @@ animations = false    # opt-in: a gentle "breathing" sweep on the tuiX logo
 # cell_width = 12          # default column width
 # start_mode = "normal"    # or "insert"
 
+[tips]
+# The "Did you know?" popup shown on launch. Unchecking its checkbox writes
+# false here; F3 opens it again at any time.
+# show_at_startup = true
+
 [keys]
 # Each binding is a list of single characters.
 # nav_up   = ["k"]

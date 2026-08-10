@@ -80,11 +80,16 @@ struct ThemeCfg {
     bool        animations = false;       // gated motion (calc shimmer, logo sweep)
 };
 
+struct TipsCfg {
+    bool show_at_startup = true;   // the "Did you know?" popup (F3 reopens it)
+};
+
 struct Config {
     Colors   colors;
     Keys     keys;
     GridCfg  grid;
     ThemeCfg theme;
+    TipsCfg  tips;
 
     // Set when config.toml exists but failed to parse (defaults are used).
     // Shown once in the status bar so a typo doesn't silently revert the theme.
@@ -93,6 +98,12 @@ struct Config {
     static Config load();
     static std::filesystem::path config_file_path();
     static std::string color_to_name(ftxui::Color c);
+
+    // Read-modify-write of just `[tips].show_at_startup` — the tips popup's
+    // checkbox persists through this, leaving every other block untouched.
+    // Returns false when there is no config path (HOME/APPDATA unset) or the
+    // file could not be written.
+    static bool save_show_tips(bool show);
 
     bool key_is(const ftxui::Event& e, const std::vector<char>& binding) const;
 };

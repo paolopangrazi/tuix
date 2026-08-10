@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -254,7 +255,31 @@ Config Config::load() {
             cfg.grid.start_insert = (*s == "insert");
     }
 
+    if (auto* t = tbl["tips"].as_table()) {
+        if (auto s = (*t)["show_at_startup"].value<bool>())
+            cfg.tips.show_at_startup = *s;
+    }
+
     return cfg;
+}
+
+bool Config::save_show_tips(bool show) {
+    const auto path = config_path();
+    if (path.empty()) return false;
+
+    // Read-modify-write, like the F12 editor's save: the user's colors, keys
+    // and [theme] must survive a checkbox toggle.
+    toml::table tbl;
+    try { tbl = toml::parse_file(path.string()); } catch (...) { /* start fresh */ }
+    if (!tbl["tips"].as_table()) tbl.insert_or_assign("tips", toml::table{});
+    tbl["tips"].as_table()->insert_or_assign("show_at_startup", show);
+
+    std::error_code ec;
+    std::filesystem::create_directories(path.parent_path(), ec);
+    std::ofstream out(path);
+    if (!out) return false;
+    out << tbl;
+    return out.good();
 }
 
 std::filesystem::path Config::config_file_path() { return config_path(); }

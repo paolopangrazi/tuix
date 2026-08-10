@@ -112,6 +112,7 @@ HelpDialog::HelpDialog(const Config& cfg, std::function<void()> on_close)
             krow(":q  /  :q!",               "Quit (confirm) / force quit immediately"),
             krow("Ctrl+E",                   "Toggle quit confirmation dialog"),
             krow("F1",                       "This help screen"),
+            krow("F3",                       "\"Did you know?\" tips popup"),
             krow("F12",                      "Configuration editor"),
             krow("tuix --help  (shell)",     "Headless CSV filter: --filter / --sort / --select"),
         }); }),

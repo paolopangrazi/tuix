@@ -115,6 +115,8 @@ add_library(tuix_core STATIC
     dialogs/help_dialog.cpp
     dialogs/config_dialog.cpp
     dialogs/sheet_actions_dialog.cpp
+    dialogs/tips_catalog.cpp
+    dialogs/tips_dialog.cpp
     util/clipboard.cpp
     util/native_file_dialog.cpp
     util/text_width.cpp

@@ -326,6 +326,7 @@ detected and flagged rather than left to hang.
 - **Command line**: `:w` saves, `:w file.csv` saves as, `:wq` saves and quits, `:e other.csv` opens another file. The output format follows the extension (`.xlsx` or `.csv`). An overwrite-confirmation prompt prevents accidental clobbering. Saving to `.xlsx` keeps formulas; `.csv` stores their computed values (the status bar reminds you when that happens).
 - A **titlebar** provides Undo / Redo / Open / Save / Save As / Exit buttons.
 - `F1` opens a tabbed keybinding reference; `F12` opens a live configuration editor that writes changes to `config.toml`.
+- A **"Did you know?"** popup greets you at launch with one hint at a time (`←` / `→` to browse). Untick its checkbox — or set `show_at_startup = false` under `[tips]` in `config.toml` — to stop it appearing; `F3` brings it back whenever you want.
 
 ---
 
@@ -581,7 +582,7 @@ cmake --install build --component tuix --prefix ~/.local   # → ~/.local/bin/tu
 | `↑`/`↓`, `Tab`/`Enter` | Browse / complete a formula |
 | `u` / `Ctrl+R` | Undo / redo |
 | `:` | Command mode — `:w`, `:w file`, `:wq`, `:q`, `:q!`, `:e file`, `:s/old/new/` (find & replace), `:sort B desc` (sort), `:B12` (jump to cell) |
-| `F1` / `F12` | Help · live config editor |
+| `F1` / `F3` / `F12` | Help · "Did you know?" tips · live config editor |
 | `Ctrl+E` | Toggle exit confirmation |
 
 ---

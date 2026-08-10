@@ -22,13 +22,14 @@
 #include "help_dialog.hpp"
 #include "config_dialog.hpp"
 #include "sheet_actions_dialog.hpp"
+#include "tips_dialog.hpp"
 
 #include <algorithm>
 #include <filesystem>
 
 // Tab indices into the root Container::Tab below — order must match it.
 enum Tab { Main, ExitConfirm, Help, SaveConfirm, SaveAs, ConfigEditor, Open, RenameSheet,
-           SheetActions, DeleteSheetConfirm };
+           SheetActions, DeleteSheetConfirm, Tips };
 
 int main(int argc, char* argv[]) {
     using namespace ftxui;
@@ -86,6 +87,7 @@ int main(int argc, char* argv[]) {
 
     HelpDialog   help_dialog(cfg, [&] { go_main(); });
     ConfigDialog cfg_dialog (cfg, [&] { go_main(); });
+    TipsDialog   tips_dialog(cfg, [&] { go_main(); });
 
     PathInputDialog rename_sheet_dialog(cfg,
         "Rename Sheet", "rename", "sheet name",
@@ -241,6 +243,7 @@ int main(int argc, char* argv[]) {
         rename_sheet_dialog.component(),
         sheet_actions_dialog.component(),
         delete_sheet_confirm.component(),
+        tips_dialog.component(),
     }, &tab);
 
     // ── Root chrome: titlebar logo + buttons wrap every tab ──────────────────
@@ -264,6 +267,11 @@ int main(int argc, char* argv[]) {
         if (e == Event::F1) {
             if (tab == Help) go_main();
             else { help_dialog.reset_tab(); tab = Help; }
+            return true;
+        }
+        if (e == Event::F3) {
+            if (tab == Tips) go_main();
+            else { tips_dialog.reset(); tab = Tips; }
             return true;
         }
         if (e == Event::F12) {
@@ -298,5 +306,11 @@ int main(int argc, char* argv[]) {
 
     screen.SetCursor(Screen::Cursor{});
     body_comp->TakeFocus();
+    // The "Did you know?" popup greets the user until they uncheck it (F3
+    // brings it back). Headless runs never reach here.
+    if (cfg.tips.show_at_startup) {
+        tab = Tips;
+        inner_tabs->ChildAt(Tips)->TakeFocus();
+    }
     screen.Loop(root);
 }

@@ -28,11 +28,13 @@ add_executable(tuix_tests
     unit/chart_test.cpp
     unit/numbers_test.cpp
     unit/cmd_mode_test.cpp
+    unit/tips_catalog_test.cpp
     integration/cross_sheet_grid_test.cpp
     integration/sort_grid_test.cpp
     integration/chart_grid_test.cpp
     integration/config_theme_test.cpp
     integration/config_save_test.cpp
+    integration/tips_config_test.cpp
 )
 
 target_link_libraries(tuix_tests PRIVATE tuix_core doctest::doctest)
