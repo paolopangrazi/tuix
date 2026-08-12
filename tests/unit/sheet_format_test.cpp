@@ -20,10 +20,17 @@ SheetData sample() {
     return d;
 }
 
+// csv/tsv go through rapidcsv, which writes the platform's native line ending
+// — CRLF on Windows, by design. These cases are about content, so compare on
+// normalized newlines rather than pinning one platform's terminator.
 std::string render(const SheetData& d, Format fmt, bool include_header = true) {
     std::ostringstream out;
     headless::write_sheet(out, d, fmt, include_header);
-    return out.str();
+
+    std::string s = out.str();
+    for (size_t i = s.find("\r\n"); i != std::string::npos; i = s.find("\r\n", i + 1))
+        s.erase(i, 1);
+    return s;
 }
 
 }  // namespace
