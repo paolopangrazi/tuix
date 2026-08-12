@@ -3,7 +3,7 @@
 
 <h1>tuiX</h1>
 
-**tui eXcel-lent — a fast, keyboard-driven spreadsheet editor for the terminal.**
+**tui eXcel-lent — a fast, keyboard-driven spreadsheet editor for the terminal, scriptable as a headless CSV/XLSX filter.**
 
 [![CI](https://github.com/paolopangrazi/tuix/actions/workflows/ci.yml/badge.svg)](https://github.com/paolopangrazi/tuix/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -15,6 +15,7 @@ without leaving your terminal. tuiX is a single native C++ binary built on
 [FTXUI](https://github.com/ArthurSonzogni/FTXUI), with no runtime dependencies.
 
 <img src="docs/demo.gif" alt="tuiX opening an XLSX file, navigating with vim keys, editing cells and evaluating formulas in the terminal" width="800">
+<img src="docs/headless.gif" alt="tuiX as a headless CSV filter" width="800">
 
 ### Platform support
 
@@ -90,8 +91,6 @@ Beyond the interactive editor, tuiX doubles as a **scriptable data filter**: giv
 it any transform flag (or pipe data into it) and it reads a sheet, applies a
 pipeline, and writes the result to stdout — never touching the terminal UI.
 Works on Linux, macOS, and Windows.
-
-![tuiX as a headless CSV filter](docs/headless.gif)
 
 ```bash
 # Filter, sort, and pick columns from a file → stdout
