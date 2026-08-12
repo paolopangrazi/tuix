@@ -3,7 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "loader/csv_loader.hpp"  // SheetData
+#include "cli/sheet_format.hpp"     // Format
+#include "loader/csv_loader.hpp"   // SheetData
 #include "loader/xlsx_loader.hpp"  // WorkbookData
 
 // Headless "unix filter" mode: read a sheet from a file or stdin, apply a
@@ -13,12 +14,14 @@
 //   tuix --filter 'salary > 50000' --sort dept --select name,dept in.csv
 //   cat in.csv | tuix --filter 'name =~ ^A' > out.csv
 //
-// The input and output formats are chosen by file extension: a `.xlsx` path is
-// read/written as an Excel workbook (one sheet — see `--sheet`), anything else
-// is CSV. stdin/stdout are always CSV (xlsx is binary and not pipe-friendly).
+// The input format is chosen by file extension: a `.xlsx` path is read as an
+// Excel workbook (one sheet — see `--sheet`), anything else is CSV. stdin is
+// always CSV (xlsx is binary and not pipe-friendly). Output is xlsx for a
+// `.xlsx` path, else the text format from `--format` (or the output extension,
+// or CSV) — see cli/sheet_format.hpp.
 //
 // The pipeline runs in a fixed order so later stages see earlier results:
-//   filter → sort → head/tail → select.
+//   no-header promotion → filter → sort → head/tail → select.
 namespace headless {
 
 // A single row predicate, e.g. `salary > 50000` or `name =~ ^A`.
@@ -38,6 +41,12 @@ struct Options {
     std::string              select;       // comma-separated columns to keep/reorder
     int                      head = -1;    // keep first N data rows (-1 = all)
     int                      tail = -1;    // keep last N data rows (-1 = all)
+
+    std::optional<Format>    format;       // --format; unset = infer from -o, else CSV
+    char                     delimiter = '\0';   // --delimiter; '\0' = auto-detect
+    bool                     no_header = false;  // first row is data, not headers
+    bool                     list_sheets = false;// print xlsx sheet names and exit
+    bool                     count = false;      // print the row count, not the sheet
 
     bool        active       = false;      // headless mode requested
     bool        show_help    = false;      // --help was passed

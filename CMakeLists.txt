@@ -109,6 +109,7 @@ add_library(tuix_core STATIC
     components/tab_bar.cpp
     components/cmd_mode.cpp
     cli/headless.cpp
+    cli/sheet_format.cpp
     dialogs/dialog_shell.cpp
     dialogs/confirm_dialog.cpp
     dialogs/path_input_dialog.cpp

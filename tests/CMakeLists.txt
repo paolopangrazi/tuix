@@ -25,6 +25,7 @@ add_executable(tuix_tests
     unit/cross_sheet_test.cpp
     unit/clipboard_test.cpp
     unit/headless_test.cpp
+    unit/sheet_format_test.cpp
     unit/chart_test.cpp
     unit/numbers_test.cpp
     unit/cmd_mode_test.cpp

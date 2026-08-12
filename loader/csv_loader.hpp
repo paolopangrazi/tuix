@@ -10,9 +10,11 @@ struct SheetData {
 };
 
 namespace CsvLoader {
-    SheetData load(const std::string& path);
+    // `delimiter` forces the separator (headless --delimiter); '\0' means
+    // auto-detect it from the first line.
+    SheetData load(const std::string& path, char delimiter = '\0');
 
     // Load CSV from an already-open stream (e.g. stdin). The delimiter is
-    // auto-detected from the first line, exactly as load() does for a path.
-    SheetData load_stream(std::istream& in);
+    // handled exactly as load() does for a path.
+    SheetData load_stream(std::istream& in, char delimiter = '\0');
 }

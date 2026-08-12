@@ -42,15 +42,15 @@ SheetData harvest(rapidcsv::Document& doc, char delim) {
 
 namespace CsvLoader {
 
-SheetData load(const std::string& path) {
-    char delim = detect_delimiter_of_path(path);
+SheetData load(const std::string& path, char delimiter) {
+    char delim = delimiter ? delimiter : detect_delimiter_of_path(path);
     rapidcsv::Document doc(path,
         rapidcsv::LabelParams(),
         rapidcsv::SeparatorParams(delim));
     return harvest(doc, delim);
 }
 
-SheetData load_stream(std::istream& in) {
+SheetData load_stream(std::istream& in, char delimiter) {
     // rapidcsv consumes the whole stream, so slurp it once and detect the
     // delimiter from the first line before re-parsing.
     std::stringstream buf;
@@ -58,7 +58,7 @@ SheetData load_stream(std::istream& in) {
     std::string text = buf.str();
 
     const size_t nl    = text.find('\n');
-    char         delim = detect_delimiter(text.substr(0, nl));
+    char         delim = delimiter ? delimiter : detect_delimiter(text.substr(0, nl));
 
     std::istringstream parse(text);
     rapidcsv::Document doc(parse,

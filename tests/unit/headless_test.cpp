@@ -6,8 +6,9 @@
 #include "cli/headless.hpp"
 #include "loader/csv_loader.hpp"
 
-// Exercises the headless "unix filter" transform pipeline (filter → sort →
-// head/tail → select) on in-memory SheetData, plus argv parsing.
+// Exercises the headless "unix filter" transform pipeline (no-header promotion
+// → filter → sort → head/tail → select) on in-memory SheetData, plus argv
+// parsing. The output encodings live in unit/sheet_format_test.cpp.
 
 using headless::Options;
 using headless::Predicate;
@@ -104,6 +105,56 @@ TEST_CASE("tail keeps the last N rows") {
     CHECK(col(d, 0) == std::vector<std::string>{"Ethan", "Fiona"});
 }
 
+TEST_CASE("no_header hands the header row back as data, named A, B, C...") {
+    SheetData d = sample();
+    Options o;
+    o.no_header = true;
+    std::string err;
+    REQUIRE(headless::apply(d, o, err));
+    CHECK(d.headers == std::vector<std::string>{"A", "B", "C"});
+    CHECK(d.rows.size() == 6);
+    CHECK(col(d, 0)[0] == "name");   // the old header line is row 0 now
+}
+
+TEST_CASE("no_header columns are addressable by letter, not by the old names") {
+    SheetData d;
+    d.headers = {"name", "salary"};   // really the first data row
+    d.rows    = {{"Anna", "95000"}, {"Carlos", "62000"}};
+
+    Options o;
+    o.no_header = true;
+    o.filters   = {{"A", Op::EQ, "Carlos"}};
+    std::string err;
+    REQUIRE(headless::apply(d, o, err));
+    CHECK(col(d, 0) == std::vector<std::string>{"Carlos"});
+
+    SheetData d2 = d;
+    Options o2;
+    o2.no_header = true;
+    o2.filters   = {{"name", Op::EQ, "Carlos"}};   // "name" is data now, not a name
+    CHECK_FALSE(headless::apply(d2, o2, err));
+}
+
+TEST_CASE("no_header pads the column letters out to the widest row") {
+    SheetData d;
+    d.headers = {"a"};
+    d.rows    = {{"x", "y", "z"}};
+    Options o;
+    o.no_header = true;
+    std::string err;
+    REQUIRE(headless::apply(d, o, err));
+    CHECK(d.headers == std::vector<std::string>{"A", "B", "C"});
+}
+
+TEST_CASE("delimiter overrides the separator the sheet is written with") {
+    SheetData d = sample();
+    Options o;
+    o.delimiter = '\t';
+    std::string err;
+    REQUIRE(headless::apply(d, o, err));
+    CHECK(d.delimiter == '\t');
+}
+
 TEST_CASE("unknown column is a reported error") {
     SheetData d = sample();
     Options o;
@@ -174,6 +225,49 @@ TEST_CASE("parse_args captures --sheet") {
     Options o2;
     headless::parse_args(2, const_cast<char**>(missing), o2);
     CHECK_FALSE(o2.parse_error.empty());
+}
+
+TEST_CASE("parse_args captures --format and rejects an unknown one") {
+    const char* argv[] = {"tuix", "-t", "JSONL", "in.csv"};
+    Options o;
+    headless::parse_args(4, const_cast<char**>(argv), o);
+    CHECK(o.parse_error.empty());
+    CHECK(o.format == headless::Format::JSONL);
+
+    const char* bad[] = {"tuix", "--format", "yaml"};
+    Options o2;
+    headless::parse_args(3, const_cast<char**>(bad), o2);
+    CHECK_FALSE(o2.parse_error.empty());
+}
+
+TEST_CASE("parse_args takes a one-character delimiter, or a spelled-out tab") {
+    for (const char* spec : {"\\t", "tab", "TAB"}) {
+        const char* argv[] = {"tuix", "-d", spec};
+        Options o;
+        headless::parse_args(3, const_cast<char**>(argv), o);
+        CHECK(o.parse_error.empty());
+        CHECK(o.delimiter == '\t');
+    }
+
+    const char* semi[] = {"tuix", "--delimiter", ";"};
+    Options o1;
+    headless::parse_args(3, const_cast<char**>(semi), o1);
+    CHECK(o1.delimiter == ';');
+
+    const char* bad[] = {"tuix", "-d", ",,"};
+    Options o2;
+    headless::parse_args(3, const_cast<char**>(bad), o2);
+    CHECK_FALSE(o2.parse_error.empty());
+}
+
+TEST_CASE("parse_args captures the standalone flags and marks them headless") {
+    const char* argv[] = {"tuix", "--no-header", "--count", "--list-sheets", "in.csv"};
+    Options o;
+    CHECK(headless::parse_args(5, const_cast<char**>(argv), o));
+    CHECK(o.parse_error.empty());
+    CHECK(o.no_header);
+    CHECK(o.count);
+    CHECK(o.list_sheets);
 }
 
 TEST_CASE("parse_args captures --version and it wins over a bad flag combo") {

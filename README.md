@@ -99,16 +99,42 @@ tuix --filter 'salary > 50000' --sort 'department,salary desc' \
 
 # Read from a pipe, keep names starting with A, write the top 20 to a file
 cat samples/csv/employees.csv | tuix --filter 'first_name =~ ^A' --head 20 -o top.csv
+
+# Hand the result to jq as JSON
+tuix --filter 'salary > 50000' --format json samples/csv/employees.csv | jq '.[].first_name'
 ```
 
 The pipeline always runs in a fixed order: **filter → sort → head/tail →
 select**, so each stage sees the previous stage's output.
 
+### Output formats
+
+The result is CSV unless you ask for something else. `--format` (`-t`) picks the
+encoding; without it, the `-o` extension decides, and failing that it is CSV.
+
+| Format | Output |
+|---|---|
+| `csv` | Comma-separated (or whatever `--delimiter` / the input used) — the default |
+| `tsv` | Tab-separated |
+| `json` | An array of objects, one per row, keyed by header |
+| `jsonl` | One JSON object per line (`ndjson`) — streams into `jq`, `mlr`, log tools |
+| `md` | A GitHub-flavored markdown table, ready to paste into a doc |
+| `table` | Aligned plain text for reading in the terminal; numeric columns right-align |
+
+In `json` and `jsonl`, cells that are exactly JSON numbers are emitted unquoted,
+so `jq` can do arithmetic on them; anything else (`007`, `1,200`, dates) stays a
+string. Blank or missing headers become column letters.
+
+```bash
+tuix --sort 'salary desc' --head 3 --format table employees.csv
+tuix --select product,revenue --format md sales.csv >> report.md
+```
+
 ### CSV and XLSX
 
-The input and output formats are chosen by **file extension**: a `.xlsx` path is
-read (and written) as an Excel workbook, anything else is CSV. You can mix them
-freely — read from `.xlsx` and write `.csv`, or the reverse.
+Excel is chosen by **file extension**: a `.xlsx` path is read (and written) as a
+workbook, anything else is text. You can mix them freely — read from `.xlsx` and
+write `.csv`, or the reverse.
 
 ```bash
 # Excel in, Excel out — filter one sheet and keep the result as .xlsx
@@ -120,13 +146,18 @@ tuix book.xlsx -o book.csv
 
 An `.xlsx` workbook can hold several sheets, but the pipeline works on **one
 sheet in, one sheet out**. Use `--sheet` to choose which one — by name
-(case-insensitive) or by 1-based index; it defaults to the first sheet. When
-writing `.xlsx`, the result is a single-sheet workbook.
+(case-insensitive) or by 1-based index; it defaults to the first sheet
+(`--list-sheets` prints the names). When writing `.xlsx`, the result is a
+single-sheet workbook.
 
-Writing CSV always stores computed **values, not formulas**; a note is printed to
-stderr when an `.xlsx` source is flattened this way. To keep formulas, write
-`.xlsx`. Because Excel files are binary, **stdin and stdout are always CSV** — a
-`.xlsx` must be a real file path, not a pipe.
+```bash
+tuix --list-sheets book.xlsx        # Summary / Sales / Costs
+```
+
+Writing text always stores computed **values, not formulas**; a note is printed
+to stderr when an `.xlsx` source is flattened this way. To keep formulas, write
+`.xlsx`. Because Excel files are binary, **stdin is always CSV and stdout is
+always text** — a `.xlsx` must be a real file path, not a pipe.
 
 ### Windows notes
 
@@ -160,13 +191,18 @@ cmd /c "type in.csv | tuix --filter ""salary > 50000"""
 | `--head` | `N` | Keep the first `N` data rows. |
 | `--tail` | `N` | Keep the last `N` data rows. |
 | `--sheet` | `NAME` | For `.xlsx` input, pick a sheet by name or 1-based index (default: first). |
+| `--list-sheets` | | Print the sheet names of an `.xlsx` and exit. |
+| `-t`, `--format` | `FMT` | Output encoding: `csv`, `tsv`, `json`, `jsonl`, `md`, `table`. |
+| `-d`, `--delimiter` | `C` | Force the CSV separator, in and out. Also accepts `'\t'` and `tab`. |
+| `-n`, `--no-header` | | The first row is data, not headers; address columns as `A`, `B`… |
+| `--count` | | Print the resulting row count instead of the rows. |
 | `-o`, `--output` | `FILE` | Write to `FILE` instead of stdout. |
 | `-h`, `--help` | | Print usage and exit. |
 | `-V`, `--version` | | Print the version and exit. |
 
 Input comes from a file argument, or from **stdin** when data is piped in (or
 you pass `-`). For CSV, the delimiter (comma, semicolon, tab, pipe) is
-auto-detected and preserved on output.
+auto-detected and preserved on output unless `--delimiter` overrides it.
 
 ### Filter predicates
 
@@ -219,6 +255,15 @@ cat employees.csv | tuix --filter 'remote == yes' --sort 'salary desc' -o remote
 
 # Columns can be referred to by letter when there's no header or you prefer brevity
 tuix --filter 'F > 80000' employees.csv   # F is the salary column
+
+# Headerless data: the first row is data, and columns are A, B, C...
+tuix --no-header --filter 'C > 80000' --format table raw.csv
+
+# How many rows survive the filter?
+tuix --filter 'remote == yes' --count employees.csv
+
+# Semicolon-separated in, JSON lines out
+tuix --delimiter ';' --format jsonl export.csv | jq -c 'select(.salary > 80000)'
 ```
 
 ---

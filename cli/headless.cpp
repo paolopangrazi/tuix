@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <numeric>
 #include <optional>
@@ -24,7 +25,6 @@
 #include "loader/xlsx_loader.hpp"
 #include "util/numbers.hpp"
 #include "util/strings.hpp"
-#include "writer/csv_writer.hpp"
 #include "writer/xlsx_writer.hpp"
 
 namespace headless {
@@ -51,6 +51,18 @@ std::string unquote(std::string s) {
     if (s.size() >= 2 && (s.front() == '"' || s.front() == '\'') && s.back() == s.front())
         return s.substr(1, s.size() - 2);
     return s;
+}
+
+// --no-header: the loader consumed row 0 as column names, so hand it back as
+// data and label the columns A, B, C... — the only way to address them then.
+void promote_header_row(SheetData& d) {
+    if (!d.headers.empty()) d.rows.insert(d.rows.begin(), std::move(d.headers));
+
+    size_t width = 0;
+    for (const auto& r : d.rows) width = std::max(width, r.size());
+    d.headers.clear();
+    d.headers.reserve(width);
+    for (size_t c = 0; c < width; ++c) d.headers.push_back(col_letter(static_cast<int>(c)));
 }
 
 // Resolve a column spec to a zero-based index: exact header name (case-
@@ -276,6 +288,11 @@ std::optional<size_t> resolve_sheet(const WorkbookData& wb, const std::string& s
 // ── Pipeline ─────────────────────────────────────────────────────────────────
 
 bool apply(SheetData& data, const Options& opts, std::string& err) {
+    // Shape and encoding first, so the transforms below see the final columns
+    // and the writer sees the requested separator.
+    if (opts.no_header) promote_header_row(data);
+    if (opts.delimiter) data.delimiter = opts.delimiter;
+
     if (!opts.filters.empty() && !apply_filters(data, opts.filters, err)) return false;
     if (!opts.sort_spec.empty() && !apply_sort(data, opts.sort_spec, err)) return false;
 
@@ -301,6 +318,15 @@ bool parse_args(int argc, char* argv[], Options& out) {
         double d;
         if (!tuix::parse_number(v, d) || d < 0 || d != static_cast<int>(d)) return false;
         n = static_cast<int>(d);
+        return true;
+    };
+    // A separator is one character, but a literal tab is awkward to type on a
+    // command line, so it may also be spelled "\t" or "tab".
+    auto parse_delimiter = [](const char* v, char& d) {
+        const std::string s = v;
+        if (s == "\\t" || tuix::to_lower(s) == "tab") { d = '\t'; return true; }
+        if (s.size() != 1) return false;
+        d = s[0];
         return true;
     };
 
@@ -347,6 +373,28 @@ bool parse_args(int argc, char* argv[], Options& out) {
                 any_flag = true; break;
             }
             any_flag = true;
+        } else if (flag("--format") || flag("-t")) {
+            const char* v = need(i);
+            auto f = v ? parse_format(v) : std::nullopt;
+            if (!f) {
+                out.parse_error = std::string("--format needs one of: ")
+                                + "csv, tsv, json, jsonl, md, table";
+                any_flag = true; break;
+            }
+            out.format = *f; any_flag = true;
+        } else if (flag("--delimiter") || flag("-d")) {
+            const char* v = need(i);
+            if (!v || !parse_delimiter(v, out.delimiter)) {
+                out.parse_error = "--delimiter needs a single character (or '\\t')";
+                any_flag = true; break;
+            }
+            any_flag = true;
+        } else if (flag("--no-header") || flag("-n")) {
+            out.no_header = true; any_flag = true;
+        } else if (flag("--list-sheets")) {
+            out.list_sheets = true; any_flag = true;
+        } else if (flag("--count")) {
+            out.count = true; any_flag = true;
         } else if (flag("--output") || flag("-o")) {
             const char* v = need(i);
             if (!v) { out.parse_error = a + " needs a path"; any_flag = true; break; }
@@ -377,9 +425,31 @@ int run(const Options& opts) {
         return 2;
     }
 
-    // Format is chosen by file extension; stdin/stdout are always CSV.
+    // xlsx is chosen by file extension; stdin is always CSV, and stdout is one
+    // of the text formats (never xlsx, which is binary).
     const bool xlsx_in  = !opts.input.empty()  && opts.input  != "-" && is_xlsx(opts.input);
     const bool xlsx_out = !opts.output.empty() && opts.output != "-" && is_xlsx(opts.output);
+
+    if (opts.list_sheets) {
+        if (!xlsx_in) {
+            std::cerr << "tuix: --list-sheets needs an .xlsx input file\n";
+            return 2;
+        }
+        try {
+            for (const auto& sheet : XlsxLoader::load_workbook(opts.input).sheets)
+                std::cout << sheet.first << "\n";
+        } catch (const std::exception& e) {
+            std::cerr << "tuix: cannot read input: " << e.what() << "\n";
+            return 1;
+        }
+        return 0;
+    }
+
+    if (xlsx_out && (opts.format || opts.count)) {
+        std::cerr << "tuix: " << (opts.format ? "--format" : "--count")
+                  << " writes text; it cannot go to an .xlsx file\n";
+        return 2;
+    }
 
     SheetData data;
     std::string sheet_name = "Sheet1";  // xlsx-output name when the source is CSV
@@ -395,9 +465,9 @@ int run(const Options& opts) {
             sheet_name = wb.sheets[*idx].first;
             data       = std::move(wb.sheets[*idx].second);
         } else if (opts.input.empty() || opts.input == "-") {
-            data = CsvLoader::load_stream(std::cin);
+            data = CsvLoader::load_stream(std::cin, opts.delimiter);
         } else {
-            data = CsvLoader::load(opts.input);
+            data = CsvLoader::load(opts.input, opts.delimiter);
         }
     } catch (const std::exception& e) {
         std::cerr << "tuix: cannot read input: " << e.what() << "\n";
@@ -413,13 +483,30 @@ int run(const Options& opts) {
     try {
         if (xlsx_out) {
             XlsxWriter::save_workbook(opts.output, {{sheet_name, data}});
+            return 0;
+        }
+
+        // One text sink for every format: stdout, or the -o path opened binary
+        // so line endings stay '\n' on every platform (as rapidcsv's own
+        // Save(path) does).
+        std::ofstream file;
+        if (!opts.output.empty() && opts.output != "-") {
+            file.open(opts.output, std::ios::binary | std::ios::trunc);
+            if (!file) {
+                std::cerr << "tuix: cannot write output: " << opts.output << "\n";
+                return 1;
+            }
+        }
+        std::ostream& out = file.is_open() ? static_cast<std::ostream&>(file) : std::cout;
+
+        if (opts.count) {
+            out << data.rows.size() << "\n";
         } else {
-            if (xlsx_in)  // xlsx → CSV loses formulas (loader already flattened them)
-                std::cerr << "tuix: note: CSV output stores values, not formulas\n";
-            if (opts.output.empty() || opts.output == "-")
-                CsvWriter::save_stream(std::cout, data);
-            else
-                CsvWriter::save(opts.output, data);
+            if (xlsx_in)  // xlsx → text loses formulas (loader already flattened them)
+                std::cerr << "tuix: note: text output stores values, not formulas\n";
+            const Format fmt = opts.format.value_or(
+                format_from_extension(opts.output).value_or(Format::CSV));
+            write_sheet(out, data, fmt, !opts.no_header);
         }
     } catch (const std::exception& e) {
         std::cerr << "tuix: cannot write output: " << e.what() << "\n";
@@ -441,16 +528,23 @@ void print_help() {
         "      --tail N        keep the last N data rows\n"
         "      --sheet NAME    for .xlsx input, pick a sheet by name or 1-based\n"
         "                      index (default: first sheet)\n"
+        "      --list-sheets   print the sheet names of an .xlsx and exit\n"
+        "  -t, --format FMT    csv, tsv, json, jsonl, md, table\n"
+        "  -d, --delimiter C   separator for CSV in and out (also '\\t')\n"
+        "  -n, --no-header     the first row is data; address columns as A, B...\n"
+        "      --count         print the resulting row count, not the rows\n"
         "  -o, --output FILE   write here instead of stdout\n"
         "  -h, --help          show this help\n"
         "  -V, --version       show the version\n\n"
-        "A .xlsx path is read/written as Excel; anything else is CSV. stdin and\n"
-        "stdout are always CSV. One sheet in, one sheet out.\n\n"
+        "A .xlsx path is read/written as Excel; anything else is text. stdin is\n"
+        "always CSV. The output format is --format, else the -o extension, else\n"
+        "CSV. One sheet in, one sheet out.\n\n"
         "PRED is 'COLUMN OP VALUE'. COLUMN is a header name or letter (A, B...).\n"
         "OP is one of:  ==  !=  <  <=  >  >=  =~ (regex)  contains\n\n"
         "Examples:\n"
         "  tuix --filter 'salary > 50000' --sort dept employees.csv\n"
         "  cat employees.csv | tuix --filter 'name =~ ^A' --select name,salary\n"
+        "  tuix --filter 'qty > 0' --format json book.xlsx | jq '.[].sku'\n"
         "  tuix --sheet Sales --filter 'qty > 0' book.xlsx -o out.xlsx\n";
 }
 
